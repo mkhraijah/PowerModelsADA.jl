@@ -7,7 +7,7 @@ just update the objective function, we force the instantiate option when the
 
 function update_objective!(pm::AbstractPowerModel; instantiate::Bool=false)
 
-    if isa(pm, AbstractConicModel) ||  _PM.check_cost_models(pm) == 1
+    if isa(pm, _PM.AbstractConicModel) ||  _PM.check_cost_models(pm) == 1
         instantiate = true
     end
 
