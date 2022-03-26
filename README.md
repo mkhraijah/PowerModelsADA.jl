@@ -34,7 +34,7 @@ The distributed algorithm parameters.
 ### Power Flow formulation 
 
 The power flow formulation is selected using the variable ` pf_model`. Currently, the code supports the following models from PowerModels: 
-ACPPowerModel, ACRPowerModel, DCPPowerModel, SOCWRPowerModel,QCRMPowerModel, SDPWRMPowerModel. See https://github.com/lanl-ansi/PowerModels.jl/blob/master/src/core/types.jl for more details about the supported power flow formulation. 
+`ACPPowerModel`, `ACRPowerModel`, `DCPPowerModel`, `SOCWRPowerModel`, `QCRMPowerModel`, `SDPWRMPowerModel`. See https://github.com/lanl-ansi/PowerModels.jl/blob/master/src/core/types.jl for more details about the supported power flow formulations. 
 
 
 ## Examples 
