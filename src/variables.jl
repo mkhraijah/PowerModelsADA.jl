@@ -77,7 +77,7 @@ function update_primal_variable!(pm::AbstractPowerModel)
     end
 end
 
-""" is there a better way to handle multiple algorithms instead of if statement? """
+""" This will be changed to pass the algorithm type as buidling function instead of string in the setting. """
 function update_dual_variable!(pm::AbstractPowerModel)
 
     Algorithm = pm.setting["distributed_algorithm"]

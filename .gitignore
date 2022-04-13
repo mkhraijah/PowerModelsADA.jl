@@ -1,6 +1,3 @@
 
-src/test/attack_function.jl
-src/test/error_inj.jl
-src/test/distirbuted_run.jl
-src/test/bilevel.jl
-src/test/noise_simulation.jl
+.DS_Store
+src/.DS_Store

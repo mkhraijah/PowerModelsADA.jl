@@ -1,5 +1,5 @@
 
-module DPM
+module DistributedPowerModels
 
 
 import JuMP

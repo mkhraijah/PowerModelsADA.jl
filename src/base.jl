@@ -1,7 +1,6 @@
 
-
-## wrapper for PowerModel.instantiate_model with dopf setting
-function instantiate_dpm_model(data::Dict{String, Any}, pf_model; setting::Dict=Dict())
+## method wrap PowerModel.instantiate_model with dopf setting
+function instantiate_dpm_model(data::Dict{String, <:Any}, pf_model; setting::Dict=Dict())
 
     if !haskey(data,"area")
         error("No area id is provided in the data")
@@ -9,12 +8,12 @@ function instantiate_dpm_model(data::Dict{String, Any}, pf_model; setting::Dict=
     if isempty(setting)
         setting = set_setting()
     end
-    pf_model = DPM.pf_formulation(pf_model)
+    pf_model = pf_formulation(pf_model)
 
     _PM.instantiate_model(data, pf_model, build_dopf, setting = setting)
 end
 
-function instantiate_dpm_model(data::Dict{String, Any}, area::Int64, pf_model; setting::Dict{String, Any}=Dict{String, Any}())
+function instantiate_dpm_model(data::Dict{String, <:Any}, area::Int64, pf_model; setting::Dict{String, <:Any}=Dict{String, <:Any}())
     data_area = decompose_system(data,area)
     instantiate_dpm_model(data_area, setting=setting)
 end
@@ -56,7 +55,6 @@ function build_dopf(pm::AbstractPowerModel)
 
 end
 
-""" I'm not sure if this is the best method to wrap the setting into a dict """
 ## method to wrap dpm settings into a dictionary
 function set_setting(distributed_algorithm::String="APP", tol::Float64= 1e-4, max_iteration::Int64=1000)
 
@@ -111,8 +109,8 @@ function update_flag_convergance!(pm::AbstractPowerModel)
     pm.ext[:flag_convergance] = mismatch < tol
 end
 
-##
-function check_flag_convergance(pms::Dict{Int64, Any})
+## Check the shared variables of all areas are within tol
+function check_flag_convergance(pms::Dict{Int64, <:Any})
     flag_convergance = reduce( & , [pms[i].ext[:flag_convergance] for i in keys(pms)])
     return flag_convergance
 end

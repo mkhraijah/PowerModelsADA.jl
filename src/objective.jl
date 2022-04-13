@@ -1,19 +1,13 @@
 ## methods to handle objective function update at every iteration
 
 ## method to update the objective function at each iteration
-"""it has an option of instantiate the PowerModel at each iteration or
-just update the objective function, we force the instantiate option when the
-    cost model is pwl or SDPWR form """
+""" will be changed to instantiate the subsystem at each iteration using the buidling function """
 
 function update_objective!(pm::AbstractPowerModel; instantiate::Bool=false)
 
     if isa(pm, _PM.AbstractConicModel) ||  _PM.check_cost_models(pm) == 1
         instantiate = true
     end
-
-""" is this the best way to instantiate the PowerModel and passing
-the previosully obtained information including the solutions and
-shared variabels values """
 
     if instantiate
         pf_model = typeof(pm)

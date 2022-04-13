@@ -34,7 +34,7 @@ function assign_area!(data::Dict, partition::Array{Int64, 2})
     assign_area!(data, Dict(partition[i,1] => partition[i,2] for i in 1:size(partition)[1] ))
 end
 
-""" is this the best way to decompose the data into subareas? """
+
 ## method to decompose a subsystem with area id
 function decompose_system(data::Dict{String, <:Any}, area::Int)
 
@@ -165,7 +165,7 @@ get_areas_bus(pm::AbstractPowerModel) = get_areas_bus(pm.data)
 ## Method to get the shared buses and branches between defined area and all other areas in pm.data
 function get_shared_component(pm::AbstractPowerModel, area::Int64)
     areas_id = get_areas_id(pm)
-    areas_bus = DPM.get_areas_bus(pm)
+    areas_bus = get_areas_bus(pm)
     shared_branch = Dict{Int64, Any}()
     shared_bus = Dict{Int64, Any}()
     for i in areas_id

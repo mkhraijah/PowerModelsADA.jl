@@ -1,25 +1,26 @@
 
 path = joinpath(@__DIR__,"..")
+cd(path)
 using Pkg
 Pkg.activate(".")
 using Ipopt
 
 ## Call Packages
-include("DPM.jl")
-
+include("../src/DistributedPowerModels.jl")
+DPM = DistributedPowerModels
 ## Read case with partition file and return dictionary of the paritioned case
-case_path = "data/case300.m"
+case_path = "test/data/case300.m"
 data = DPM.parse_file(case_path)
 
-partition_path= "data/case300_3areas.csv"
+partition_path= "test/data/case300_3areas.csv"
 DPM.assign_area!(data, partition_path)
 
 ## Settings
-alpha = 100
+alpha = 10000
 max_iteration = 10000
-tol = 1e-2
+tol = 1e-4
 distributed_algorithm = "APP" # Select algorithm among APP ADMM ATC
-pf_model = "SOC" # Select model among DC AC SOC SDP QC
+pf_model = "DC" # Select model among DC AC SOC SDP QC
 
 settings = DPM.set_setting(distributed_algorithm, tol, max_iteration)
 
@@ -43,7 +44,7 @@ flag_convergance = false
 
 ## Start the algorithm iteration
 
-while iteration < max_iteration && flag_convergance == false
+@time while iteration < max_iteration && flag_convergance == false
     ## Solve local problem and update shared variables
     for i in areas_id
         DPM.update_dual_variable!(subsystem[i])
@@ -79,3 +80,5 @@ while iteration < max_iteration && flag_convergance == false
     DPM.update_iteration!(subsystem)
 
 end
+
+DPM.compare_solution(data, subsystem, pf_model, optimizer[1])
