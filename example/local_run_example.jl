@@ -8,34 +8,37 @@ using Ipopt
 ## Call Packages
 include("../src/DistributedPowerModels.jl")
 DPM = DistributedPowerModels
+
 ## Read case with partition file and return dictionary of the paritioned case
-case_path = "test/data/case300.m"
+case_path = "test/data/case14.m"
 data = DPM.parse_file(case_path)
 
-partition_path= "test/data/case300_3areas.csv"
-DPM.assign_area!(data, partition_path)
+# partition_path= "test/data/case300_3areas.csv"
+# DPM.assign_area!(data, partition_path)
 
 ## Settings
-alpha = 10000
+alpha = 1.1
 max_iteration = 10000
 tol = 1e-4
-distributed_algorithm = "APP" # Select algorithm among APP ADMM ATC
-pf_model = "DC" # Select model among DC AC SOC SDP QC
+pf_model = "AC" # Select model among DC AC SOC SDP QC
+optimizer = Ipopt.Optimizer
+build_method = DPM.build_dopf_atc
 
-settings = DPM.set_setting(distributed_algorithm, tol, max_iteration)
+
+##  Distributed algorithm settings
+areas_id = DPM.get_areas_id(data) # return a vector with areas ids
+data_area = Dict{Int,Any}()
+pf_model = DPM.pf_formulation(pf_model)
+
 
 ## Decompose the system into several subsystem return PowerModel
-
-areas_id = DPM.get_areas_id(data) # return a vector with areas ids
-subsystem_data = Dict{Int,Any}()
-subsystem = Dict{Int,Any}()
-optimizer = Dict{Int,Any}()
-
 for i in areas_id
-    optimizer[i] = Ipopt.Optimizer
-    subsystem_data[i] = DPM.decompose_system(data, i)
-    subsystem[i] = DPM.instantiate_dpm_model(subsystem_data[i], pf_model, setting = settings)
-    DPM.initialize_dpm!(subsystem[i], optimizer[i], alpha)
+    data_area[i] = DPM.decompose_system(data, i)
+end
+
+## Initilize distributed power model parameters
+for i in areas_id
+    DPM.initialize_dpm!(data_area[i], optimizer, pf_model)
 end
 
 ## Initialaize the algorithms counters
@@ -44,41 +47,40 @@ flag_convergance = false
 
 ## Start the algorithm iteration
 
-@time while iteration < max_iteration && flag_convergance == false
+while iteration < max_iteration && flag_convergance == false
+
     ## Solve local problem and update shared variables
     for i in areas_id
-        DPM.update_dual_variable!(subsystem[i])
-        DPM.update_objective!(subsystem[i])
-        DPM.solve_local_model!(subsystem[i])
-        DPM.update_primal_variable!(subsystem[i])
+        pm = DPM.update_subproblem(data_area[i], pf_model, build_method, alpha = alpha, tol = tol, max_iteration = max_iteration)
+        DPM.solve_subproblem!(pm, optimizer)
+        DPM.update_solution!(data_area[i], pm)
     end
 
     ## Share solution
     for i in areas_id # sender subsystem
         for j in areas_id # receiver subsystem
-            if i != j && i in keys(subsystem[j].ext[:primal_shared_variable])
-                shared_data = DPM.send_shared_data(i, j, subsystem[i], serialize = false)
+            if i != j && i in keys(data_area[j]["shared_primal"])
+                shared_data = DPM.send_shared_data(i, j, data_area[i], serialize = false)
                     ### Communication ####
-                DPM.receive_shared_data!(i, shared_data, subsystem[j])
+                DPM.receive_shared_data!(i, shared_data, data_area[j])
             end
         end
     end
 
     ## Calculate mismatches and update convergance flags
     for i in areas_id
-        DPM.calc_mismatch!(subsystem[i],2)
-        DPM.update_flag_convergance!(subsystem[i])
+        DPM.calc_mismatch!(data_area[i],2)
+        DPM.update_flag_convergance!(data_area[i], tol)
     end
 
     ## Calculate global mismatch
-    mismatch =  DPM.check_mismatch(subsystem)
+    mismatch =  DPM.calc_global_mismatch(data_area)
     println("Iteration Number = $iteration, mismatch = $mismatch")
 
     ## Check global convergance and update iteration counters
-    flag_convergance = DPM.check_flag_convergance(subsystem)
+    flag_convergance = DPM.check_flag_convergance(data_area)
     iteration += 1
-    DPM.update_iteration!(subsystem)
 
 end
 
-DPM.compare_solution(data, subsystem, pf_model, optimizer[1])
+DPM.compare_solution(data, data_area, pf_model, optimizer)
