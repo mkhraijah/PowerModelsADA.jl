@@ -21,7 +21,7 @@ data_300 =  DPM.parse_file("test/data/case300.m")
 data_300_3 =  DPM.parse_file("test/data/case300_3areas.m")
 
 
-@testset "DistributedPowerModels" begin
+begin
 
 ## assign area test
     @testset "assign area to busses for case300" begin

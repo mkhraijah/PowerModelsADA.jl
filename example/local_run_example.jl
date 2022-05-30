@@ -10,19 +10,19 @@ include("../src/DistributedPowerModels.jl")
 DPM = DistributedPowerModels
 
 ## Read case with partition file and return dictionary of the paritioned case
-case_path = "test/data/case14.m"
+case_path = "test/data/case118_3areas.m"
 data = DPM.parse_file(case_path)
 
 # partition_path= "test/data/case300_3areas.csv"
 # DPM.assign_area!(data, partition_path)
 
 ## Settings
-alpha = 1.1
-max_iteration = 10000
+alpha = 100
+max_iteration = 2
 tol = 1e-4
-pf_model = "AC" # Select model among DC AC SOC SDP QC
+pf_model = "DC" # Select model among DC AC SOC SDP QC
 optimizer = Ipopt.Optimizer
-build_method = DPM.build_dopf_atc
+build_method = DPM.build_dopf_admm
 
 
 ##  Distributed algorithm settings
@@ -38,7 +38,7 @@ end
 
 ## Initilize distributed power model parameters
 for i in areas_id
-    DPM.initialize_dpm!(data_area[i], optimizer, pf_model)
+    DPM.initialize_dpm!(data_area[i], pf_model)
 end
 
 ## Initialaize the algorithms counters

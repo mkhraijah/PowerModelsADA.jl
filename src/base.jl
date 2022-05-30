@@ -38,7 +38,7 @@ end
 function solve_subproblem!(pm::AbstractPowerModel, optimizer)
     JuMP.set_optimizer(pm.model, optimizer)
     JuMP.set_silent(pm.model)
-    _PM.optimize_model!(pm)
+    optimize_model!(pm)
     update_primal_variable!(pm)
     update_data!(pm.data, pm.solution)
 end
@@ -46,7 +46,7 @@ end
 
 ## wrapping for updata_data! in PowerModels
 function update_solution!(data::Dict{String,<:Any}, pm::AbstractPowerModel)
-    _PM.update_data!(data, pm.solution)
+    update_data!(data, pm.solution)
     data["shared_primal"] = pm.data["shared_primal"]
     data["shared_dual"] = pm.data["shared_dual"]
     update_iteration!(data)

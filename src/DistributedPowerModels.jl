@@ -4,7 +4,7 @@ module DistributedPowerModels
 
 import JuMP
 import PowerModels as _PM
-import PowerModels: AbstractPowerModel, AbstractDCPModel, AbstractACPModel, AbstractACRModel, AbstractSOCWRModel, AbstractQCRMPowerModel, AbstractSDPWRMModel, pm_it_sym, var, ids, update_data!, parse_file
+import PowerModels: AbstractPowerModel, AbstractDCPModel, AbstractACPModel, AbstractACRModel, AbstractSOCWRModel, AbstractQCRMPowerModel, AbstractSDPWRMModel, pm_it_sym, var, ids, update_data!, parse_file, optimize_model!
 import Serialization
 import LinearAlgebra: norm, I, eigen
 import DelimitedFiles

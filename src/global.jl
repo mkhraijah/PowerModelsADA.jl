@@ -111,7 +111,12 @@ function run_dopf(data::Dict{String, <:Any}, pf_model, build_method::Function, o
 
         ## solve local problem and update solution
         for i in areas_id
-
+""" simplify things here and make depends on data only (not pm)
+make it four steps
+step 1 update the dual variable
+step 2 optimize power models using the specified build method
+step 3 update solution (require converting data into string=>float)
+            """
             pm = update_subproblem(data_area[i], pf_model, build_method, alpha = alpha, tol = tol, max_iteration = max_iteration)
             solve_subproblem!(pm, optimizer)
             update_solution!(data_area[i], pm)
@@ -148,9 +153,10 @@ function run_dopf(data::Dict{String, <:Any}, pf_model, build_method::Function, o
         iteration += 1
 
     end
-
+""" update the original data file (using update_data! after converting data into string=>float)""" 
     return data_area
 end
+
 
 ## Compare the distributed algorithm solutoin with PowerModels centralized solution
 function compare_solution(data, data_area, pf_model, optimizer)
