@@ -1,3 +1,8 @@
+name = "DistributedPowerModels"
+uuid = "bf5a6c5f-0285-47d6-bb57-79927775d05d"
+authors = ["Mohannad Alkhraijah"]
+version = "0.0.1"
+
 [deps]
 Clustering = "aaaa29a8-35af-508c-8bc3-b662a17a0fe5"
 GraphRecipes = "bd48cda9-67a9-57be-86fa-5b3c104eda73"
