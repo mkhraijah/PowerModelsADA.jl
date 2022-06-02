@@ -1,8 +1,8 @@
 using DistributedPowerModels
 
+import JuMP
 import HiGHS
 import Ipopt
-
 
 using Test
 
@@ -10,22 +10,24 @@ using Test
 milp_solver = JuMP.optimizer_with_attributes(HiGHS.Optimizer, "output_flag"=>false)
 nlp_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-6, "print_level"=>0)
 
+const DPM = DistributedPowerModels
+
 ## load test systems
-data_WB5 = DPM.parse_file("test/data/WB5.m")
-data_14 =  DPM.parse_file("test/data/case14.m")
-data_30 =  DPM.parse_file("test/data/case30.m")
-data_RTS =  DPM.parse_file("test/data/case_RTS.m")
-data_118 =  DPM.parse_file("test/data/case118.m")
-data_118_3 = DPM.parse_file("test/data/case118_3areas.m")
-data_300 =  DPM.parse_file("test/data/case300.m")
-data_300_3 =  DPM.parse_file("test/data/case300_3areas.m")
+data_WB5 = DPM.parse_file("../test/data/WB5.m")
+data_14 =  DPM.parse_file("../test/data/case14.m")
+data_30 =  DPM.parse_file("../test/data/case30.m")
+data_RTS =  DPM.parse_file("../test/data/case_RTS.m")
+data_118 =  DPM.parse_file("../test/data/case118.m")
+data_118_3 = DPM.parse_file("../test/data/case118_3areas.m")
+data_300 =  DPM.parse_file("../test/data/case300.m")
+data_300_3 =  DPM.parse_file("../test/data/case300_3areas.m")
 
 
-begin
+@testset "DistributedPowerModels" begin
 
 ## assign area test
     @testset "assign area to busses for case300" begin
-        DPM.assign_area!(data_300, "test/data/case300_8areas.csv")
+        DPM.assign_area!(data_300, "../test/data/case300_8areas.csv")
         area_count = [65, 35, 33, 38, 43, 44, 22, 20]
         test_count = [count(c -> c["area"]  == k, [bus for (i,bus) in data_300["bus"]]) for k in 1:8]
         @test test_count == area_count
@@ -99,7 +101,7 @@ begin
         end
         pm = DPM.update_subproblem(data_area[1], "DC", DPM.build_dopf_admm)
         DPM.solve_subproblem!(pm, milp_solver)
-        DPM.update_solution!(data_area[i], pm)
+        DPM.update_solution!(data_area[1], pm)
 
         shared_data = DPM.send_shared_data(1, 2, data_area[1], serialize = false)
         va = [0.0, 0.1644, 0.1753, 0.1675, -0.0481, 0.3257]
