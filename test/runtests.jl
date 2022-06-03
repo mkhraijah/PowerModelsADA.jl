@@ -1,11 +1,13 @@
-using DistributedPowerModels.jl
+using DistributedPowerModels
 
 import JuMP
+import HiGHS
 import Ipopt
 
 using Test
 
 ## default setup for solvers
+milp_solver = JuMP.optimizer_with_attributes(HiGHS.Optimizer, "output_flag"=>false)
 nlp_solver = JuMP.optimizer_with_attributes(Ipopt.Optimizer, "tol"=>1e-6, "print_level"=>0)
 
 const DPM = DistributedPowerModels
