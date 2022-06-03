@@ -16,45 +16,28 @@ function assign_area!(data::Dict{String, <:Any}, partition_path::String)
     assign_area!(data, partition)
 end
 
-## Assign area to the PowerModel data using a vector with (bus => area) pairs
-function assign_area!(data::Dict{String, <:Any}, partition::Vector{Pair{Int64, Int64}})
-    assign_area!(data, Dict(partition))
-end
-
-## Assign area to the PowerModel data using a matrix with [bus, area] colmuns or rows
-function assign_area!(data::Dict{String, <:Any}, partition::Array{Int64, 2})
-    if size(partition)[2] != 2 && length(data["bus"]) != 2
-        partition = partition'
-        if size(partition)[2] != 2
-            #through error
-            error("Partitioning data doesn't contin correct area assignment")
-        end
-    end
-    assign_area!(data, Dict(partition[i,1] => partition[i,2] for i in 1:size(partition)[1] ))
-end
-
 
 ## method to decompose a subsystem with area id
-function decompose_system(data::Dict{String, <:Any}, area::Int)
+function decompose_system(data::Dict{String, <:Any}, area_id::Int)
 
     # idintify local buses
-    local_bus = get_local_bus(data, area)
-    neighbor_bus = get_neighbor_bus(data, area)
+    local_bus = get_local_bus(data, area_id)
+    neighbor_bus = get_neighbor_bus(data, area_id)
 
     ## generators list
-    virtual_gen =  add_virtual_gen!(data,neighbor_bus, area)
+    virtual_gen =  add_virtual_gen!(data,neighbor_bus, area_id)
     area_gen = Dict{String, Any}([i => gen for (i,gen) in data["gen"] if gen["gen_bus"] in local_bus])
 
     data_area = Dict{String,Any}()
-    data_area["area"] = area
-    data_area["name"]= "$(data["name"])_area_$area"
+    data_area["area"] = area_id
+    data_area["name"]= "$(data["name"])_area_$area_id"
     data_area["source_version"] = data["source_version"]
     data_area["source_type"] = data["source_type"]
     data_area["baseMVA"] = data["baseMVA"]
     data_area["per_unit"] = data["per_unit"]
     data_area["bus"] = Dict{String,Any}([j => bus for (j,bus) in data["bus"] if bus["bus_i"] in [local_bus;neighbor_bus]])
     data_area["branch"] = Dict{String,Any}([j => branch for (j,branch) in data["branch"] if branch["f_bus"] in local_bus || branch["t_bus"] in local_bus])
-    data_area["gen"] = merge(area_gen,virtual_gen)
+    data_area["gen"] = merge(area_gen, virtual_gen)
     data_area["shunt"] = Dict{String, Any}([i => shunt for (i,shunt) in data["shunt"] if shunt["shunt_bus"] in local_bus])
     data_area["load"] = Dict{String, Any}([i => load for (i,load) in data["load"] if load["load_bus"] in local_bus])
     data_area["storage"]= Dict{String, Any}([i => storage for (i,storage) in data["storage"] if gen["storage_bus"] in local_bus])
@@ -68,10 +51,10 @@ function decompose_system(data::Dict{String, <:Any}, area::Int)
 end
 
 # add virtual geneartors at the neighboring buses of an area
-function add_virtual_gen!(data::Dict{String, <:Any},neighbor_bus::Vector, area::Int)
+function add_virtual_gen!(data::Dict{String, <:Any},neighbor_bus::Vector, area_id::Int)
     max_gen_ind = maximum([parse(Int,i) for i in keys(data["gen"])])
     virtual_gen = Dict{String, Any}()
-    cost_model = data["gen"]["$max_gen_ind"]["model"]
+    cost_model = data["gen"][string(max_gen_ind)]["model"]
     max_flow = 10*sum(load["pd"] for (i,load) in data["load"])
     if cost_model == 1
         for i in neighbor_bus
@@ -83,4 +66,16 @@ function add_virtual_gen!(data::Dict{String, <:Any},neighbor_bus::Vector, area::
         end
     end
     return virtual_gen
+end
+
+
+function update_primal_shared!(data::Dict)
+    area_id = string(DPM.get_area_id(data))
+    for comp in keys(data["shared_primal"][area_id])
+        for ids in keys(data["shared_primal"][area_id][comp])
+            for vstring in keys(data["shared_primal"][area_id][comp][ids])
+                data["shared_primal"][area_id][comp][ids][vstring] = data[comp][ids][vstring]
+            end
+        end
+    end
 end

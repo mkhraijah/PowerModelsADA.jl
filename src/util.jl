@@ -5,27 +5,27 @@
 
 
 ## method to find the correct power flow model
-function pf_formulation(pf::DataType)
-    if pf <: AbstractPowerModel
-        pf
+function pf_formulation(model_type::Type)
+    if model_type <: AbstractPowerModel
+        model_type
     else
         error("Power Flow model is not identified")
     end
 end
 
 ## method for power flow formulation shortcut
-function pf_formulation(pf::String)
-    if pf == "DC"
+function pf_formulation(model_type::String)
+    if model_type == "DC"
         _PM.DCPPowerModel
-    elseif pf == "AC" || pf == "ACP"
+    elseif model_type == "AC" || pf == "ACP"
         _PM.ACPPowerModel
-    elseif pf == "ACR"
+    elseif model_type == "ACR"
         _PM.ACRPowerModel
-    elseif pf == "SOC" || pf == "SOCP"
+    elseif model_type == "SOC" || pf == "SOCP"
         _PM.SOCWRPowerModel
-    elseif pf == "QC"
+    elseif model_type == "QC"
         _PM.QCRMPowerModel
-    elseif pf == "SDP"
+    elseif model_type == "SDP"
         _PM.SDPWRMPowerModel
     else
         error("Power Flow model is not identified")
@@ -88,7 +88,7 @@ get_local_bus(data::Dict{String, <:Any},area::Int) = [bus["bus_i"] for (i,bus) i
 get_local_bus(pm::AbstractPowerModel,area::Int) = [bus["bus_i"] for (i,bus) in pm.data["bus"] if bus["area"] == area]
 
 function get_neighbor_bus(data::Dict{String, <:Any}, local_bus::Vector)
-    neighbor_bus = []
+    neighbor_bus = Vector{Int64}()
     for (i,branch) in data["branch"]
         if branch["f_bus"] in local_bus && !(branch["t_bus"] in local_bus)
             push!(neighbor_bus,branch["t_bus"])

@@ -2,6 +2,11 @@
 #                     Build methods for ADMM algorithm                        #
 ###############################################################################
 
+function initialize_dopf_admm!(data::Dict{String, <:Any}, model_type::Type; alpha::Real=1000, tol::Float64=1e-4, max_iteration::Int64=1000)
+
+    initialize_dpm!(data, model_type, alpha=alpha, tol, max_iteration)
+
+end
 
 ## build method for Distributed PowerModel using ADMM algorithm
 function build_dopf_admm(pm::AbstractPowerModel)
@@ -35,48 +40,73 @@ function build_dopf_admm(pm::AbstractPowerModel)
         _PM.constraint_dcline_power_losses(pm, i)
     end
 
-    update_dual_admm!(pm)
-
     objective_min_fuel_and_consensus!(pm, objective_admm!)
 end
 
 ## method to set the ADMM algorithm objective
 function objective_admm!(pm::AbstractPowerModel)
     ## ADMM parameters
-    alpha = pm.setting["alpha"]
+    alpha = pm.data["alpha"]
 
     ## data
-    area = get_area_id(pm)
+    area_id = string(get_area_id(pm))
     primal_variable = pm.data["shared_primal"]
     dual_variable = pm.data["shared_dual"]
 
     ## objective function
-    objective = JuMP.objective_function(pm.model) + sum(dual_variable[i][j][k] * (var(pm, j, k) - (primal_variable[area][j][k] + primal_variable[i][j][k])/2) + alpha/2 * (var(pm, j, k) - (primal_variable[area][j][k] + primal_variable[i][j][k])/2)^2 for i in keys(primal_variable) if i != area for j in keys(primal_variable[i]) for k in keys(primal_variable[i][j]))
+    objective = JuMP.objective_function(pm.model)
+    for area in keys(primal_variable)
+        if area != area_id
+            for comp in keys(primal_variable[area])
+                for ids in keys(primal_variable[area][comp])
+                    for vstring in keys(primal_variable[area][comp][ids])
+
+                        v = pm.sol[:it][:pm][:nw][0][Symbol(comp)][parse(Int64,ids)][Symbol(vstring)]
+                        v_central = (primal_variable[area_id][comp][ids][vstring] + primal_variable[area][comp][ids][vstring])/2
+                        v_dual = dual_variable[area][comp][ids][vstring]
+
+                        objective += alpha/2 * (v - v_central)^2 + v_dual * (v - v_central)
+                    end
+                end
+            end
+        end
+    end
 
     JuMP.@objective(pm.model, Min,  objective)
 end
 
+
+
 ## method to update the dual variable value
-function update_dual_admm!(pm::AbstractPowerModel)
+function update_admm!(data::Dict{String, <:Any})
 
     ## ADMM parameters
-    alpha = pm.setting["alpha"]
+    alpha = data["alpha"]
 
     ## data
-    area_id = get_area_id(pm)
-    primal_variable = pm.data["shared_primal"]
-    dual_variable = pm.data["shared_dual"]
+    area_id = string(get_area_id(data))
+    primal_variable = data["shared_primal"]
+    dual_variable = data["shared_dual"]
 
     ## update dual variable
-    for i in keys(dual_variable)
-        for j in keys(dual_variable[i])
-            for k in keys(dual_variable[i][j])
-                dual_variable[i][j][k] = dual_variable[i][j][k] + alpha * (primal_variable[area_id][j][k] - (primal_variable[area_id][j][k] + primal_variable[i][j][k])/2 )
+    for area in keys(dual_variable)
+        for comp in keys(dual_variable[area])
+            for ids in keys(dual_variable[area][comp])
+                for vstring in keys(dual_variable[area][comp][ids])
+
+                    v_primal = primal_variable[area_id][comp][ids][vstring]
+                    v_central = (primal_variable[area_id][comp][ids][vstring] + primal_variable[area][comp][ids][vstring])/2
+                    v_dual = dual_variable[area][comp][ids][vstring]
+
+                    data["shared_dual"][area][comp][ids][vstring] = v_dual  + alpha * (v_primal - v_central)
+                end
             end
         end
     end
 end
 
-function run_dopf_admm(data, pf_model, optimizer, alpha::Real=1000; tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true)
-    run_dopf(data, pf_model, build_dopf_admm, optimizer, alpha, tol = tol, max_iteration=max_iteration,verbose =verbose)
+function run_dopf_admm(data::Dict, model_type, optimizer; alpha::Real=1000, tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true)
+
+    run_dopf(data, model_type, build_dopf_admm, update_admm!, optimizer, alpha=alpha, tol = tol, max_iteration=max_iteration, verbose=verbose)
+
 end

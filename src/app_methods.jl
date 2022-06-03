@@ -3,6 +3,25 @@
 ###############################################################################
 
 
+function initialize_dopf_app!(data::Dict{String, <:Any}, model_type::Type; alpha::Real=1000,beta::Real=0, gamma::Real=0, tol::Float64=1e-4, max_iteration::Int64=1000)
+
+    initialize_dpm!(data, model_type, alpha=alpha, tol=tol, max_iteration=max_iteration)
+
+    # use beta if defined in setting or use 2α
+    if beta != 0
+        data["beta"] = beta
+    else
+        data["beta"] = 2*alpha
+    end
+    # use gamma if defined in setting or use α
+    if gamma != 0
+        data["gamma"] = gamma
+    else
+        data["gamma"] = alpha
+    end
+
+
+end
 
 ## build method for Distributed PowerModel using ADMM algorithm
 function build_dopf_app(pm::AbstractPowerModel)
@@ -36,8 +55,6 @@ function build_dopf_app(pm::AbstractPowerModel)
         _PM.constraint_dcline_power_losses(pm, i)
     end
 
-    update_dual_app!(pm)
-
     objective_min_fuel_and_consensus!(pm, objective_app!)
 end
 
@@ -45,27 +62,35 @@ end
 function objective_app!(pm::AbstractPowerModel)
 
     ## APP parameters
-    alpha = pm.setting["alpha"]
-    # use beta if defined in setting or use 2α
-    if haskey(pm.setting, "beta")
-        beta = pm.setting["beta"]
-    else
-        beta = 2*alpha
-    end
-    # use gamma if defined in setting or use α
-    if haskey(pm.setting, "gamma")
-        gamma = pm.setting["gamma"]
-    else
-        gamma = alpha
-    end
+    alpha = pm.data["alpha"]
+    beta  = pm.data["beta"]
+    gamma = pm.data["gamma"]
 
     ## data
-    area = get_area_id(pm)
+    area_id = string(get_area_id(pm))
     primal_variable = pm.data["shared_primal"]
     dual_variable = pm.data["shared_dual"]
 
     ## objective function
-    objective = JuMP.objective_function(pm.model) + sum(beta/2 * (var(pm, j, k) - primal_variable[area][j][k])^2 + var(pm, j, k) * dual_variable[i][j][k] + gamma * var(pm, j, k) * (primal_variable[area][j][k] - primal_variable[i][j][k]) for i in keys(primal_variable) if i != area for j in keys(primal_variable[i]) for k in keys(primal_variable[i][j]))
+
+    objective = JuMP.objective_function(pm.model)
+    for area in keys(primal_variable)
+        if area != area_id
+            for comp in keys(primal_variable[area])
+                for ids in keys(primal_variable[area][comp])
+                    for vstring in keys(primal_variable[area][comp][ids])
+
+                        v = pm.sol[:it][:pm][:nw][0][Symbol(comp)][parse(Int64,ids)][Symbol(vstring)]
+                        v_neighbor = primal_variable[area][comp][ids][vstring]
+                        v_local = primal_variable[area_id][comp][ids][vstring]
+                        v_dual = dual_variable[area][comp][ids][vstring]
+
+                        objective += beta/2 *  (v - v_local)^2 + gamma * v * (v_local - v_neighbor) + v * v_dual
+                    end
+                end
+            end
+        end
+    end
 
     JuMP.@objective(pm.model, Min,  objective)
 end
@@ -73,27 +98,36 @@ end
 
 ## method to update the dual variable value
 
-function update_dual_app!(pm::AbstractPowerModel)
+function update_app!(data::Dict{String, <:Any})
 
     ## APP parameters
-    alpha = pm.setting["alpha"]
+    alpha = data["alpha"]
 
     ## data
-    area_id = get_area_id(pm)
-    primal_variable = pm.data["shared_primal"]
-    dual_variable = pm.data["shared_dual"]
+    area_id = string(get_area_id(data))
+    primal_variable = data["shared_primal"]
+    dual_variable = data["shared_dual"]
 
     ## update dual variable
-    for i in keys(dual_variable)
-        for j in keys(dual_variable[i])
-            for k in keys(dual_variable[i][j])
-                dual_variable[i][j][k] = dual_variable[i][j][k] + alpha * (primal_variable[area_id][j][k] - primal_variable[i][j][k])
+    for area in keys(dual_variable)
+        for comp in keys(dual_variable[area])
+            for ids in keys(dual_variable[area][comp])
+                for vstring in keys(dual_variable[area][comp][ids])
+
+                    v_neighbor = primal_variable[area][comp][ids][vstring]
+                    v_local = primal_variable[area_id][comp][ids][vstring]
+                    v_dual = dual_variable[area][comp][ids][vstring]
+
+                    data["shared_dual"][area][comp][ids][vstring] = v_dual  + alpha * (v_local - v_neighbor)
+                end
             end
         end
     end
 
 end
 
-function run_dopf_app(data, pf_model, optimizer, alpha::Real=1000; tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true)
-    run_dopf(data, pf_model, build_dopf_app, optimizer, alpha, tol = tol, max_iteration=max_iteration,verbose =verbose)
+function run_dopf_app(data, model_type, optimizer; alpha::Real=1000, beta::Real=0, gamma::Real=0, tol::Float64=1e-4, max_iteration::Int64=1000, verbose=true)
+
+    run_dopf(data, model_type, build_dopf_app, update_app!, optimizer, alpha=alpha, beta=beta, gamma=gamma, initialize_method=initialize_dopf_app! , tol=tol, max_iteration=max_iteration, verbose=verbose)
+
 end

@@ -4,13 +4,15 @@
 
 ## methot to get the shared data with or without serialization
 function send_shared_data(from::Int64, to::Int64, data::Dict{String, <:Any}; serialize::Bool=false)
-    shared_data = Dict{Symbol, Any}();
-    for j in keys(data["shared_primal"][to]) # loop through variables (va, vm, p, q)
-        shared_data[j] = Dict{Any, Any}();
-        for k in keys(data["shared_primal"][to][j]) # loop through the shared variables with area "to"
-                shared_data[j][k] = data["shared_primal"][from][j][k]
+
+    shared_data = Dict{String, Any}()
+    for j in keys(data["shared_primal"][string(to)]) # loop through variables (va, vm, p, q)
+        shared_data[j] = Dict{String, Any}()
+        for k in keys(data["shared_primal"][string(to)][j]) # loop through the shared variables with area "to"
+                shared_data[j][k] = data["shared_primal"][string(from)][j][k]
         end
     end
+
     if serialize
         # IObuffer function to convert object to byte streams
         io = IOBuffer()
@@ -19,6 +21,7 @@ function send_shared_data(from::Int64, to::Int64, data::Dict{String, <:Any}; ser
         # take! Function fetches IOBUffer contents as Byte array
         shared_data = take!(io)
     end
+
     return shared_data
 end
 
@@ -29,10 +32,12 @@ function receive_shared_data!(from::Int64, shared_data::Vector, data::Dict{Strin
 end
 
 function receive_shared_data!(from::Int64, shared_data::Dict, data::Dict{String, <:Any})
-    for i in keys(data["shared_primal"][from])
-        for j in keys(data["shared_primal"][from][i])
-            if !isnan(shared_data[i][j])
-                data["shared_primal"][from][i][j] = shared_data[i][j]
+    for comp in keys(data["shared_primal"][string(from)])
+        for ids in keys(data["shared_primal"][string(from)][comp])
+            for vstring in keys(data["shared_primal"][string(from)][comp][ids])
+                if !isnan(shared_data[comp][ids][vstring])
+                    data["shared_primal"][string(from)][comp][ids][vstring] = shared_data[comp][ids][vstring]
+                end
             end
         end
     end

@@ -3,42 +3,40 @@
 ###############################################################################
 
 ## initialize the shared variables
-function variable_shared(data::Dict{String, <:Any}, pf_model)
-    primal_variable_shared!(data, pf_model)
+function variable_shared(data::Dict{String, <:Any}, model_type)
+    primal_variable_shared!(data, model_type)
     dual_variable_shared!(data)
 end
 
 ## initialize the primal shared variables
-function primal_variable_shared!(data::Dict{String, <:Any}, pf_model)
-
-    ## Check the power flow model
-    pf_model= pf_formulation(pf_model)
+function primal_variable_shared!(data::Dict{String, <:Any}, model_type)
 
     area_id = get_area_id(data)
-    areas_id = get_areas_id(data)
-    nodal_variables_name, cross_variables_name = variable_shared_names(pf_model)
-    shared_bus, shared_branch = get_shared_component(data, area_id)
+    areas_id =  get_areas_id(data)
+    bus_variables_name, branch_variables_name =  variable_shared_names(model_type)
+    shared_bus, shared_branch =  get_shared_component(data, area_id)
 
-    data["shared_primal"] = Dict{Int64, Any}()
+    data["shared_primal"] = Dict{String, Any}()
 
     for i in areas_id
-        data["shared_primal"][i] =  Dict{Symbol, Any}()
-        ## Nodal varaibles
-        for k in nodal_variables_name
-            data["shared_primal"][i][k] = Dict{Int64, Float64}([j=> 0 for j in shared_bus[i] if data["bus"]["$j"]["bus_type"] != 4])
+        data["shared_primal"][string(i)] =  Dict{String, Any}(["bus" => Dict{String, Any}(), "branch" => Dict{String, Any}()])
+
+        ## bus varaibles
+        for j in shared_bus[i]
+            if data["bus"][string(j)]["bus_type"] != 4
+                data["shared_primal"][string(i)]["bus"][string(j)] = Dict{String, Any}()
+                for k in bus_variables_name
+                    data["shared_primal"][string(i)]["bus"][string(j)][k] = 0
+                end
+            end
         end
 
-        ## Cross variables
-        if pf_model <: AbstractDCPModel
-            for k in cross_variables_name
-                data["shared_primal"][i][k] = Dict{Tuple{Int64, Int64, Int64}, Float64}([(j, data["branch"]["$j"]["f_bus"], data["branch"]["$j"]["t_bus"]) => 0 for j in shared_branch[i] if data["branch"]["$j"]["br_status"] == 1 ])
-            end
-        else
-            for k in cross_variables_name
-                if k in [:p, :q]
-                    data["shared_primal"][i][k] = merge( Dict{Tuple{Int64, Int64, Int64}, Float64}([(j, data["branch"]["$j"]["f_bus"], data["branch"]["$j"]["t_bus"]) => 0 for j in shared_branch[i] if data["branch"]["$j"]["br_status"] == 1 ]), Dict{Tuple{Int64, Int64, Int64}, Float64}([(j, data["branch"]["$j"]["t_bus"], data["branch"]["$j"]["f_bus"]) => 0 for j in shared_branch[i] if data["branch"]["$j"]["br_status"] == 1 ]))
-                else
-                    data["shared_primal"][i][k] = Dict{Tuple{Int64, Int64}, Any}([ (data["branch"]["$j"]["f_bus"], data["branch"]["$j"]["t_bus"]) => 0 for j in shared_branch[i] if (data["branch"]["$j"]["br_status"] == 1)])
+        ## branch variables
+        for j in shared_branch[i]
+            if data["branch"][string(j)]["br_status"] == 1
+                data["shared_primal"][string(i)]["branch"][string(j)] = Dict{String, Any}()
+                for k in branch_variables_name
+                    data["shared_primal"][string(i)]["branch"][string(j)][k] = 0
                 end
             end
         end
@@ -50,40 +48,49 @@ function dual_variable_shared!(data::Dict{String, <:Any})
     area_id = get_area_id(data)
     areas_id = get_areas_id(data)
 
-    data["shared_dual"] = Dict{Int64, Any}()
+    data["shared_dual"] = Dict{String, Any}()
     for i in areas_id
         if i != area_id
-            data["shared_dual"][i] = deepcopy(data["shared_primal"][i])
+            data["shared_dual"][string(i)] = deepcopy(data["shared_primal"][string(i)])
         end
     end
 end
 
 
 ## method to update primal variables after obtaining a solution at each iteraton
-function update_primal_variable!(pm::AbstractPowerModel)
-    area_id = get_area_id(pm)
-    primal_variable = pm.data["shared_primal"]
-    for i in keys(primal_variable[area_id])
-        for j in keys(primal_variable[area_id][i])
-            primal_variable[area_id][i][j] = JuMP.value(var(pm,i,j))
+function update_shared_primal!(data::Dict{String,<:Any}, solution::Dict{String,<:Any})
+    area_id = string(get_area_id(data))
+    shared_primal = data["shared_primal"][area_id]
+    _update_shared_primal!(shared_primal, solution)
+end
+
+function _update_shared_primal!(data::Dict{String,<:Any}, new_data::Dict{String,<:Any})
+
+    for (key, new_v) in new_data
+        if haskey(data, key)
+            v = data[key]
+            if isa(v, Dict) && isa(new_v, Dict)
+                _update_shared_primal!(v, new_v)
+            else
+                data[key] = new_v
+            end
         end
     end
 end
 
-
 ## Methods to idinifiy the nodal and cross variables names
-function variable_shared_names(pf_model)
-    if pf_model <: AbstractDCPModel
-        return [:va], [:p]
-    elseif pf_model <: AbstractACPModel
-        return [:va, :vm], [:p, :q]
-    elseif pf_model <: AbstractACRModel
-        return [:vr, :vi], [:p, :q]
-    elseif pf_model <: AbstractSOCWRModel
-        return [:w], [:p, :q, :wr, :wi]
-    elseif pf_model <: AbstractQCRMPowerModel
-        return [:vm, :va , :w], [:p, :q, :wr, :wi, :vv, :ccm, :cs, :si, :td]
-    elseif pf_model <: AbstractSDPWRMModel
-        return [:w], [:p, :q, :wr, :wi]
+function variable_shared_names(model_type)
+    if model_type <: AbstractDCPModel
+        return ["va"], ["pf"]
+    elseif model_type <: AbstractACPModel
+        return ["va", "vm"], ["pf", "pt", "qf", "qt"]
+    elseif model_type <: AbstractACRModel
+        return ["vr", "vi"], ["pf", "pt", "qf", "qt"]
+    elseif model_type <: AbstractSOCWRModel
+        return ["w"], ["pf", "pt", "qf", "qt", "wr", "wi"]
+    elseif model_type <: AbstractQCRMPowerModel
+        return ["vm", "va" , "w"], ["pf", "pt", "qf", "qt", "wr", "wi", "vv", "ccm", "cs", "si", "td"]
+    elseif model_type <: AbstractSDPWRMModel
+        return ["w"], ["pf", "pt", "qf", "qt", "wr", "wi"]
     end
 end
