@@ -153,13 +153,13 @@ step 3 update solution (require converting data into string=>float)
         iteration += 1
 
     end
-""" update the original data file (using update_data! after converting data into string=>float)""" 
+""" update the original data file (using update_data! after converting data into string=>float)"""
     return data_area
 end
 
 
 ## Compare the distributed algorithm solutoin with PowerModels centralized solution
-function compare_solution(data, data_area, pf_model, optimizer)
+function compare_solution(data::Dict{String, <:Any}, data_area::Dict, pf_model, optimizer)
 
     pf_model = pf_formulation(pf_model)
 
@@ -170,7 +170,7 @@ function compare_solution(data, data_area, pf_model, optimizer)
     end
 
     # Solve Centralized OPF
-    Central_solution = _PM.run_opf(data, pf_model, optimizer)
+    Central_solution = _PM.solve_opf(data, pf_model, optimizer)
 
     # Calculate objective function
     Obj_dist = _PM.calc_gen_cost(data)

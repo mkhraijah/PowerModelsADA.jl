@@ -34,7 +34,7 @@ end
 
 
 ## partition a system into p subsystem using spactural clustering
-function partition_system!(data::Dict, p::Int64; correct_neg_susceptance::Bool=false)
+function partition_system!(data::Dict, p::Int64; init=[], correct_neg_susceptance::Bool=false)
 
     neg_b_branch = findall(x->x["br_x"]<0, data["branch"])
     if !isempty(neg_b_branch)
@@ -65,8 +65,16 @@ function partition_system!(data::Dict, p::Int64; correct_neg_susceptance::Bool=f
     end
 
     L = I - sqrt.(inv(D)) * W * sqrt.(inv(D))
-    S,U = eigen(L);
-    C = kmeans(U[:,1:p]',p).assignments
+    S,U = eigen(L)
+    if isempty(init)
+        C = kmeans(U[:,1:p]',p).assignments
+    else
+        order = Vector{Int64}()
+        for i in init
+            append!(order, findfirst(isequal(i), bus_index))
+        end
+        C = kmeans(U[:,1:p]',p, init=order).assignments
+    end
 
     for i in 1:nbus
         data["bus"]["$(bus_index[i])"]["area"] = C[i]
