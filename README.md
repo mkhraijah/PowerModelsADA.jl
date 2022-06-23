@@ -1,6 +1,12 @@
 # DistributedPowerModels
 A library to run different distributed algorithms to solve optimal power flow using PowerModels and JuMP. Currently, the library uses three distributed algorithms: Alternating Direction Method of Multipliers (ADMM), Auxiliary Problem Principle (APP), and Analytical Target Cascading (ATC). 
 
+
+Status:
+[![CI](https://github.com/mkhraijah/DistributedPowerModels/workflows/CI/badge.svg)](https://github.com/mkhraijah/DistributedPowerModels/actions?query=workflow%3ACI)
+[![codecov](https://codecov.io/gh/mkhraijah/DistributedPowerModels/branch/main/graph/badge.svg)](https://codecov.io/gh/mkhraijah/DistributedPowerModels)
+</p>
+
 ## Dependencies
 * InfrastructureModels v0.7.4
 * PowerModels v0.19.5
