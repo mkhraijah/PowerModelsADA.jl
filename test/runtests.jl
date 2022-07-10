@@ -44,13 +44,11 @@ data_300_3 =  DPM.parse_file("../test/data/case300_3areas.m")
             test_branch = [length(data_area[i]["branch"]) for i in 1:3]
             test_load = [length(data_area[i]["load"]) for i in 1:3]
             test_neighbor = [length(data_area[i]["neighbor_bus"]) for i in 1:3]
-
             @test test_bus == test_bus
             @test gen_size == test_gen
             @test branch_size == test_branch
             @test load_size == test_load
             @test neighbor_size == test_neighbor
-
         end
     end
 
@@ -58,64 +56,51 @@ data_300_3 =  DPM.parse_file("../test/data/case300_3areas.m")
     @testset "partition system using spectral clustering" begin
         @testset "case_RTS" begin
             DPM.partition_system!(data_RTS, 3, init=[101, 201, 301])
-
             test_count = [count(c -> c["area"]  == k, [bus for (i,bus) in data_RTS["bus"]]) for k in 1:3]
             test_count_24 = count(==(24),test_count)
             test_count_25 = count(==(25),test_count)
             @test test_count_24 == 2
             @test test_count_25 == 1
-
         end
     end
 
 ## ADMM test
     @testset "admm algorithm with DC power flow" begin
-
-        data_area = DPM.run_dopf_admm(data_14, "DC", milp_solver, 1000, tol = 1e-2, verbose = false)
-        dist_error = DPM.compare_solution(data_14, data_area, "DC", milp_solver)
-        @test abs(dist_error) <= 1e0
+        data_area = DPM.run_dopf_admm(data_14, "DC", milp_solver; alpha=1000, tol=1e-2, max_iteration=1000, verbose = false)
+        dist_cost = DPM.calc_dist_gen_cost(data_area)
+        @test abs((dist_cost - 7642.59)/7642.59 *100) <= 1e0
 
     end
 
     @testset "admm algorithm with AC power flow" begin
-
-        data_area = DPM.run_dopf_admm(data_14, "AC", nlp_solver, 1000, tol = 1e-2, verbose = false)
-        dist_error = DPM.compare_solution(data_14, data_area, "AC", nlp_solver)
-        @test abs(dist_error) <= 1e0
-
+        data_area = DPM.run_dopf_admm(data_14, "AC", nlp_solver; alpha=1000, tol=1e-2, max_iteration=1000, verbose = false)
+        dist_cost = DPM.calc_dist_gen_cost(data_area)
+        @test abs((dist_cost - 8081.52)/8081.52 *100) <= 1e0
     end
 
     ## ATC test
     @testset "atc algorithm with DC power flow" begin
-
-        data_area = DPM.run_dopf_atc(data_14, "DC", milp_solver, 1.1, tol = 1e-2, verbose = false)
-        dist_error = DPM.compare_solution(data_14, data_area, "DC", milp_solver)
-        @test abs(dist_error) <= 1e0
-
+        data_area = DPM.run_dopf_atc(data_14, "DC", milp_solver; alpha=1.1, tol=1e-2, max_iteration=1000, verbose = false)
+        dist_cost = DPM.calc_dist_gen_cost(data_area)
+        @test abs((dist_cost - 7642.59)/7642.59 *100) <= 1e0
     end
 
     @testset "atc algorithm with SOC relaxation of power flow" begin
-
-        data_area = DPM.run_dopf_atc(data_14, "SOCP", nlp_solver, 1.1, tol = 1e-2, verbose = false)
-        dist_error = DPM.compare_solution(data_14, data_area, "SOCP", nlp_solver)
-        @test abs(dist_error) <= 1e-1
-
+        data_area = DPM.run_dopf_atc(data_14, "SOC", nlp_solver; alpha=1.1, tol=1e-2, max_iteration=1000, verbose = false)
+        dist_cost = DPM.calc_dist_gen_cost(data_area)
+        @test abs((dist_cost - 8075.12)/8075.12 *100) <= 1e-1
     end
 
     ## APP test
     @testset "app algorithm with DC power flow" begin
-
-        data_area = DPM.run_dopf_app(data_14, "DC", milp_solver, 1000, tol = 1e-2, verbose = false)
-        dist_error = DPM.compare_solution(data_14, data_area, "DC", milp_solver)
-        @test abs(dist_error) <= 1e0
-
+        data_area = DPM.run_dopf_app(data_14, "DC", milp_solver; alpha=1000, tol=1e-2, max_iteration=1000, verbose = false)
+        dist_cost = DPM.calc_dist_gen_cost(data_area)
+        @test abs((dist_cost - 7642.59)/7642.59 *100) <= 1e0
     end
 
-    @testset "app algorithm with DC power flow" begin
-
-        data_area = DPM.run_dopf_app(data_14, "ACR", nlp_solver, 1000, tol = 1e-2, verbose = false)
-        dist_error = DPM.compare_solution(data_14, data_area, "ACR", nlp_solver)
-        @test abs(dist_error) <= 1e-1
-
+    @testset "app algorithm with ACR power flow" begin
+        data_area = DPM.run_dopf_app(data_14, "ACR", nlp_solver; alpha=1000, tol=1e-2, max_iteration=1000, verbose = false)
+        dist_cost = DPM.calc_dist_gen_cost(data_area)
+        @test abs((dist_cost - 8081.52)/8081.52 *100) <= 1e-1
     end
 end

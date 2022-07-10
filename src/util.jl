@@ -5,27 +5,27 @@
 
 
 ## method to find the correct power flow model
-function pf_formulation(model_type::Type)
-    if model_type <: AbstractPowerModel
-        model_type
+function pf_formulation(pf::DataType)
+    if pf <: AbstractPowerModel
+        pf
     else
         error("Power Flow model is not identified")
     end
 end
 
 ## method for power flow formulation shortcut
-function pf_formulation(model_type::String)
-    if model_type == "DC"
+function pf_formulation(pf::String)
+    if pf == "DC"
         _PM.DCPPowerModel
-    elseif model_type == "AC" || pf == "ACP"
+    elseif pf == "AC" || pf == "ACP"
         _PM.ACPPowerModel
-    elseif model_type == "ACR"
+    elseif pf == "ACR"
         _PM.ACRPowerModel
-    elseif model_type == "SOC" || pf == "SOCP"
+    elseif pf == "SOC" || pf == "SOCP"
         _PM.SOCWRPowerModel
-    elseif model_type == "QC"
+    elseif pf == "QC"
         _PM.QCRMPowerModel
-    elseif model_type == "SDP"
+    elseif pf == "SDP"
         _PM.SDPWRMPowerModel
     else
         error("Power Flow model is not identified")
@@ -96,7 +96,7 @@ get_local_bus(data::Dict{String, <:Any},area::Int) = [bus["bus_i"] for (i,bus) i
 get_local_bus(pm::AbstractPowerModel,area::Int) = [bus["bus_i"] for (i,bus) in pm.data["bus"] if bus["area"] == area]
 
 function get_neighbor_bus(data::Dict{String, <:Any}, local_bus::Vector)
-    neighbor_bus = Vector{Int64}()
+    neighbor_bus = []
     for (i,branch) in data["branch"]
         if branch["f_bus"] in local_bus && !(branch["t_bus"] in local_bus)
             push!(neighbor_bus,branch["t_bus"])
@@ -142,4 +142,34 @@ end
 function get_shared_component(data::Dict{String, <:Any})
     area = get_area_id(data)
     get_shared_component(data, area)
+end
+
+## Method to calculate distributed solution operation cost
+function calc_dist_gen_cost(data_area::Dict{Int, <:Any})
+
+    gen_cost = 0
+    # Calculate objective function
+    for i in keys(data_area)
+        gen_cost += _PM.calc_gen_cost(data_area[i])
+    end
+
+    return gen_cost
+end
+
+## Method to compare the distributed algorithm solutoin with PowerModels centralized solution
+function compare_solution(data::Dict{String, <:Any}, data_area::Dict{Int, <:Any}, model_type, optimizer)
+
+    # check the power flow model
+    model_type = pf_formulation(model_type)
+
+    # Solve Centralized OPF
+    Central_solution = _PM.run_opf(data, model_type, optimizer)
+
+    # Calculate objective function
+    Obj_dist = calc_dist_gen_cost(data_area::Dict{Int, <:Any})
+    Obj_cent = Central_solution["objective"]
+
+    # Calculate optimility gap
+    Relative_Error = (Obj_dist - Obj_cent)/ Obj_cent * 100
+    return Relative_Error
 end
