@@ -2,8 +2,21 @@
 #              Base method for all distirbuted OPF algorithms                 #
 ###############################################################################
 
+## method to decompose system into subsystem defined by bus area
+function decompose_system(data::Dict{String, <:Any})
+    areas_id = get_areas_id(data)
+    data_area = Dict{Int64, Any}()
+    for i in areas_id
+        data_area[i] = decompose_system(data, i)
+    end
+    return data_area
+end
+
 ## method to initialize dpm parameters and optimizer
-function initialize_dpm!(data::Dict{String, <:Any}, model_type::Type; alpha::Real, tol::Float64=1e-4, max_iteration::Int64=1000)
+function initialize_dpm!(data::Dict{String, <:Any}, model_type; alpha::Real, tol::Float64=1e-4, max_iteration::Int64=1000)
+
+    # check the power flow model
+    model_type = pf_formulation(model_type)
 
     # initiate primal and dual shared variables
     variable_shared(data, model_type)
@@ -17,43 +30,6 @@ function initialize_dpm!(data::Dict{String, <:Any}, model_type::Type; alpha::Rea
     data["max_iteration"] = max_iteration
 
 end
-
-
-# ## wraping PowerModel.instantiate_model with dopf setting
-# function update_subproblem(data::Dict{String, <:Any}, model_type, build_method::Function; alpha::Real=1000, tol::Float64=1e-4, max_iteration::Int64=1000)
-#
-#     ## check the power flow model
-#     model_type= pf_formulation(model_type)
-#
-#     # ensure the subsystem data includes the area id
-#     if !haskey(data,"area")
-#         error("No area id is provided in the data")
-#     end
-#
-#     setting = Dict{String,Any}("alpha" => alpha, "tol" => tol, "max_iteration" => max_iteration)
-#
-#
-#     _PM.instantiate_model(data, model_type, build_method, setting = setting)
-# end
-
-
-# ## solve local dopf called every iteration
-# function solve_subproblem!(pm::AbstractPowerModel, optimizer)
-#     JuMP.set_optimizer(pm.model, optimizer)
-#     JuMP.set_silent(pm.model)
-#     optimize_model!(pm)
-#     update_primal_variable!(pm)
-#     update_data!(pm.data, pm.solution)
-# end
-
-
-# ## wrapping for updata_data! in PowerModels
-# function update_solution!(data::Dict{String,<:Any}, pm::AbstractPowerModel)
-#     update_data!(data, pm.solution)
-#     data["shared_primal"] = pm.data["shared_primal"]
-#     data["shared_dual"] = pm.data["shared_dual"]
-#     update_iteration!(data)
-# end
 
 ## update iteration
 function update_iteration!(data::Dict{String, <:Any})
@@ -85,4 +61,84 @@ function update_flag_convergance!(data::Dict{String, <:Any}, tol::Float64)
     area_id = string(data["area"])
     mismatch = data["mismatch"][end][area_id]
     data["flag_convergance"] = mismatch < tol
+end
+
+## Check the flag convergence for all subsystem and return a global variables
+function check_flag_convergance(data_area::Dict{Int, <:Any})
+    flag_convergance = reduce( & , [data_area[i]["flag_convergance"] for i in keys(data_area)])
+    return flag_convergance
+end
+
+## Calculate the global mismatch based on local mismatch
+calc_global_mismatch(data_area::Dict{Int, <:Any}, p::Int64=2) = norm([data_area[i]["mismatch"][end][string(i)] for i in keys(data_area)], p)
+
+
+## wrapping method to run distributed algorithms
+function run_dopf(data::Dict{String, <:Any}, model_type, build_method::Function, update_method::Function, optimizer; alpha::Real=1000, beta::Real=0, gamma::Real=0, initialize_method::Function=initialize_dpm!, tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true)
+
+    # check the power flow model
+    model_type = pf_formulation(model_type)
+
+    ## Obtain areas ids
+    areas_id = get_areas_id(data)
+
+    ## Decompose the system into several subsystem return PowerModel
+    data_area = Dict{Int64, Any}()
+    for i in areas_id
+        data_area[i] = decompose_system(data, i)
+    end
+
+    ## Initilize distributed power model parameters
+    for i in areas_id
+        initialize_method(data_area[i], model_type, alpha=alpha, tol=tol, max_iteration=max_iteration)
+    end
+
+    ## Initialaize the algorithms counters
+    iteration = 1
+    flag_convergance = false
+
+    ## start iteration
+    while iteration < max_iteration && flag_convergance == false
+
+        ## solve local problem and update solution
+        for i in areas_id
+            update_method(data_area[i])
+            result = solve_model(data_area[i], model_type, optimizer, build_method)
+            update_data!(data_area[i], result["solution"])
+            update_shared_primal!(data_area[i], result["solution"])
+        end
+
+        ## Share solution
+        for i in areas_id # sender subsystem
+            for j in areas_id # receiver subsystem
+                if i != j && string(i) in keys(data_area[j]["shared_primal"])
+                    shared_data = send_shared_data(i, j, data_area[i], serialize = false)
+                        ### Communication ####
+                    receive_shared_data!(i, shared_data, data_area[j])
+                end
+            end
+        end
+
+        ## Calculate mismatches and update convergance flags
+        for i in areas_id
+            calc_mismatch!(data_area[i],2)
+            update_flag_convergance!(data_area[i], tol)
+        end
+
+        ## Check global convergance and update iteration counters
+        flag_convergance = check_flag_convergance(data_area)
+
+        if verbose
+            mismatch = calc_global_mismatch(data_area)
+            println("Iteration = $iteration, mismatch = $mismatch")
+            if flag_convergance
+                println("Consistency achived within $tol")
+            end
+        end
+
+        iteration += 1
+
+    end
+
+    return data_area
 end

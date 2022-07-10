@@ -9,10 +9,9 @@ import Serialization
 import LinearAlgebra: norm, I, eigen
 import DelimitedFiles
 import Clustering: kmeans
-
+import DelimitedFiles
 
 include("base.jl")
-include("global.jl")
 include("variables.jl")
 include("objective.jl")
 include("data.jl")

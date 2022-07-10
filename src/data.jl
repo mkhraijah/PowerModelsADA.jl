@@ -17,6 +17,22 @@ function assign_area!(data::Dict{String, <:Any}, partition_path::String)
 end
 
 
+## Assign area to the PowerModel data using a vector with (bus => area) pairs
+function assign_area!(data::Dict{String, <:Any}, partition::Vector{Pair{Int64, Int64}})
+    assign_area!(data, Dict(partition))
+end
+
+## Assign area to the PowerModel data using a matrix with [bus, area] colmuns or rows
+function assign_area!(data::Dict{String, <:Any}, partition::Array{Int64, 2})
+    if size(partition)[2] != 2 && length(data["bus"]) != 2
+        partition = partition'
+        if size(partition)[2] != 2
+            #through error
+            error("Partitioning data doesn't contin correct area assignment")
+        end
+    end
+    assign_area!(data, Dict(partition[i,1] => partition[i,2] for i in 1:size(partition)[1] ))
+end
 ## method to decompose a subsystem with area id
 function decompose_system(data::Dict{String, <:Any}, area_id::Int)
 
