@@ -1,4 +1,5 @@
-# DistributedPowerModels
+# PowerModelsAlternatingDistributedAlgorithms.jl (PMADA.jl)
+
 A library to run different distributed algorithms to solve optimal power flow using PowerModels and JuMP. Currently, the library uses three distributed algorithms: Alternating Direction Method of Multipliers (ADMM), Auxiliary Problem Principle (APP), and Analytical Target Cascading (ATC). 
 
 
@@ -19,23 +20,14 @@ There are two modes of running the distributed algorithms: global and local mode
 
 The distirbuted algorithms can be run in global mode as follow: 
 
-`DPM.run_dopf(data, pf_model, optimizer, settings, parameter, verbose = true)`
+`run_dopf_admm(data, model_type, optimizer, alpha=1000, tol=1e-4, max_iteration=1000, verbose = true)`
 
 
 ## Configuration
 
-To configure the model, change the directory in Julia to the library folder and activate the environment using `Pkg. activate(“.”)`, and load the module using `include("DPM.jl")`. The case study needs to be parsed using `DPM.parse_file(casename)`. 
+To configure the model, change the directory in Julia to the library folder and activate the environment using `Pkg. activate(“.”)`, and load the module using `include("PMADA.jl")`. The case study needs to be parsed using `parse_file(casename)`. 
 
-*Note: the parsed case study needs to be divided into subareas using the key “area” of each bus. You can use the helper function `DPM.assign_area!(data, partition_file)` to load a partition csv file with bus and area pairs in each row and assign the bus area accordingly.  
-
-### settings
-
-The distributed algorithm require passing a setting dictionary that includes the fields: 
-`distributed_algorithms`, `tol`, and `max_iteration`. The setting can be set using `DPM.set_setting()`. If no setting options are provided the assumed values for distributed_algorithms="APP", tol=1e-4, and max_iteration=1000. 
-
-### parameter
-
-The distributed algorithm parameters.
+*Note: the parsed case study needs to be divided into subareas using the key “area” of each bus. You can use the helper function `assign_area!(data, partition_file)` to load a partition csv file with bus and area pairs in each row and assign the bus area accordingly.  
 
 ### Power Flow formulation 
 
@@ -45,4 +37,4 @@ The power flow formulation is selected using the variable ` pf_model`. Currently
 
 ## Examples 
 
-For examples on how to run the code see `example/global_run_example.jl` and `example/local_run_example.jl`
+For examples on how to run the code see `example/example.jl`.
