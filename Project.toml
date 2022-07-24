@@ -1,4 +1,4 @@
-name = "DistributedPowerModels"
+name = "PMADA"
 uuid = "bf5a6c5f-0285-47d6-bb57-79927775d05d"
 authors = ["Mohannad Alkhraijah"]
 version = "0.0.1"
