@@ -1,18 +1,24 @@
 ###############################################################################
-#                     Build methods for ATC algorithm                        #
+#                     Build methods for ADMM algorithm                        #
 ###############################################################################
 
-function initialize_dopf_atc!(data::Dict{String, <:Any}, model_type::Type; alpha::Real=1.05, beta::Real=1, tol::Float64=1e-4, max_iteration::Int64=1000)
+## solve the distributed OPF problem using ADMM algorithm
+function run_dopf_admm(data::Dict{String, <:Any}, model_type::Type, optimizer; tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true, alpha::Real=1000)
 
-    initialize_dpm!(data, model_type, alpha=alpha, tol=tol, max_iteration=max_iteration)
-
-    data["beta"] = beta
+    run_dopf(data, model_type, build_dopf_admm, update_admm!, optimizer, initialize_method=initialize_dopf_admm!, tol = tol, max_iteration=max_iteration, verbose=verbose, alpha=alpha)
 
 end
 
+## method to inilitlize the admm algorithm
+function initialize_dopf_admm!(data::Dict{String, <:Any}, model_type::Type; tol::Float64=1e-4, max_iteration::Int64=1000, kwargs)
+
+    initialize_dopf!(data, model_type, tol=tol, max_iteration=max_iteration, kwargs=kwargs)
+    data["alpha"] = kwargs[:alpha]
+
+end
 
 ## build method for Distributed PowerModel using ADMM algorithm
-function build_dopf_atc(pm::AbstractPowerModel)
+function build_dopf_admm(pm::AbstractPowerModel)
 
     # define variables
     _PM.variable_bus_voltage(pm)
@@ -43,14 +49,14 @@ function build_dopf_atc(pm::AbstractPowerModel)
         _PM.constraint_dcline_power_losses(pm, i)
     end
 
-    objective_min_fuel_and_consensus!(pm, objective_atc!)
+    objective_min_fuel_and_consensus!(pm, objective_admm!)
 end
 
-## method to set the ATC algorithm objective
-function objective_atc!(pm::AbstractPowerModel)
+## method to set the ADMM algorithm objective
+function objective_admm!(pm::AbstractPowerModel)
 
-    ## ATC parameters
-    beta = pm.data["beta"]
+    ## ADMM parameters
+    alpha = pm.data["alpha"]
 
     ## data
     area_id = string(get_area_id(pm))
@@ -69,7 +75,7 @@ function objective_atc!(pm::AbstractPowerModel)
                         v_central = (primal_variable[area_id][comp][ids][vstring] + primal_variable[area][comp][ids][vstring])/2
                         v_dual = dual_variable[area][comp][ids][vstring]
 
-                        objective += (beta * (v - v_central))^2 + v_dual * (v - v_central)
+                        objective += alpha/2 * (v - v_central)^2 + v_dual * (v - v_central)
                     end
                 end
             end
@@ -80,23 +86,18 @@ function objective_atc!(pm::AbstractPowerModel)
 end
 
 
+
 ## method to update the dual variable value
-function update_atc!(data::Dict{String, <:Any})
+function update_admm!(data::Dict{String, <:Any})
 
-    ## ATC parameters
-    if !haskey(data,"beta")
-        data["beta"] = 1
-    end
-
+    ## ADMM parameters
     alpha = data["alpha"]
-    beta  = data["beta"]
 
     ## data
     area_id = string(get_area_id(data))
     primal_variable = data["shared_primal"]
     dual_variable = data["shared_dual"]
 
-    ## update dual variable
     ## update dual variable
     for area in keys(dual_variable)
         for comp in keys(dual_variable[area])
@@ -107,21 +108,9 @@ function update_atc!(data::Dict{String, <:Any})
                     v_central = (primal_variable[area_id][comp][ids][vstring] + primal_variable[area][comp][ids][vstring])/2
                     v_dual = dual_variable[area][comp][ids][vstring]
 
-                    data["shared_dual"][area][comp][ids][vstring] = v_dual  + 2 * beta^2 * (v_primal - v_central)
+                    data["shared_dual"][area][comp][ids][vstring] = v_dual  + alpha * (v_primal - v_central)
                 end
             end
         end
     end
-
-
-    ## update ATC parameter
-    data["beta"] *= alpha
-
-end
-
-
-function run_dopf_atc(data, model_type, optimizer; alpha::Real=1.05, beta::Real=1, tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true)
-
-    run_dopf(data, model_type, build_dopf_atc, update_atc!, optimizer, alpha=alpha, beta=beta, initialize_method=initialize_dopf_atc! , tol=tol, max_iteration=max_iteration, verbose=verbose)
-
 end

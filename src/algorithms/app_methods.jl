@@ -2,23 +2,37 @@
 #                     Build methods for APP algorithm                        #
 ###############################################################################
 
+## solve the distributed OPF problem using APP algorithm
+function run_dopf_app(data::Dict{String, <:Any}, model_type::Type, optimizer; alpha::Real=1000, beta::Real=0, gamma::Real=0, tol::Float64=1e-4, max_iteration::Int64=1000, verbose=true)
 
-function initialize_dopf_app!(data::Dict{String, <:Any}, model_type::Type; alpha::Real=1000,beta::Real=0, gamma::Real=0, tol::Float64=1e-4, max_iteration::Int64=1000)
+    run_dopf(data, model_type, build_dopf_app, update_app!, optimizer, initialize_method=initialize_dopf_app!, tol=tol, max_iteration=max_iteration, verbose=verbose, alpha=alpha, beta=beta, gamma=gamma)
 
-    initialize_dpm!(data, model_type, alpha=alpha, tol=tol, max_iteration=max_iteration)
+end
 
-    # use beta if defined in setting or use 2α
-    if beta != 0
-        data["beta"] = beta
-    else
-        data["beta"] = 2*alpha
-    end
-    # use gamma if defined in setting or use α
-    if gamma != 0
-        data["gamma"] = gamma
-    else
-        data["gamma"] = alpha
-    end
+## method to inilitlize the APP algorithm
+function initialize_dopf_app!(data::Dict{String, <:Any}, model_type::Type; tol::Float64=1e-4, max_iteration::Int64=1000, kwargs)
+
+    initialize_dopf!(data, model_type, tol=tol, max_iteration=max_iteration, kwargs=kwargs)
+    data["alpha"] = kwargs[:alpha]
+    data["beta"] = 2*kwargs[:alpha]
+    data["gamma"] = kwargs[:alpha]
+
+    # use beta if defined in setting or use 2*alpha
+    # if haskey(kwargs, :beta)
+    #     if kwargs[:beta] != 0
+    #         data["beta"] = kwargs[:beta]
+    #     end
+    # else
+    #     data["beta"] = 2*kwargs[:alpha]
+    # end
+    # # use gamma if defined in setting or use alpha
+    # if haskey(kwargs, :gamma)
+    #     if kwargs[:gamma] != 0
+    #         data["gamma"] = kwargs[:gamma]
+    #     end
+    # else
+    #     data["gamma"] = kwargs[:alpha]
+    # end
 
 
 end
@@ -95,9 +109,7 @@ function objective_app!(pm::AbstractPowerModel)
     JuMP.@objective(pm.model, Min,  objective)
 end
 
-
 ## method to update the dual variable value
-
 function update_app!(data::Dict{String, <:Any})
 
     ## APP parameters
@@ -123,11 +135,5 @@ function update_app!(data::Dict{String, <:Any})
             end
         end
     end
-
-end
-
-function run_dopf_app(data, model_type, optimizer; alpha::Real=1000, beta::Real=0, gamma::Real=0, tol::Float64=1e-4, max_iteration::Int64=1000, verbose=true)
-
-    run_dopf(data, model_type, build_dopf_app, update_app!, optimizer, alpha=alpha, beta=beta, gamma=gamma, initialize_method=initialize_dopf_app! , tol=tol, max_iteration=max_iteration, verbose=verbose)
 
 end

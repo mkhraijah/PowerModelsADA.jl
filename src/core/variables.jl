@@ -80,17 +80,17 @@ end
 
 ## Methods to idinifiy the nodal and cross variables names
 function variable_shared_names(model_type)
-    if model_type <: AbstractDCPModel
+    if model_type <: DCPPowerModel
         return ["va"], ["pf"]
-    elseif model_type <: AbstractACPModel
+    elseif model_type <: ACPPowerModel
         return ["va", "vm"], ["pf", "pt", "qf", "qt"]
-    elseif model_type <: AbstractACRModel
+    elseif model_type <: ACRPowerModel
         return ["vr", "vi"], ["pf", "pt", "qf", "qt"]
-    elseif model_type <: AbstractSOCWRModel
+    elseif model_type <: SOCWRPowerModel
         return ["w"], ["pf", "pt", "qf", "qt", "wr", "wi"]
-    elseif model_type <: AbstractQCRMPowerModel
+    elseif model_type <: QCRMPowerModel
         return ["vm", "va" , "w"], ["pf", "pt", "qf", "qt", "wr", "wi", "vv", "ccm", "cs", "si", "td"]
-    elseif model_type <: AbstractSDPWRMModel
+    elseif model_type <: SDPWRMPowerModel
         return ["w"], ["pf", "pt", "qf", "qt", "wr", "wi"]
     end
 end

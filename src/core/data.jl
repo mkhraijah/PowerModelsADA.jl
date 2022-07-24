@@ -84,15 +84,3 @@ function add_virtual_gen!(data::Dict{String, <:Any},neighbor_bus::Vector, area_i
     end
     return virtual_gen
 end
-
-
-function update_primal_shared!(data::Dict)
-    area_id = string(DPM.get_area_id(data))
-    for comp in keys(data["shared_primal"][area_id])
-        for ids in keys(data["shared_primal"][area_id][comp])
-            for vstring in keys(data["shared_primal"][area_id][comp][ids])
-                data["shared_primal"][area_id][comp][ids][vstring] = data[comp][ids][vstring]
-            end
-        end
-    end
-end

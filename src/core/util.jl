@@ -2,44 +2,13 @@
 #               Helper methods for all distributed algorithms                 #
 ###############################################################################
 
-
-
-## method to find the correct power flow model
-function pf_formulation(pf::DataType)
-    if pf <: AbstractPowerModel
-        pf
-    else
-        error("Power Flow model is not identified")
-    end
-end
-
-## method for power flow formulation shortcut
-function pf_formulation(pf::String)
-    if pf == "DC"
-        _PM.DCPPowerModel
-    elseif pf == "AC" || pf == "ACP"
-        _PM.ACPPowerModel
-    elseif pf == "ACR"
-        _PM.ACRPowerModel
-    elseif pf == "SOC" || pf == "SOCP"
-        _PM.SOCWRPowerModel
-    elseif pf == "QC"
-        _PM.QCRMPowerModel
-    elseif pf == "SDP"
-        _PM.SDPWRMPowerModel
-    else
-        error("Power Flow model is not identified")
-    end
-end
-
-
 ## partition a system into p subsystem using spactural clustering
 function partition_system!(data::Dict, p::Int64; init=[], correct_neg_susceptance::Bool=false)
 
     neg_b_branch = findall(x->x["br_x"]<0, data["branch"])
     if !isempty(neg_b_branch)
         if !correct_neg_susceptance
-            error("Branch/s $neg_b_branch has/have negative susceptance/s, try to enforce postive susceptance by setting correct_neg_susceptance = true")
+            error("Branch/s $neg_b_branch has/have negative susceptance, try to enforce postive susceptance by setting correct_neg_susceptance = true")
         end
     end
 
@@ -64,8 +33,8 @@ function partition_system!(data::Dict, p::Int64; init=[], correct_neg_susceptanc
         D[i,i] = sum(W[i,:])
     end
 
-    L = I - sqrt.(inv(D)) * W * sqrt.(inv(D))
-    S,U = eigen(L)
+    L = LinearAlgebra.I - sqrt.(inv(D)) * W * sqrt.(inv(D))
+    S,U = LinearAlgebra.eigen(L)
     if isempty(init)
         C = kmeans(U[:,1:p]',p).assignments
     else

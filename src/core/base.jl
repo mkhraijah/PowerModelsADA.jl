@@ -2,8 +2,9 @@
 #              Base method for all distirbuted OPF algorithms                 #
 ###############################################################################
 
-## method to decompose system into subsystem defined by bus area
+## method to decompose a system into subsystem defined by bus area
 function decompose_system(data::Dict{String, <:Any})
+
     areas_id = get_areas_id(data)
     data_area = Dict{Int64, Any}()
     for i in areas_id
@@ -12,11 +13,8 @@ function decompose_system(data::Dict{String, <:Any})
     return data_area
 end
 
-## method to initialize dpm parameters and optimizer
-function initialize_dpm!(data::Dict{String, <:Any}, model_type; alpha::Real, tol::Float64=1e-4, max_iteration::Int64=1000)
-
-    # check the power flow model
-    model_type = pf_formulation(model_type)
+## method to initialize dopf parameters and optimizer
+function initialize_dopf!(data::Dict{String, <:Any}, model_type::Type;  tol::Float64=1e-4, max_iteration::Int64=1000, kwargs...)
 
     # initiate primal and dual shared variables
     variable_shared(data, model_type)
@@ -25,7 +23,6 @@ function initialize_dpm!(data::Dict{String, <:Any}, model_type; alpha::Real, tol
     data["iteration"] = Int64(1)
     data["flag_convergance"] = false
     data["mismatch"] = Vector{Dict{String, Any}}()
-    data["alpha"] = alpha
     data["tol"] = tol
     data["max_iteration"] = max_iteration
 
@@ -33,7 +30,9 @@ end
 
 ## update iteration
 function update_iteration!(data::Dict{String, <:Any})
+
     data["iteration"] += 1
+
 end
 
 ## calculate the mismatch and store it in data
@@ -51,7 +50,7 @@ function calc_mismatch!(data::Dict{String, <:Any}, p::Int64=2 )
     ids => Dict{String, Any}([
     vstring => primal_variable[area_id][comp][ids][vstring] - primal_variable[area][comp][ids][vstring] for vstring in keys(primal_variable[area][comp][ids])]) for ids in keys(primal_variable[area][comp])]) for comp in keys(primal_variable[area])]) for area in keys(primal_variable) if area != area_id ])
 
-    mismatch[area_id] = norm([value for area in keys(mismatch) if area != area_id for comp in keys(mismatch[area]) for ids in keys(mismatch[area][comp]) for (vstring,value) in mismatch[area][comp][ids]],p)
+    mismatch[area_id] = LinearAlgebra.norm([value for area in keys(mismatch) if area != area_id for comp in keys(mismatch[area]) for ids in keys(mismatch[area][comp]) for (vstring,value) in mismatch[area][comp][ids]],p)
 
     push!(data["mismatch"], mismatch)
 end
@@ -70,14 +69,11 @@ function check_flag_convergance(data_area::Dict{Int, <:Any})
 end
 
 ## Calculate the global mismatch based on local mismatch
-calc_global_mismatch(data_area::Dict{Int, <:Any}, p::Int64=2) = norm([data_area[i]["mismatch"][end][string(i)] for i in keys(data_area)], p)
+calc_global_mismatch(data_area::Dict{Int, <:Any}, p::Int64=2) = LinearAlgebra.norm([data_area[i]["mismatch"][end][string(i)] for i in keys(data_area)], p)
 
 
 ## wrapping method to run distributed algorithms
-function run_dopf(data::Dict{String, <:Any}, model_type, build_method::Function, update_method::Function, optimizer; alpha::Real=1000, beta::Real=0, gamma::Real=0, initialize_method::Function=initialize_dpm!, tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true)
-
-    # check the power flow model
-    model_type = pf_formulation(model_type)
+function run_dopf(data::Dict{String, <:Any}, model_type, build_method::Function, update_method::Function, optimizer; initialize_method::Function=initialize_dopf!, tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true, kwargs...)
 
     ## Obtain areas ids
     areas_id = get_areas_id(data)
@@ -90,7 +86,7 @@ function run_dopf(data::Dict{String, <:Any}, model_type, build_method::Function,
 
     ## Initilize distributed power model parameters
     for i in areas_id
-        initialize_method(data_area[i], model_type, alpha=alpha, tol=tol, max_iteration=max_iteration)
+        initialize_method(data_area[i], model_type::Type, tol=tol, max_iteration=max_iteration, kwargs=kwargs)
     end
 
     ## Initialaize the algorithms counters
@@ -103,8 +99,8 @@ function run_dopf(data::Dict{String, <:Any}, model_type, build_method::Function,
         ## solve local problem and update solution
         for i in areas_id
             update_method(data_area[i])
-            result = solve_model(data_area[i], model_type, optimizer, build_method)
-            update_data!(data_area[i], result["solution"])
+            result = _PM.solve_model(data_area[i], model_type, optimizer, build_method)
+            _PM.update_data!(data_area[i], result["solution"])
             update_shared_primal!(data_area[i], result["solution"])
         end
 
