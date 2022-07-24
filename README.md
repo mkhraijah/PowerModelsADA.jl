@@ -5,8 +5,14 @@ A library to run different distributed algorithms to solve optimal power flow us
 
 Status:
 [![CI](https://github.com/mkhraijah/PowerModelsAlternatingDistributedAlgorithms/workflows/CI/badge.svg)](https://github.com/mkhraijah/PowerModelsAlternatingDistributedAlgorithms/actions?query=workflow%3ACI)
-[![codecov](https://codecov.io/gh/mkhraijah/DistributedPowerModels/branch/main/graph/badge.svg)](https://codecov.io/gh/mkhraijah/PowerModelsAlternatingDistributedAlgorithms)
+[![codecov](https://codecov.io/gh/mkhraijah/PowerModelsAlternatingDistributedAlgorithms/branch/main/graph/badge.svg)](https://codecov.io/gh/mkhraijah/PowerModelsAlternatingDistributedAlgorithms)
 [![Documentation](https://github.com/mkhraijah/PowerModelsAlternatingDistributedAlgorithms/workflows/Documentation/badge.svg)]()
+</p>
+
+Status:
+[![CI](https://github.com/lanl-ansi/PowerModels.jl/workflows/CI/badge.svg)](https://github.com/lanl-ansi/PowerModels.jl/actions?query=workflow%3ACI)
+[![codecov](https://codecov.io/gh/lanl-ansi/PowerModels.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/lanl-ansi/PowerModels.jl)
+[![Documentation](https://github.com/lanl-ansi/PowerModels.jl/workflows/Documentation/badge.svg)](https://lanl-ansi.github.io/PowerModels.jl/stable/)
 </p>
 
 
