@@ -3,8 +3,20 @@ push!(LOAD_PATH,"../src/")
 using PMADA
 using Documenter
 
-makedocs(sitename="Documentation")
+makedocs(
+    modules = [PMADA],
+    format = Documenter.HTML(
+        analytics = "",
+        mathengine = Documenter.MathJax(),
+        prettyurls=false,
+        collapselevel=1,
+    ),
+    strict=false,
+    sitename = "PMADA.jl",
+    authors = "Mohannad Alkhraijah",
+    pages = ["Introduction" => "index.md"]
+)
 
 deploydocs(
-    repo = "github.gatech.edu/malkhraijah3/PMADA.jl.git",
+    repo = "github.com/mkhraijah/PMADA.jl.git",
 )
