@@ -42,15 +42,3 @@ function receive_shared_data!(from::Int64, shared_data::Dict, data::Dict{String,
         end
     end
 end
-
-## Method to update the primal variable after solving the subproblem
-function update_primal_shared!(data::Dict)
-    area_id = string(get_area_id(data))
-    for comp in keys(data["shared_primal"][area_id])
-        for ids in keys(data["shared_primal"][area_id][comp])
-            for vstring in keys(data["shared_primal"][area_id][comp][ids])
-                data["shared_primal"][area_id][comp][ids][vstring] = data[comp][ids][vstring]
-            end
-        end
-    end
-end
