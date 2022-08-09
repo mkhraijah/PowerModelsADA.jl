@@ -1,0 +1,10 @@
+
+.DS_Store
+docs/build/assets/documenter.js
+docs/build/assets/search.js
+docs/build/assets/themes/documenter-dark.css
+docs/build/assets/themes/documenter-light.css
+docs/build/assets/themeswap.js
+docs/build/index.html
+docs/build/search.html
+docs/build/search_index.js
