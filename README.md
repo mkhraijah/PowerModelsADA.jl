@@ -3,7 +3,7 @@
 Status:
 [![CI](https://github.com/mkhraijah/PMADA.jl/workflows/CI/badge.svg)](https://github.com/mkhraijah/PMADA.jl/actions?query=workflow%3ACI)
 [![codecov](https://codecov.io/gh/mkhraijah/PMADA.jl/branch/main/graph/badge.svg?token=371LK4OBZG)](https://codecov.io/gh/mkhraijah/PMADA.jl)
-[![Documentation](https://github.com/mkhraijah/PMADA.jl/workflows/Documentation/badge.svg)]()
+[![Documentation](https://github.com/mkhraijah/PMADA.jl/workflows/Documentation/badge.svg)](https://mkhraijah.github.io/PMADA.jl/)
 </p>
 
 
