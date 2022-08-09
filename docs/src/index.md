@@ -1,1 +1,1 @@
-This documentaiton is made by documenter.jl
+This documentation is made by documenter.jl
