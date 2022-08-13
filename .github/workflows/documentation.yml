@@ -1,6 +1,8 @@
 name: Documentation
 on:
   - push
+    branches: [main]
+    tags: '*'
   - pull_request
 jobs:
   docs:
@@ -8,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: julia-actions/setup-julia@v1
+      - uses: julia-actions/setup-julia@latest
         with:
           version: '1'
       - run: |

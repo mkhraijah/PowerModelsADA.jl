@@ -2,7 +2,11 @@
 #              Base method for all distirbuted OPF algorithms                 #
 ###############################################################################
 
-## method to decompose a system into subsystem defined by bus area
+"""
+    decompose_system(data::Dict{String, <:Any})
+
+Method to decompose a system into subsystem defined by bus area.
+"""
 function decompose_system(data::Dict{String, <:Any})
 
     areas_id = get_areas_id(data)

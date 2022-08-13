@@ -1,1 +1,8 @@
-This documentation is made by documenter.jl
+# PMADA.jl
+
+Documentation for PMADA.jl
+
+
+```@docs
+decompose_system(data::Dict{String, <:Any})
+```
