@@ -2,7 +2,11 @@
 #                     Build methods for ADMM algorithm                        #
 ###############################################################################
 
-## solve the distributed OPF problem using ADMM algorithm
+"""
+    run_dopf_admm(data::Dict{String, <:Any}, model_type::Type, optimizer; tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true, alpha::Real=1000)
+
+Solve the distributed OPF problem using ADMM algorithm.
+"""
 function run_dopf_admm(data::Dict{String, <:Any}, model_type::Type, optimizer; tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true, alpha::Real=1000)
 
     run_dopf(data, model_type, build_dopf_admm, update_admm!, optimizer, initialize_method=initialize_dopf_admm!, tol = tol, max_iteration=max_iteration, verbose=verbose, alpha=alpha)

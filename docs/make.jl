@@ -1,22 +1,27 @@
 push!(LOAD_PATH,"../src/")
-using Documenter
-using PMADA
+using Documenter, PMADA
 
 makedocs(
+    modules = [PMADA],
     sitename = "PMADA.jl",
+    authors = "Mohannad Alkhraijah",
     format = Documenter.HTML(
         analytics = "",
         mathengine = Documenter.MathJax(),
-        prettyurls=false,
         collapselevel=1,
     ),
-    modules = [PMADA],
-    authors = "Mohannad Alkhraijah",
+    pages = [
+        "Home" => "index.md",
+        "Manual" => [
+            "Quick Start Guide" => "quickguide.md",
+            "Distributed Algorithms" => [
+                "ADMM" => "admm.md"
+            ]
+        ]
+    ]
+
 )
 
-# Documenter can also automatically deploy documentation to gh-pages.
-# See "Hosting Documentation" and deploydocs() in the Documenter manual
-# for more information.
 deploydocs(
     repo = "github.com/mkhraijah/PMADA.jl"
 )
