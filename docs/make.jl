@@ -18,5 +18,5 @@ makedocs(
 # See "Hosting Documentation" and deploydocs() in the Documenter manual
 # for more information.
 deploydocs(
-    repo = "https://github.com/mkhraijah/PMADA.jl"
+    repo = "github.com/mkhraijah/PMADA.jl"
 )
