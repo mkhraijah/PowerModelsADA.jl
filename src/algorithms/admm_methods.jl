@@ -3,17 +3,17 @@
 ###############################################################################
 
 """
-    run_dopf_admm(data::Dict{String, <:Any}, model_type::Type, optimizer; tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true, alpha::Real=1000)
+    solve_dopf_admm(data::Dict{String, <:Any}, model_type::Type, optimizer; tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true, alpha::Real=1000)
 
 Solve the distributed OPF problem using ADMM algorithm.
 """
-function run_dopf_admm(data::Dict{String, <:Any}, model_type::Type, optimizer; tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true, alpha::Real=1000)
+function solve_dopf_admm(data::Dict{String, <:Any}, model_type::Type, optimizer; tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true, alpha::Real=1000)
 
-    run_dopf(data, model_type, build_dopf_admm, update_admm!, optimizer, initialize_method=initialize_dopf_admm!, tol = tol, max_iteration=max_iteration, verbose=verbose, alpha=alpha)
+    solve_dopf(data, model_type, build_dopf_admm, update_admm!, optimizer, initialize_method=initialize_dopf_admm!, tol = tol, max_iteration=max_iteration, verbose=verbose, alpha=alpha)
 
 end
 
-## method to inilitlize the admm algorithm
+"inilitlize the admm algorithm"
 function initialize_dopf_admm!(data::Dict{String, <:Any}, model_type::Type; tol::Float64=1e-4, max_iteration::Int64=1000, kwargs)
 
     initialize_dopf!(data, model_type, tol=tol, max_iteration=max_iteration, kwargs=kwargs)
@@ -21,7 +21,7 @@ function initialize_dopf_admm!(data::Dict{String, <:Any}, model_type::Type; tol:
 
 end
 
-## build method for Distributed PowerModel using ADMM algorithm
+"build PowerModel using ADMM algorithm"
 function build_dopf_admm(pm::AbstractPowerModel)
 
     # define variables
@@ -56,7 +56,7 @@ function build_dopf_admm(pm::AbstractPowerModel)
     objective_min_fuel_and_consensus!(pm, objective_admm!)
 end
 
-## method to set the ADMM algorithm objective
+"ADMM algorithm objective"
 function objective_admm!(pm::AbstractPowerModel)
 
     ## ADMM parameters
@@ -91,7 +91,7 @@ end
 
 
 
-## method to update the dual variable value
+"update the dual variable value"
 function update_admm!(data::Dict{String, <:Any})
 
     ## ADMM parameters

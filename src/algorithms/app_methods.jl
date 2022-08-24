@@ -2,14 +2,19 @@
 #                     Build methods for APP algorithm                        #
 ###############################################################################
 
-## solve the distributed OPF problem using APP algorithm
-function run_dopf_app(data::Dict{String, <:Any}, model_type::Type, optimizer; alpha::Real=1000, beta::Real=0, gamma::Real=0, tol::Float64=1e-4, max_iteration::Int64=1000, verbose=true)
 
-    run_dopf(data, model_type, build_dopf_app, update_app!, optimizer, initialize_method=initialize_dopf_app!, tol=tol, max_iteration=max_iteration, verbose=verbose, alpha=alpha, beta=beta, gamma=gamma)
+"""
+    solve_dopf_app(data::Dict{String, <:Any}, model_type::Type, optimizer; tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true, alpha::Real=1000, beta::Real=0, gamma::Real=0)
+
+Solve the distributed OPF problem using APP algorithm.
+"""
+function solve_dopf_app(data::Dict{String, <:Any}, model_type::Type, optimizer; tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true, alpha::Real=1000, beta::Real=0, gamma::Real=0)
+
+    solve_dopf(data, model_type, build_dopf_app, update_app!, optimizer, initialize_method=initialize_dopf_app!, tol=tol, max_iteration=max_iteration, verbose=verbose, alpha=alpha, beta=beta, gamma=gamma)
 
 end
 
-## method to inilitlize the APP algorithm
+"inilitlize the APP algorithm"
 function initialize_dopf_app!(data::Dict{String, <:Any}, model_type::Type; tol::Float64=1e-4, max_iteration::Int64=1000, kwargs)
 
     initialize_dopf!(data, model_type, tol=tol, max_iteration=max_iteration, kwargs=kwargs)
@@ -17,27 +22,9 @@ function initialize_dopf_app!(data::Dict{String, <:Any}, model_type::Type; tol::
     data["beta"] = 2*kwargs[:alpha]
     data["gamma"] = kwargs[:alpha]
 
-    # use beta if defined in setting or use 2*alpha
-    # if haskey(kwargs, :beta)
-    #     if kwargs[:beta] != 0
-    #         data["beta"] = kwargs[:beta]
-    #     end
-    # else
-    #     data["beta"] = 2*kwargs[:alpha]
-    # end
-    # # use gamma if defined in setting or use alpha
-    # if haskey(kwargs, :gamma)
-    #     if kwargs[:gamma] != 0
-    #         data["gamma"] = kwargs[:gamma]
-    #     end
-    # else
-    #     data["gamma"] = kwargs[:alpha]
-    # end
-
-
 end
 
-## build method for Distributed PowerModel using ADMM algorithm
+"build PowerModel using APP algorithm"
 function build_dopf_app(pm::AbstractPowerModel)
 
     # define variables
@@ -72,7 +59,7 @@ function build_dopf_app(pm::AbstractPowerModel)
     objective_min_fuel_and_consensus!(pm, objective_app!)
 end
 
-## method to set the APP algorithm objective
+"set the APP algorithm objective"
 function objective_app!(pm::AbstractPowerModel)
 
     ## APP parameters
@@ -109,7 +96,7 @@ function objective_app!(pm::AbstractPowerModel)
     JuMP.@objective(pm.model, Min,  objective)
 end
 
-## method to update the dual variable value
+"method to update the dual variable value"
 function update_app!(data::Dict{String, <:Any})
 
     ## APP parameters

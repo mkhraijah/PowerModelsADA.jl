@@ -8,7 +8,6 @@
 Method to decompose a system into subsystem defined by bus area.
 """
 function decompose_system(data::Dict{String, <:Any})
-
     areas_id = get_areas_id(data)
     data_area = Dict{Int64, Any}()
     for i in areas_id
@@ -17,32 +16,28 @@ function decompose_system(data::Dict{String, <:Any})
     return data_area
 end
 
-## method to initialize dopf parameters and optimizer
+"initialize dopf parameters"
 function initialize_dopf!(data::Dict{String, <:Any}, model_type::Type;  tol::Float64=1e-4, max_iteration::Int64=1000, kwargs...)
-
     # initiate primal and dual shared variables
     variable_shared(data, model_type)
 
     # initiate distributed algorithm parameters
-    data["iteration"] = Int64(1)
+    data["iteration"] = Int64(0)
     data["flag_convergance"] = false
     data["mismatch"] = Vector{Dict{String, Any}}()
     data["tol"] = tol
     data["max_iteration"] = max_iteration
-
 end
 
-## update iteration
+"update iteration"
 function update_iteration!(data::Dict{String, <:Any})
-
     data["iteration"] += 1
-
 end
 
-## calculate the mismatch and store it in data
-# for iteration k area i, data["mismatch"][k][j] is
-# the p-norm of all mismatches, if i = j
-# the actual mismatches for every shared variable otherwise
+"""
+    calc_mismatch!(data::Dict{String, <:Any}, p::Int64=2)
+calculate the mismatch using p-norm and return the area data dictionary with the mismatch as seen by the area. The mismatches are stored in a vector indexed by the iteraiton number.
+"""
 function calc_mismatch!(data::Dict{String, <:Any}, p::Int64=2 )
 
     area_id = string(data["area"])
@@ -59,25 +54,32 @@ function calc_mismatch!(data::Dict{String, <:Any}, p::Int64=2 )
     push!(data["mismatch"], mismatch)
 end
 
-## Check the shared variables of a local area are within tol
+"check the shared variables of a local area are within tol"
 function update_flag_convergance!(data::Dict{String, <:Any}, tol::Float64)
     area_id = string(data["area"])
     mismatch = data["mismatch"][end][area_id]
     data["flag_convergance"] = mismatch < tol
 end
 
-## Check the flag convergence for all subsystem and return a global variables
+"check the flag convergence for all subsystem and return a global variables"
 function check_flag_convergance(data_area::Dict{Int, <:Any})
     flag_convergance = reduce( & , [data_area[i]["flag_convergance"] for i in keys(data_area)])
     return flag_convergance
 end
 
-## Calculate the global mismatch based on local mismatch
+"calculate the global mismatch based on local mismatch"
 calc_global_mismatch(data_area::Dict{Int, <:Any}, p::Int64=2) = LinearAlgebra.norm([data_area[i]["mismatch"][end][string(i)] for i in keys(data_area)], p)
 
 
 ## wrapping method to run distributed algorithms
-function run_dopf(data::Dict{String, <:Any}, model_type, build_method::Function, update_method::Function, optimizer; initialize_method::Function=initialize_dopf!, tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true, kwargs...)
+
+"""
+    solve_dopf(data::Dict{String, <:Any}, model_type, build_method::Function, update_method::Function, optimizer; initialize_method::Function=initialize_dopf!, tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true, kwargs...)
+
+Solve the distributed OPF problem. The distributed algorithm is defined by the build_method and update_method.
+"""
+
+function solve_dopf(data::Dict{String, <:Any}, model_type, build_method::Function, update_method::Function, optimizer; initialize_method::Function=initialize_dopf!, tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true, kwargs...)
 
     ## Obtain areas ids
     areas_id = get_areas_id(data)
@@ -93,8 +95,8 @@ function run_dopf(data::Dict{String, <:Any}, model_type, build_method::Function,
         initialize_method(data_area[i], model_type::Type, tol=tol, max_iteration=max_iteration, kwargs=kwargs)
     end
 
-    ## Initialaize the algorithms counters
-    iteration = 1
+    ## Initialaize the algorithms global counters
+    iteration = 0
     flag_convergance = false
 
     ## start iteration
@@ -133,6 +135,8 @@ function run_dopf(data::Dict{String, <:Any}, model_type, build_method::Function,
             println("Iteration = $iteration, mismatch = $mismatch")
             if flag_convergance
                 println("Consistency achived within $tol")
+                objective = calc_dist_gen_cost(data_area)
+                println("Objective = $objective")
             end
         end
 

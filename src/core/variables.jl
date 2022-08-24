@@ -91,6 +91,8 @@ function variable_shared_names(model_type)
     elseif model_type <: QCRMPowerModel
         return ["vm", "va" , "w"], ["pf", "pt", "qf", "qt", "wr", "wi", "vv", "ccm", "cs", "si", "td"]
     elseif model_type <: SDPWRMPowerModel
-        return ["w"], ["pf", "pt", "qf", "qt", "wr", "wi"]
+        return ["w"], ["pf", "pt", "qf", "qt"]
+    elseif model_type <: SparseSDPWRMPowerModel
+        return ["w"], ["pf", "pt", "qf", "qt"]
     end
 end
