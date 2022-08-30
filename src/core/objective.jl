@@ -2,7 +2,7 @@
 #           Objective update for all distirbuted OPF algorithms               #
 ###############################################################################
 
-## wrapper for objective function definition from PowerModels and algorithm specific objective
+"wrapper for objective function definition from PowerModels and algorithm specific objective"
 function objective_min_fuel_and_consensus!(pm::AbstractPowerModel, objective_method::Function)
 
     # if subsystem has generator minimize the cost of generator

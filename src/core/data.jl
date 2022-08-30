@@ -3,26 +3,25 @@
 ###############################################################################
 
 
-## assign area to the PowerModel data using a dictionary with (bus => area) Int pairs
+"assign area to the PowerModel data using a dictionary with (bus => area) Int pairs"
 function assign_area!(data::Dict{String, <:Any}, partition::Dict)
     for i in keys(data["bus"])
         data["bus"][i]["area"] = partition[parse(Int64,i)]
     end
 end
 
-## assign area to the PowerModel data using a CVS file with buses and area id
+"assign area to the PowerModel data using a CVS file with buses and area id"
 function assign_area!(data::Dict{String, <:Any}, partition_path::String)
     partition = DelimitedFiles.readdlm(partition_path, ',', Int, '\n')
     assign_area!(data, partition)
 end
 
-
-## Assign area to the PowerModel data using a vector with (bus => area) pairs
+"assign area to the PowerModel data using a vector with (bus => area) pairs"
 function assign_area!(data::Dict{String, <:Any}, partition::Vector{Pair{Int64, Int64}})
     assign_area!(data, Dict(partition))
 end
 
-## Assign area to the PowerModel data using a matrix with [bus, area] colmuns or rows
+"assign area to the PowerModel data using a matrix with [bus, area] colmuns or rows"
 function assign_area!(data::Dict{String, <:Any}, partition::Array{Int64, 2})
     if size(partition)[2] != 2 && length(data["bus"]) != 2
         partition = partition'
@@ -34,7 +33,7 @@ function assign_area!(data::Dict{String, <:Any}, partition::Array{Int64, 2})
     assign_area!(data, Dict(partition[i,1] => partition[i,2] for i in 1:size(partition)[1] ))
 end
 
-## method to decompose a subsystem with area id
+"decompose a subsystem with area id"
 function decompose_system(data::Dict{String, <:Any}, area_id::Int)
 
     # idintify local buses
@@ -45,6 +44,7 @@ function decompose_system(data::Dict{String, <:Any}, area_id::Int)
     virtual_gen =  add_virtual_gen!(data,neighbor_bus, area_id)
     area_gen = Dict{String, Any}([i => gen for (i,gen) in data["gen"] if gen["gen_bus"] in local_bus])
 
+    ## area data
     data_area = Dict{String,Any}()
     data_area["area"] = area_id
     data_area["name"]= "$(data["name"])_area_$area_id"
@@ -67,7 +67,7 @@ function decompose_system(data::Dict{String, <:Any}, area_id::Int)
     return data_area
 end
 
-# add virtual geneartors at the neighboring buses of an area
+"add virtual geneartors at the neighboring buses of an area"
 function add_virtual_gen!(data::Dict{String, <:Any},neighbor_bus::Vector, area_id::Int)
     max_gen_ind = maximum([parse(Int,i) for i in keys(data["gen"])])
     virtual_gen = Dict{String, Any}()

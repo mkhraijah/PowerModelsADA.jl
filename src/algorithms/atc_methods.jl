@@ -3,26 +3,21 @@
 ###############################################################################
 
 """
-    solve_dopf_atc(data::Dict{String, <:Any}, model_type::Type, optimizer; tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true, alpha::Real=1000, beta::Real=1)
+    solve_dopf_atc(data::Dict{String, <:Any}, model_type::DataType, optimizer; tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true, alpha::Real=1000, beta::Real = 1)
 
-Solve the distributed OPF problem using APP algorithm.
+Solve the distributed OPF problem using ATC algorithm.
 """
-function solve_dopf_atc(data::Dict{String, <:Any}, model_type::Type, optimizer; tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true, alpha::Real=1000, beta::Real=1)
-
-    solve_dopf(data, model_type, build_dopf_atc, update_atc!, optimizer, initialize_method=initialize_dopf_atc! , tol=tol, max_iteration=max_iteration, verbose=verbose, alpha=alpha, beta=beta)
-
+function solve_dopf_atc(data::Dict{String, <:Any}, model_type::DataType, optimizer; tol::Float64=1e-4, max_iteration::Int64=1000, verbose::Bool=true, alpha::Real=1000, beta::Real=1)
+    solve_dopf(data, model_type, optimizer, initialize_dopf_atc!, update_atc!, build_dopf_atc ; tol=tol , max_iteration=max_iteration, verbose=verbose, alpha=alpha, beta=beta)
 end
 
 "inilitlize the ATC algorithm"
-function initialize_dopf_atc!(data::Dict{String, <:Any}, model_type::Type; tol::Float64=1e-4, max_iteration::Int64=1000, kwargs)
+function initialize_dopf_atc!(data::Dict{String, <:Any}, model_type::DataType; tol::Float64=1e-4, max_iteration::Int64=1000, kwargs...)
 
-    initialize_dopf!(data, model_type, tol=tol, max_iteration=max_iteration, kwargs=kwargs)
+    initialize_dopf!(data, model_type; tol=tol, max_iteration=max_iteration)
     data["alpha"] = kwargs[:alpha]
-    if haskey(kwargs,:beta)
-        data["beta"] = kwargs[:beta]
-    else
-        data["beta"] = 1
-    end
+    data["beta"] = kwargs[:beta]
+   
 end
 
 "build method for Distributed PowerModel using ATC algorithm"
@@ -73,19 +68,14 @@ function objective_atc!(pm::AbstractPowerModel)
 
     ## objective function
     objective = JuMP.objective_function(pm.model)
-    for area in keys(primal_variable)
-        if area != area_id
-            for comp in keys(primal_variable[area])
-                for ids in keys(primal_variable[area][comp])
-                    for vstring in keys(primal_variable[area][comp][ids])
+    for area in keys(dual_variable)
+        for variable in keys(dual_variable[area])
+            for idx in keys(dual_variable[area][variable])
+                v = _var(pm, variable, idx)
+                v_central = (primal_variable[area_id][variable][idx] + primal_variable[area][variable][idx])/2
+                v_dual = dual_variable[area][variable][idx]
 
-                        v = pm.sol[:it][:pm][:nw][0][Symbol(comp)][parse(Int64,ids)][Symbol(vstring)]
-                        v_central = (primal_variable[area_id][comp][ids][vstring] + primal_variable[area][comp][ids][vstring])/2
-                        v_dual = dual_variable[area][comp][ids][vstring]
-
-                        objective += (beta * (v - v_central))^2 + v_dual * (v - v_central)
-                    end
-                end
+                objective += (beta * (v - v_central))^2 + v_dual * (v - v_central)
             end
         end
     end
@@ -94,7 +84,7 @@ function objective_atc!(pm::AbstractPowerModel)
 end
 
 
-"update the dual variable value"
+"update the ATC algorithm before each iteration"
 function update_atc!(data::Dict{String, <:Any})
 
     ## ATC parameters
@@ -113,16 +103,13 @@ function update_atc!(data::Dict{String, <:Any})
     ## update dual variable
     ## update dual variable
     for area in keys(dual_variable)
-        for comp in keys(dual_variable[area])
-            for ids in keys(dual_variable[area][comp])
-                for vstring in keys(dual_variable[area][comp][ids])
+        for variable in keys(dual_variable[area])
+            for idx in keys(dual_variable[area][variable])
+                v_primal = primal_variable[area_id][variable][idx]
+                v_central = (primal_variable[area_id][variable][idx] + primal_variable[area][variable][idx])/2
+                v_dual = dual_variable[area][variable][idx]
 
-                    v_primal = primal_variable[area_id][comp][ids][vstring]
-                    v_central = (primal_variable[area_id][comp][ids][vstring] + primal_variable[area][comp][ids][vstring])/2
-                    v_dual = dual_variable[area][comp][ids][vstring]
-
-                    data["shared_dual"][area][comp][ids][vstring] = v_dual  + 2 * beta^2 * (v_primal - v_central)
-                end
+                data["shared_dual"][area][variable][idx] = v_dual  + 2 * beta^2 * (v_primal - v_central)
             end
         end
     end

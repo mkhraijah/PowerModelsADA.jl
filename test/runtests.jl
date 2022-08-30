@@ -16,28 +16,28 @@ PowerModels.silence()
 ## load test systems
 data_14 =  PMADA.parse_file("../test/data/case14.m")
 data_RTS =  PMADA.parse_file("../test/data/case_RTS.m")
-data_300 =  PMADA.parse_file("../test/data/case300.m")
-data_300_3 =  PMADA.parse_file("../test/data/case300_3areas.m")
 
 @testset "PMADA" begin
 
 ## assign area test
     @testset "assign area to busses" begin
-        PMADA.assign_area!(data_300, "../test/data/case300_8areas.csv")
-        area_count = [65, 35, 33, 38, 43, 44, 22, 20]
-        test_count = [count(c -> c["area"]  == k, [bus for (i,bus) in data_300["bus"]]) for k in 1:8]
-        @test test_count == area_count
+        PMADA.assign_area!(data_14, "../test/data/case14_2areas.csv")
+        area_bus = PMADA.get_areas_bus(data_14)
+        area_1 = [1, 2, 3, 4, 5]
+        area_2 = [6, 7, 8, 9, 10, 11, 12, 13, 14]
+        @test sort(area_bus[1]) == area_1
+        @test sort(area_bus[2]) == area_2
     end
 
-## decompose system test
+## decompose system test 
     @testset "decmpose system into subsystems" begin
-        @testset "case300" begin
-            data_area = PMADA.decompose_system(data_300_3)
-            bus_size = [169, 83, 69]
-            gen_size = [41, 27, 22]
-            branch_size = [216, 117, 90]
-            load_size = [109, 47, 45]
-            neighbor_size = [12, 5, 7]
+        @testset "data_RTS" begin
+            data_area = PMADA.decompose_system(data_RTS)
+            bus_size = [28, 28, 27]
+            gen_size = [56, 41, 71]
+            branch_size = [42, 42, 41]
+            load_size = [17, 17, 17]
+            neighbor_size = [4, 4, 2]
             test_bus = [length(data_area[i]["bus"]) for i in 1:3]
             test_gen = [length(data_area[i]["gen"]) for i in 1:3]
             test_branch = [length(data_area[i]["branch"]) for i in 1:3]
@@ -65,41 +65,40 @@ data_300_3 =  PMADA.parse_file("../test/data/case300_3areas.m")
 
 ## ADMM test
     @testset "admm algorithm with DC power flow" begin
-        data_area = PMADA.solve_dopf_admm(data_14, PMADA.DCPPowerModel, milp_solver; alpha=1000, tol=1e-2, max_iteration=1000, verbose = false)
+        data_area = PMADA.solve_dopf_admm(data_14, PMADA.DCPPowerModel, milp_solver; alpha=1000, tol=1e-3, max_iteration=1000, verbose = false)
         dist_cost = PMADA.calc_dist_gen_cost(data_area)
-        @test abs((dist_cost - 7642.59)/7642.59 *100) <= 1e0
-
+        @test  isapprox(dist_cost, 7642.59, atol =5)
     end
 
     @testset "admm algorithm with AC power flow" begin
-        data_area = PMADA.solve_dopf_admm(data_14, PMADA.ACPPowerModel, nlp_solver; alpha=1000, tol=1e-2, max_iteration=1000, verbose = false)
+        data_area = PMADA.solve_dopf_admm(data_14, PMADA.ACPPowerModel, nlp_solver; alpha=1000, tol=1e-3, max_iteration=1000, verbose = false)
         dist_cost = PMADA.calc_dist_gen_cost(data_area)
-        @test abs((dist_cost - 8081.52)/8081.52 *100) <= 1e0
+        @test isapprox(dist_cost, 8081.52, atol =5)
     end
 
     ## ATC test
     @testset "atc algorithm with DC power flow" begin
-        data_area = PMADA.solve_dopf_atc(data_14, PMADA.DCPPowerModel, milp_solver; alpha=1.1, tol=1e-2, max_iteration=1000, verbose = false)
+        data_area = PMADA.solve_dopf_atc(data_14, PMADA.DCPPowerModel, milp_solver; alpha=1.1, tol=1e-3, max_iteration=1000, verbose = false)
         dist_cost = PMADA.calc_dist_gen_cost(data_area)
-        @test abs((dist_cost - 7642.59)/7642.59 *100) <= 1e0
+        @test isapprox(dist_cost, 7642.59, atol =5)
     end
 
     @testset "atc algorithm with SOC relaxation of power flow" begin
-        data_area = PMADA.solve_dopf_atc(data_14, PMADA.SOCWRPowerModel, nlp_solver; alpha=1.1, tol=1e-2, max_iteration=1000, verbose = false)
+        data_area = PMADA.solve_dopf_atc(data_14, PMADA.SOCWRPowerModel, nlp_solver; alpha=1.1, tol=1e-3, max_iteration=1000, verbose = false)
         dist_cost = PMADA.calc_dist_gen_cost(data_area)
-        @test abs((dist_cost - 8075.12)/8075.12 *100) <= 1e-1
+        @test isapprox(dist_cost, 8075.12, atol =5)
     end
 
     ## APP test
     @testset "app algorithm with DC power flow" begin
-        data_area = PMADA.solve_dopf_app(data_14, PMADA.DCPPowerModel, milp_solver; alpha=1000, tol=1e-2, max_iteration=1000, verbose = false)
+        data_area = PMADA.solve_dopf_app(data_14, PMADA.DCPPowerModel, milp_solver; alpha=1000, tol=1e-3, max_iteration=1000, verbose = false)
         dist_cost = PMADA.calc_dist_gen_cost(data_area)
-        @test abs((dist_cost - 7642.59)/7642.59 *100) <= 1e0
+        @test isapprox(dist_cost, 7642.59, atol =5)
     end
 
     @testset "app algorithm with ACR power flow" begin
-        data_area = PMADA.solve_dopf_app(data_14, PMADA.ACRPowerModel, nlp_solver; alpha=1000, tol=1e-2, max_iteration=1000, verbose = false)
+        data_area = PMADA.solve_dopf_app(data_14, PMADA.ACRPowerModel, nlp_solver; alpha=1000, tol=1e-3, max_iteration=1000, verbose = false)
         dist_cost = PMADA.calc_dist_gen_cost(data_area)
-        @test abs((dist_cost - 8081.52)/8081.52 *100) <= 1e-1
+        @test isapprox(dist_cost, 8081.52, atol =5)
     end
 end

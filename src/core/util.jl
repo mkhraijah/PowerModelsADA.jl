@@ -2,7 +2,7 @@
 #               Helper methods for all distributed algorithms                 #
 ###############################################################################
 
-## partition a system into p subsystem using spactural clustering
+"partition a system into p subsystem using spactural clustering"
 function partition_system!(data::Dict, p::Int64; init=[], correct_neg_susceptance::Bool=false)
 
     neg_b_branch = findall(x->x["br_x"]<0, data["branch"])
@@ -51,7 +51,7 @@ function partition_system!(data::Dict, p::Int64; init=[], correct_neg_susceptanc
 end
 
 
-## helper functions to handle area ids, local buses, neighbor buses
+"helper functions to handle area ids, local buses, neighbor buses"
 get_areas_id(data::Dict{String, <:Any}) = unique([bus["area"] for (i, bus) in data["bus"]])
 
 get_areas_id(pm::AbstractPowerModel) = unique([bus["area"] for (i, bus) in pm.data["bus"]])
@@ -60,12 +60,12 @@ get_area_id(data::Dict{String, <:Any}) = get(data,"area", NaN)
 
 get_area_id(pm::AbstractPowerModel) = get(pm.data,"area", NaN)
 
-get_local_bus(data::Dict{String, <:Any},area::Int) = [bus["bus_i"] for (i,bus) in data["bus"] if bus["area"] == area]
+get_local_bus(data::Dict{String, <:Any},area::Int) = Vector{Int64}([bus["bus_i"] for (i,bus) in data["bus"] if bus["area"] == area])
 
-get_local_bus(pm::AbstractPowerModel,area::Int) = [bus["bus_i"] for (i,bus) in pm.data["bus"] if bus["area"] == area]
+get_local_bus(pm::AbstractPowerModel,area::Int) = Vector{Int64}([bus["bus_i"] for (i,bus) in pm.data["bus"] if bus["area"] == area])
 
 function get_neighbor_bus(data::Dict{String, <:Any}, local_bus::Vector)
-    neighbor_bus = []
+    neighbor_bus = Vector{Int64}()
     for (i,branch) in data["branch"]
         if branch["f_bus"] in local_bus && !(branch["t_bus"] in local_bus)
             push!(neighbor_bus,branch["t_bus"])
@@ -82,7 +82,7 @@ get_neighbor_bus(data::Dict{String, <:Any}, area::Int) = get_neighbor_bus(data, 
 
 function get_areas_bus(data::Dict{String, <:Any})
     areas_id = get_areas_id(data)
-    areas_bus = Dict{Int64, Any}()
+    areas_bus = Dict{Int64, Vector{Int64}}()
     for i in areas_id
         areas_bus[i] = [bus["bus_i"] for (j,bus) in data["bus"] if bus["area"]==i]
     end
@@ -91,7 +91,7 @@ end
 
 get_areas_bus(pm::AbstractPowerModel) = get_areas_bus(pm.data)
 
-## Method to get the shared buses and branches between defined area and all other areas in pm.data
+"get the shared buses and branches between defined area and all other areas"
 function get_shared_component(data::Dict{String, <:Any}, area::Int64)
     areas_id = get_areas_id(data)
     areas_bus = get_areas_bus(data)
@@ -113,7 +113,7 @@ function get_shared_component(data::Dict{String, <:Any})
     get_shared_component(data, area)
 end
 
-## Method to calculate distributed solution operation cost
+"calculate distributed solution operation cost"
 function calc_dist_gen_cost(data_area::Dict{Int, <:Any})
 
     gen_cost = 0
@@ -125,11 +125,8 @@ function calc_dist_gen_cost(data_area::Dict{Int, <:Any})
     return gen_cost
 end
 
-## Method to compare the distributed algorithm solutoin with PowerModels centralized solution
+"compare the distributed algorithm solution with PowerModels centralized solution"
 function compare_solution(data::Dict{String, <:Any}, data_area::Dict{Int, <:Any}, model_type, optimizer)
-
-    # check the power flow model
-    model_type = pf_formulation(model_type)
 
     # Solve Centralized OPF
     Central_solution = _PM.run_opf(data, model_type, optimizer)
@@ -141,4 +138,27 @@ function compare_solution(data::Dict{String, <:Any}, data_area::Dict{Int, <:Any}
     # Calculate optimility gap
     Relative_Error = (Obj_dist - Obj_cent)/ Obj_cent * 100
     return Relative_Error
+end
+
+
+function _var(pm::AbstractPowerModel, key::String, idx::String )
+    bus_variables_name, branch_variables_name = variable_shared_names(typeof(pm))
+    idx = parse(Int64,idx)
+    if key in bus_variables_name
+        var = _PM.var(pm, Symbol(key), idx)
+    elseif key in branch_variables_name
+        branch = _PM.ref(pm, :branch, idx)
+        f_bus = branch["f_bus"]
+        t_bus = branch["t_bus"]
+
+        if key in ["pf", "qf"]
+            var = _PM.var(pm, Symbol(key[1]),  (idx, f_bus, t_bus))
+        elseif key in ["pt", "qt"]
+            var = _PM.var(pm, Symbol(key[1]),  (idx, t_bus, f_bus))
+        else
+            var = _PM.var(pm, Symbol(key), (f_bus, t_bus))
+        end
+    end
+
+    return var
 end

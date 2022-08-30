@@ -2,16 +2,14 @@
 #                   Methods for sharing data between areas                    #
 ###############################################################################
 
-## methot to get the shared data with or without serialization
+"get the shared data with or without serialization"
 function send_shared_data(from::Int64, to::Int64, data::Dict{String, <:Any}; serialize::Bool=false)
 
-    shared_data = Dict{String, Any}()
-    for j in keys(data["shared_primal"][string(to)]) # loop through variables (va, vm, p, q)
-        shared_data[j] = Dict{String, Any}()
-        for k in keys(data["shared_primal"][string(to)][j]) # loop through the shared variables with area "to"
-                shared_data[j][k] = data["shared_primal"][string(from)][j][k]
-        end
-    end
+    shared_data = Dict{String, Any}([
+        variable => 
+            Dict{String, Any}([idx => data["shared_primal"][string(from)][variable][idx]
+            for idx in keys(data["shared_primal"][string(to)][variable]) ])
+        for variable in keys(data["shared_primal"][string(to)]) ])
 
     if serialize
         # IObuffer function to convert object to byte streams
@@ -25,19 +23,17 @@ function send_shared_data(from::Int64, to::Int64, data::Dict{String, <:Any}; ser
     return shared_data
 end
 
-## Method to deserialize and store the received data in the local pm object
+"deserialize and store the received data in the local pm object"
 function receive_shared_data!(from::Int64, shared_data::Vector, data::Dict{String, <:Any})
     shared_data = Serialization.deserialize(IOBuffer(shared_data))
     receive_shared_data!(from,shared_data, data)
 end
 
 function receive_shared_data!(from::Int64, shared_data::Dict, data::Dict{String, <:Any})
-    for comp in keys(data["shared_primal"][string(from)])
-        for ids in keys(data["shared_primal"][string(from)][comp])
-            for vstring in keys(data["shared_primal"][string(from)][comp][ids])
-                if !isnan(shared_data[comp][ids][vstring])
-                    data["shared_primal"][string(from)][comp][ids][vstring] = shared_data[comp][ids][vstring]
-                end
+    for variable in keys(data["shared_primal"][string(from)])
+        for idx in keys(data["shared_primal"][string(from)][variable])
+            if !isnan(shared_data[variable][idx])
+                data["shared_primal"][string(from)][variable][idx] = shared_data[variable][idx]
             end
         end
     end

@@ -3,20 +3,18 @@
 ###############################################################################
 
 """
-    solve_dopf_admm(data::Dict{String, <:Any}, model_type::Type, optimizer; tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true, alpha::Real=1000)
+    solve_dopf_admm(data::Dict{String, <:Any}, model_type::DataType, optimizer; tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true, alpha::Real=1000)
 
 Solve the distributed OPF problem using ADMM algorithm.
 """
-function solve_dopf_admm(data::Dict{String, <:Any}, model_type::Type, optimizer; tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true, alpha::Real=1000)
-
-    solve_dopf(data, model_type, build_dopf_admm, update_admm!, optimizer, initialize_method=initialize_dopf_admm!, tol = tol, max_iteration=max_iteration, verbose=verbose, alpha=alpha)
-
+function solve_dopf_admm(data::Dict{String, <:Any}, model_type::DataType, optimizer; tol::Float64=1e-4, max_iteration::Int64=1000, verbose::Bool=true, alpha::Real=1000)
+    solve_dopf(data, model_type, optimizer, initialize_dopf_admm!, update_admm!, build_dopf_admm ; tol=tol , max_iteration=max_iteration, verbose=verbose, alpha=alpha)
 end
 
 "inilitlize the admm algorithm"
-function initialize_dopf_admm!(data::Dict{String, <:Any}, model_type::Type; tol::Float64=1e-4, max_iteration::Int64=1000, kwargs)
+function initialize_dopf_admm!(data::Dict{String, <:Any}, model_type::DataType; tol::Float64=1e-4, max_iteration::Int64=1000, kwargs...)
 
-    initialize_dopf!(data, model_type, tol=tol, max_iteration=max_iteration, kwargs=kwargs)
+    initialize_dopf!(data, model_type; tol=tol, max_iteration=max_iteration)
     data["alpha"] = kwargs[:alpha]
 
 end
@@ -69,19 +67,14 @@ function objective_admm!(pm::AbstractPowerModel)
 
     ## objective function
     objective = JuMP.objective_function(pm.model)
-    for area in keys(primal_variable)
-        if area != area_id
-            for comp in keys(primal_variable[area])
-                for ids in keys(primal_variable[area][comp])
-                    for vstring in keys(primal_variable[area][comp][ids])
-
-                        v = pm.sol[:it][:pm][:nw][0][Symbol(comp)][parse(Int64,ids)][Symbol(vstring)]
-                        v_central = (primal_variable[area_id][comp][ids][vstring] + primal_variable[area][comp][ids][vstring])/2
-                        v_dual = dual_variable[area][comp][ids][vstring]
-
-                        objective += alpha/2 * (v - v_central)^2 + v_dual * (v - v_central)
-                    end
-                end
+    for area in keys(dual_variable)
+        for variable in keys(dual_variable[area])
+            for idx in keys(dual_variable[area][variable])
+                v = _var(pm, variable, idx)
+                v_central = (primal_variable[area_id][variable][idx] + primal_variable[area][variable][idx])/2
+                v_dual = dual_variable[area][variable][idx]
+ 
+                objective += alpha/2 * (v - v_central)^2 + v_dual * (v - v_central)
             end
         end
     end
@@ -91,7 +84,7 @@ end
 
 
 
-"update the dual variable value"
+"update the ADMM algorithm before each iteration"
 function update_admm!(data::Dict{String, <:Any})
 
     ## ADMM parameters
@@ -104,16 +97,13 @@ function update_admm!(data::Dict{String, <:Any})
 
     ## update dual variable
     for area in keys(dual_variable)
-        for comp in keys(dual_variable[area])
-            for ids in keys(dual_variable[area][comp])
-                for vstring in keys(dual_variable[area][comp][ids])
+        for variable in keys(dual_variable[area])
+            for idx in keys(dual_variable[area][variable])
+                v_primal = primal_variable[area_id][variable][idx]
+                v_central = (primal_variable[area_id][variable][idx] + primal_variable[area][variable][idx])/2
+                v_dual = dual_variable[area][variable][idx]
 
-                    v_primal = primal_variable[area_id][comp][ids][vstring]
-                    v_central = (primal_variable[area_id][comp][ids][vstring] + primal_variable[area][comp][ids][vstring])/2
-                    v_dual = dual_variable[area][comp][ids][vstring]
-
-                    data["shared_dual"][area][comp][ids][vstring] = v_dual  + alpha * (v_primal - v_central)
-                end
+                data["shared_dual"][area][variable][idx]= v_dual  + alpha * (v_primal - v_central)
             end
         end
     end

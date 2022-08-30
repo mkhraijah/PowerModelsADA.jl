@@ -2,25 +2,22 @@
 #                     Build methods for APP algorithm                        #
 ###############################################################################
 
-
 """
-    solve_dopf_app(data::Dict{String, <:Any}, model_type::Type, optimizer; tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true, alpha::Real=1000, beta::Real=0, gamma::Real=0)
+    solve_dopf_app(data::Dict{String, <:Any}, model_type::DataType, optimizer; tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true, alpha::Real=1000, beta::Real, gamma::Real)
 
 Solve the distributed OPF problem using APP algorithm.
 """
-function solve_dopf_app(data::Dict{String, <:Any}, model_type::Type, optimizer; tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true, alpha::Real=1000, beta::Real=0, gamma::Real=0)
-
-    solve_dopf(data, model_type, build_dopf_app, update_app!, optimizer, initialize_method=initialize_dopf_app!, tol=tol, max_iteration=max_iteration, verbose=verbose, alpha=alpha, beta=beta, gamma=gamma)
-
+function solve_dopf_app(data::Dict{String, <:Any}, model_type::DataType, optimizer; tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true, alpha::Real=1000, beta::Real=2alpha, gamma::Real=alpha)
+    solve_dopf(data, model_type, optimizer, initialize_dopf_app!, update_app!, build_dopf_app ; tol=tol , max_iteration=max_iteration, verbose = verbose, alpha=alpha, beta=beta, gamma=gamma)
 end
 
 "inilitlize the APP algorithm"
-function initialize_dopf_app!(data::Dict{String, <:Any}, model_type::Type; tol::Float64=1e-4, max_iteration::Int64=1000, kwargs)
+function initialize_dopf_app!(data::Dict{String, <:Any}, model_type::Type; tol::Float64=1e-4, max_iteration::Int64=1000, kwargs...)
 
-    initialize_dopf!(data, model_type, tol=tol, max_iteration=max_iteration, kwargs=kwargs)
+    initialize_dopf!(data, model_type; tol=tol, max_iteration=max_iteration)
     data["alpha"] = kwargs[:alpha]
-    data["beta"] = 2*kwargs[:alpha]
-    data["gamma"] = kwargs[:alpha]
+    data["beta"] = kwargs[:beta]
+    data["gamma"] = kwargs[:gamma]
 
 end
 
@@ -75,20 +72,15 @@ function objective_app!(pm::AbstractPowerModel)
     ## objective function
 
     objective = JuMP.objective_function(pm.model)
-    for area in keys(primal_variable)
-        if area != area_id
-            for comp in keys(primal_variable[area])
-                for ids in keys(primal_variable[area][comp])
-                    for vstring in keys(primal_variable[area][comp][ids])
+    for area in keys(dual_variable)
+        for variable in keys(dual_variable[area])
+            for idx in keys(dual_variable[area][variable])
+                v = _var(pm, variable, idx)
+                v_neighbor = primal_variable[area][variable][idx]
+                v_local = primal_variable[area_id][variable][idx]
+                v_dual = dual_variable[area][variable][idx]
 
-                        v = pm.sol[:it][:pm][:nw][0][Symbol(comp)][parse(Int64,ids)][Symbol(vstring)]
-                        v_neighbor = primal_variable[area][comp][ids][vstring]
-                        v_local = primal_variable[area_id][comp][ids][vstring]
-                        v_dual = dual_variable[area][comp][ids][vstring]
-
-                        objective += beta/2 *  (v - v_local)^2 + gamma * v * (v_local - v_neighbor) + v * v_dual
-                    end
-                end
+                objective += beta/2 *  (v - v_local)^2 + gamma * v * (v_local - v_neighbor) + v * v_dual
             end
         end
     end
@@ -96,7 +88,7 @@ function objective_app!(pm::AbstractPowerModel)
     JuMP.@objective(pm.model, Min,  objective)
 end
 
-"method to update the dual variable value"
+"update the APP algorithm before each iteration"
 function update_app!(data::Dict{String, <:Any})
 
     ## APP parameters
@@ -109,16 +101,13 @@ function update_app!(data::Dict{String, <:Any})
 
     ## update dual variable
     for area in keys(dual_variable)
-        for comp in keys(dual_variable[area])
-            for ids in keys(dual_variable[area][comp])
-                for vstring in keys(dual_variable[area][comp][ids])
+        for variable in keys(dual_variable[area])
+            for idx in keys(dual_variable[area][variable])
+                v_neighbor = primal_variable[area][variable][idx]
+                v_local = primal_variable[area_id][variable][idx]
+                v_dual = dual_variable[area][variable][idx]
 
-                    v_neighbor = primal_variable[area][comp][ids][vstring]
-                    v_local = primal_variable[area_id][comp][ids][vstring]
-                    v_dual = dual_variable[area][comp][ids][vstring]
-
-                    data["shared_dual"][area][comp][ids][vstring] = v_dual  + alpha * (v_local - v_neighbor)
-                end
+                data["shared_dual"][area][variable][idx] = v_dual  + alpha * (v_local - v_neighbor)
             end
         end
     end
