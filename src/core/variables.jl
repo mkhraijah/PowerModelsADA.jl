@@ -170,5 +170,7 @@ function variable_shared_names(model_type::DataType)
         return ["w"], ["pf", "pt", "qf", "qt", "wr", "wi"]
     elseif model_type <: QCRMPowerModel
         return ["vm", "va" , "w"], ["pf", "pt", "qf", "qt", "wr", "wi", "vv", "ccm", "cs", "si", "td"]
+    else
+        error("PowerModel type is not supported yet!")
     end
 end

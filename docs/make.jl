@@ -20,11 +20,14 @@ makedocs(
                 "ADMM" => "admm.md",
                 "ATC" => "atc.md",
                 "APP" => "app.md",
-                "ALADEN" => "aladen.md"
+                "ALADEN" => "aladin.md"
             ],
             "Utilities" => "utilities.md"
         ],
-        "Tutorials" => "tutorial.md",
+        "Tutorials" => [
+            "Using PMADA" => "tutorial.md",
+        "User-defined Algorithm" => "newalgorithm.md"
+        ],
         "Library" => "library.md"
     ]
 )

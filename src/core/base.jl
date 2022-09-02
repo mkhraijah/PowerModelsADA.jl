@@ -93,8 +93,9 @@ function solve_dopf(data::Dict{String, <:Any}, model_type::DataType, optimizer,
     tol::Float64=1e-4, max_iteration::Int64=1000, verbose::Bool=true, kwargs...)
 
     ## obtain and arrange areas id
+    arrange_areas_id!(data)
     areas_id = get_areas_id(data)
-    arrange_areas_id!(data,areas_id)
+
 
     ## decompose the system into subsystems
     data_coordinator = decompose_coordinator(data)
@@ -290,13 +291,13 @@ end
 arrange area id from 1 to number of areas
 this step is necessary when having area number 0 and using central coordinator
 """
-function arrange_areas_id!(data::Dict{String, <:Any},areas_id::Vector{Int64})
+function arrange_areas_id!(data::Dict{String, <:Any})
+    areas_id = get_areas_id(data)
     new_areas_id = collect(1:length(areas_id))
     area_id_lookup = Dict(areas_id[i] => i for i in new_areas_id)
     for (i,bus) in data["bus"]
         bus["area"] = area_id_lookup[bus["area"]]
     end
-    areas_id = new_areas_id
 end
 
 

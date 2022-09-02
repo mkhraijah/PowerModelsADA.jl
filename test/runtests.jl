@@ -50,9 +50,9 @@ data_RTS =  PMADA.parse_file("../test/data/case_RTS.m")
     end
 
 ## paritiotioning test
-    @testset "partition system using spectral clustering" begin
+    @testset "partition system" begin
         @testset "case_RTS" begin
-            PMADA.partition_system!(data_RTS, 3, init=[101, 201, 301])
+            PMADA.partition_system!(data_RTS, 3)
             test_count = [count(c -> c["area"]  == k, [bus for (i,bus) in data_RTS["bus"]]) for k in 1:3]
             test_count_24 = count(==(24),test_count)
             test_count_25 = count(==(25),test_count)

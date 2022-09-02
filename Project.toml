@@ -5,13 +5,14 @@ repo = "https://github.com/mkhraijah/PMADA.jl"
 version = "0.0.1"
 
 [deps]
-Clustering = "aaaa29a8-35af-508c-8bc3-b662a17a0fe5"
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"
-JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-PowerModels = "c36e90e8-916a-50a6-bd94-075b64ef4655"
-Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
+JuMP = "4076af6c-e467-56ae-b986-b466b2749572"
+PowerModels = "c36e90e8-916a-50a6-bd94-075b64ef4655"
+KaHyPar = "2a6221f6-aa48-11e9-3542-2d9e0ef01880"
+Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 
 [extras]
 HiGHS = "87dc4568-4c63-4d18-b0c0-bb2238e4078b"

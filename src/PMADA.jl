@@ -1,4 +1,3 @@
-
 module PMADA
 
 import JuMP
@@ -6,10 +5,10 @@ import PowerModels as _PM
 import Serialization
 import LinearAlgebra
 import DelimitedFiles
-import Clustering: kmeans
+import SparseArrays: sparse
+import KaHyPar
 
 import PowerModels: AbstractPowerModel, parse_file, ids, ref, var, con, sol, nw_ids, nws, optimize_model!, nw_id_default, ismultinetwork, update_data!
-
 
 # PowerModels types
 powermodels = names(_PM)
@@ -35,7 +34,6 @@ include("algorithms/coordinated_admm_methods.jl")
 include("algorithms/coordinated_atc_methods.jl")
 
 export
-parse_file,
 assign_area!,
 solve_dopf_admm,
 solve_dopf_app,
@@ -100,7 +98,7 @@ update_app!
 import JuMP: optimizer_with_attributes
 export optimizer_with_attributes
 
-
-export ids, ref, var, con, sol, nw_ids, nws, optimize_model!, nw_id_default, ismultinetwork, update_data!
+# PowerModels functions
+export ids, ref, var, con, sol, nw_ids, nws, optimize_model!, nw_id_default, ismultinetwork, update_data!, parse_file, AbstractPowerModel
 
 end

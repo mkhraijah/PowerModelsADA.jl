@@ -1,10 +1,10 @@
-# ALADEN
+# ALADIN
 
 
 ```@meta
 CurrentModule = PMADA
 ```
 
-```@docs
+```
 TODO
 ```
