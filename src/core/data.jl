@@ -33,6 +33,20 @@ function assign_area!(data::Dict{String, <:Any}, partition::Array{Int64, 2})
     assign_area!(data, Dict(partition[i,1] => partition[i,2] for i in 1:size(partition)[1] ))
 end
 
+"""
+    decompose_system(data::Dict{String, <:Any})
+
+decompose a system into subsystem defined by bus area.
+"""
+function decompose_system(data::Dict{String, <:Any})
+    areas_id = get_areas_id(data)
+    data_area = Dict{Int64, Any}()
+    for i in areas_id
+        data_area[i] = decompose_system(data, i)
+    end
+    return data_area
+end
+
 "decompose a subsystem with area id"
 function decompose_system(data::Dict{String, <:Any}, area_id::Int)
 
@@ -61,8 +75,6 @@ function decompose_system(data::Dict{String, <:Any}, area_id::Int)
     data_area["switch"]=Dict{String, Any}([i => switch for (i,switch) in data["switch"] if gen["switch_bus"] in local_bus])
     data_area["dcline"]= Dict{String, Any}([i => dcline for (i,dcline) in data["dcline"] if dcline["f_bus"] in local_bus || dcline["t_bus"] in local_bus ] )
 
-    data_area["local_bus"] = local_bus
-    data_area["neighbor_bus"] = neighbor_bus
 
     return data_area
 end
@@ -83,4 +95,31 @@ function add_virtual_gen!(data::Dict{String, <:Any},neighbor_bus::Vector, area_i
         end
     end
     return virtual_gen
+end
+
+
+function decompose_coordinator(data::Dict{String, <:Any})
+   
+    areas_id = get_areas_id(data)
+
+    # idintify local buses
+   boundary_bus = unique(reduce(vcat, [get_neighbor_bus(data, area_id) for area_id in areas_id]))
+
+   ## area data
+   data_coordinator = Dict{String,Any}()
+   data_coordinator["area"] = 0
+   data_coordinator["name"]= "$(data["name"])_coordinator"
+   data_coordinator["source_version"] = data["source_version"]
+   data_coordinator["source_type"] = data["source_type"]
+   data_coordinator["baseMVA"] = data["baseMVA"]
+   data_coordinator["per_unit"] = data["per_unit"]
+   data_coordinator["bus"] = Dict{String,Any}([j => bus for (j,bus) in data["bus"] if bus["bus_i"] in boundary_bus])
+   data_coordinator["branch"] = Dict{String,Any}([j => branch for (j,branch) in data["branch"] if branch["f_bus"] in boundary_bus && branch["t_bus"] in boundary_bus && data["bus"]["$(branch["f_bus"])"]["area"] != data["bus"]["$(branch["t_bus"])"]["area"] ])
+   data_coordinator["gen"] = Dict{String,Any}()
+   data_coordinator["shunt"] = Dict{String,Any}()
+   data_coordinator["load"] = Dict{String,Any}()
+   data_coordinator["storage"]= Dict{String,Any}()
+   data_coordinator["switch"]= Dict{String,Any}()
+   data_coordinator["dcline"]= Dict{String,Any}()
+   return data_coordinator
 end

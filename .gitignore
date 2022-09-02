@@ -1,4 +1,5 @@
 .DS_Store
+.gitignore
 docs/build/assets/documenter.js
 docs/build/assets/search.js
 docs/build/assets/themes/documenter-dark.css
@@ -8,3 +9,4 @@ docs/build/index.html
 docs/build/search.html
 docs/build/search_index.js
 Manifest.toml
+.vscode/

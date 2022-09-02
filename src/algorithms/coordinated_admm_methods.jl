@@ -1,5 +1,5 @@
 ###############################################################################
-#                     Build methods for ADMM algorithm                        #
+#            Build methods for ADMM algorithm with coordinator                #
 ###############################################################################
 
 """
@@ -7,15 +7,34 @@
 
 Solve the distributed OPF problem using ADMM algorithm.
 """
-function solve_dopf_admm(data::Dict{String, <:Any}, model_type::DataType, optimizer; tol::Float64=1e-4, max_iteration::Int64=1000, verbose::Bool=true, alpha::Real=1000)
-    solve_dopf(data, model_type, optimizer, initialize_dopf_admm!, update_admm!, build_dopf_admm ; tol=tol , max_iteration=max_iteration, verbose=verbose, alpha=alpha)
+function solve_dopf_admm_coordinated(data::Dict{String, <:Any}, model_type::DataType, optimizer; tol::Float64=1e-4, max_iteration::Int64=1000, verbose::Bool=true, alpha::Real=1000)
+    
+    data_coordinator, data_area = PMADA.solve_dopf(data, model_type, optimizer, 
+    PMADA.initialize_dopf_admm_coordinator!, PMADA.initialize_dopf_admm_local!,
+    PMADA.build_dopf_admm_coordinator, PMADA.build_dopf_admm_local, 
+    PMADA.update_admm_coordinated!;tol=tol , max_iteration=max_iteration, verbose=verbose, alpha=alpha)
+    
 end
 
-"inilitlize the ADMM algorithm"
-function initialize_dopf_admm!(data::Dict{String, <:Any}, model_type::DataType; tol::Float64=1e-4, max_iteration::Int64=1000, kwargs...)
+
+function initialize_dopf_admm_local!(data::Dict{String, <:Any}, model_type::DataType; tol::Float64=1e-4, max_iteration::Int64=1000, kwargs...)
 
     # initiate primal and dual shared variables
-    initialize_variable_shared!(data, model_type)
+    initialize_variable_shared_local!(data, model_type)
+
+    # initiate distributed algorithm parameters
+    initialize_dopf_parameters!(data; tol=tol, max_iteration=max_iteration)
+ 
+    # initiate ADMM parameters
+    alpha = get(kwargs, :alpha, 1000)
+    data["alpha"] = alpha
+
+end
+
+function initialize_dopf_admm_coordinator!(data::Dict{String, <:Any}, model_type::DataType; tol::Float64=1e-4, max_iteration::Int64=1000, kwargs...)
+
+    # initiate primal and dual shared variables
+    initialize_variable_shared_coordinator!(data, model_type)
 
     # initiate distributed algorithm parameters
     initialize_dopf_parameters!(data; tol=tol, max_iteration=max_iteration)
@@ -27,7 +46,7 @@ function initialize_dopf_admm!(data::Dict{String, <:Any}, model_type::DataType; 
 end
 
 "build PowerModel using ADMM algorithm"
-function build_dopf_admm(pm::AbstractPowerModel)
+function build_dopf_admm_local(pm::AbstractPowerModel)
 
     # define variables
     _PM.variable_bus_voltage(pm)
@@ -58,11 +77,22 @@ function build_dopf_admm(pm::AbstractPowerModel)
         _PM.constraint_dcline_power_losses(pm, i)
     end
 
-    objective_min_fuel_and_consensus!(pm, objective_admm!)
+    objective_min_fuel_and_consensus!(pm, objective_admm_coordinated!)
 end
 
+function build_dopf_admm_coordinator(pm::AbstractPowerModel)
+
+    # define variables
+    _PM.variable_bus_voltage(pm)
+    _PM.variable_branch_power(pm)
+
+    objective_min_fuel_and_consensus!(pm, objective_admm_coordinated!)
+
+end
+
+
 "ADMM algorithm objective"
-function objective_admm!(pm::AbstractPowerModel)
+function objective_admm_coordinated!(pm::AbstractPowerModel)
 
     ## ADMM parameters
     alpha = pm.data["alpha"]
@@ -78,7 +108,7 @@ function objective_admm!(pm::AbstractPowerModel)
         for variable in keys(dual_variable[area])
             for idx in keys(dual_variable[area][variable])
                 v = _var(pm, variable, idx)
-                v_central = (primal_variable[area_id][variable][idx] + primal_variable[area][variable][idx])/2
+                v_central = primal_variable[area][variable][idx]
                 v_dual = dual_variable[area][variable][idx]
  
                 objective += alpha/2 * (v - v_central)^2 + v_dual * (v - v_central)
@@ -90,8 +120,8 @@ function objective_admm!(pm::AbstractPowerModel)
 end
 
 
-"update the ADMM algorithm before each iteration"
-function update_admm!(data::Dict{String, <:Any})
+
+function update_admm_coordinated!(data::Dict{String, <:Any})
 
     ## ADMM parameters
     alpha = data["alpha"]
@@ -106,11 +136,12 @@ function update_admm!(data::Dict{String, <:Any})
         for variable in keys(dual_variable[area])
             for idx in keys(dual_variable[area][variable])
                 v_primal = primal_variable[area_id][variable][idx]
-                v_central = (primal_variable[area_id][variable][idx] + primal_variable[area][variable][idx])/2
+                v_local =  primal_variable[area][variable][idx]
                 v_dual = dual_variable[area][variable][idx]
 
-                data["shared_dual"][area][variable][idx]= v_dual  + alpha * (v_primal - v_central)
+                data["shared_dual"][area][variable][idx]= v_dual  + alpha * (v_primal - v_local)
             end
         end
     end
+
 end

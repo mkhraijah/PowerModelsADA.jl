@@ -12,7 +12,8 @@ CurrentModule = PMADA
 PMADA can be installed using the Julia package manager with
 
 ```julia
-] add PMADA
+using Pkg
+Pkg.add("PMADA")
 ```
 
 ## Examples

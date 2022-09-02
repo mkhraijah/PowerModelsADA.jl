@@ -42,12 +42,10 @@ data_RTS =  PMADA.parse_file("../test/data/case_RTS.m")
             test_gen = [length(data_area[i]["gen"]) for i in 1:3]
             test_branch = [length(data_area[i]["branch"]) for i in 1:3]
             test_load = [length(data_area[i]["load"]) for i in 1:3]
-            test_neighbor = [length(data_area[i]["neighbor_bus"]) for i in 1:3]
             @test test_bus == test_bus
             @test gen_size == test_gen
             @test branch_size == test_branch
             @test load_size == test_load
-            @test neighbor_size == test_neighbor
         end
     end
 
@@ -71,7 +69,7 @@ data_RTS =  PMADA.parse_file("../test/data/case_RTS.m")
     end
 
     @testset "admm algorithm with AC power flow" begin
-        data_area = PMADA.solve_dopf_admm(data_14, PMADA.ACPPowerModel, nlp_solver; alpha=1000, tol=1e-3, max_iteration=1000, verbose = false)
+        data_coordinator, data_area = PMADA.solve_dopf_admm_coordinated(data_14, PMADA.ACPPowerModel, nlp_solver; alpha=1000, tol=1e-3, max_iteration=1000, verbose = false)
         dist_cost = PMADA.calc_dist_gen_cost(data_area)
         @test isapprox(dist_cost, 8081.52, atol =5)
     end
@@ -84,7 +82,7 @@ data_RTS =  PMADA.parse_file("../test/data/case_RTS.m")
     end
 
     @testset "atc algorithm with SOC relaxation of power flow" begin
-        data_area = PMADA.solve_dopf_atc(data_14, PMADA.SOCWRPowerModel, nlp_solver; alpha=1.1, tol=1e-3, max_iteration=1000, verbose = false)
+        data_coordinator, data_area = PMADA.solve_dopf_atc_coordinated(data_14, PMADA.SOCWRPowerModel, nlp_solver; alpha=1.1, tol=1e-3, max_iteration=1000, verbose = false)
         dist_cost = PMADA.calc_dist_gen_cost(data_area)
         @test isapprox(dist_cost, 8075.12, atol =5)
     end
@@ -96,9 +94,4 @@ data_RTS =  PMADA.parse_file("../test/data/case_RTS.m")
         @test isapprox(dist_cost, 7642.59, atol =5)
     end
 
-    @testset "app algorithm with ACR power flow" begin
-        data_area = PMADA.solve_dopf_app(data_14, PMADA.ACRPowerModel, nlp_solver; alpha=1000, tol=1e-3, max_iteration=1000, verbose = false)
-        dist_cost = PMADA.calc_dist_gen_cost(data_area)
-        @test isapprox(dist_cost, 8081.52, atol =5)
-    end
 end

@@ -14,10 +14,20 @@ end
 "inilitlize the APP algorithm"
 function initialize_dopf_app!(data::Dict{String, <:Any}, model_type::Type; tol::Float64=1e-4, max_iteration::Int64=1000, kwargs...)
 
-    initialize_dopf!(data, model_type; tol=tol, max_iteration=max_iteration)
-    data["alpha"] = kwargs[:alpha]
-    data["beta"] = kwargs[:beta]
-    data["gamma"] = kwargs[:gamma]
+    # initiate primal and dual shared variables
+    initialize_variable_shared!(data, model_type)
+
+    # initiate distributed algorithm parameters
+    initialize_dopf_parameters!(data; tol=tol, max_iteration=max_iteration)
+
+    # initiate APP parameters
+    alpha = get(kwargs, :alpha, 1000)
+    beta = get(kwargs, :beta, 2*alpha)
+    gamma = get(kwargs, :gamma, alpha)
+
+    data["alpha"] = alpha
+    data["beta"] = beta
+    data["gamma"] = gamma
 
 end
 
