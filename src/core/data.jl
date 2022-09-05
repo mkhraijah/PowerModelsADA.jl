@@ -36,7 +36,7 @@ end
 """
     decompose_system(data::Dict{String, <:Any})
 
-decompose a system into subsystem defined by bus area.
+decompose a system into areas defined by bus area.
 """
 function decompose_system(data::Dict{String, <:Any})
     areas_id = get_areas_id(data)
@@ -47,7 +47,7 @@ function decompose_system(data::Dict{String, <:Any})
     return data_area
 end
 
-"decompose a subsystem with area id"
+"decompose an area with area id"
 function decompose_system(data::Dict{String, <:Any}, area_id::Int)
 
     # idintify local buses
@@ -55,7 +55,7 @@ function decompose_system(data::Dict{String, <:Any}, area_id::Int)
     neighbor_bus = get_neighbor_bus(data, area_id)
 
     ## generators list
-    virtual_gen =  add_virtual_gen!(data,neighbor_bus, area_id)
+    virtual_gen =  add_virtual_gen!(data, neighbor_bus, area_id)
     area_gen = Dict{String, Any}([i => gen for (i,gen) in data["gen"] if gen["gen_bus"] in local_bus])
 
     ## area data
@@ -75,8 +75,34 @@ function decompose_system(data::Dict{String, <:Any}, area_id::Int)
     data_area["switch"]=Dict{String, Any}([i => switch for (i,switch) in data["switch"] if gen["switch_bus"] in local_bus])
     data_area["dcline"]= Dict{String, Any}([i => dcline for (i,dcline) in data["dcline"] if dcline["f_bus"] in local_bus || dcline["t_bus"] in local_bus ] )
 
-
     return data_area
+end
+
+"define system coordinator"
+function decompose_coordinator(data::Dict{String, <:Any})
+   
+    areas_id = get_areas_id(data)
+
+    # idintify local buses
+    boundary_bus = unique(reduce(vcat, [get_neighbor_bus(data, area_id) for area_id in areas_id]))
+
+    ## area data
+    data_coordinator = Dict{String,Any}()
+    data_coordinator["area"] = 0
+    data_coordinator["name"]= "$(data["name"])_coordinator"
+    data_coordinator["source_version"] = data["source_version"]
+    data_coordinator["source_type"] = data["source_type"]
+    data_coordinator["baseMVA"] = data["baseMVA"]
+    data_coordinator["per_unit"] = data["per_unit"]
+    data_coordinator["bus"] = Dict{String,Any}([j => bus for (j,bus) in data["bus"] if bus["bus_i"] in boundary_bus])
+    data_coordinator["branch"] = Dict{String,Any}([j => branch for (j,branch) in data["branch"] if branch["f_bus"] in boundary_bus && branch["t_bus"] in boundary_bus && data["bus"]["$(branch["f_bus"])"]["area"] != data["bus"]["$(branch["t_bus"])"]["area"] ])
+    data_coordinator["gen"] = Dict{String,Any}()
+    data_coordinator["shunt"] = Dict{String,Any}()
+    data_coordinator["load"] = Dict{String,Any}()
+    data_coordinator["storage"]= Dict{String,Any}()
+    data_coordinator["switch"]= Dict{String,Any}()
+    data_coordinator["dcline"]= Dict{String,Any}()
+    return data_coordinator
 end
 
 "add virtual geneartors at the neighboring buses of an area"
@@ -87,7 +113,7 @@ function add_virtual_gen!(data::Dict{String, <:Any},neighbor_bus::Vector, area_i
     max_flow = 10*sum(load["pd"] for (i,load) in data["load"])
     if cost_model == 1
         for i in neighbor_bus
-            virtual_gen[string(i+max_gen_ind)] = Dict{String, Any}("ncost" => 2, "qc1max" => 0.0, "pg" => 0, "model" => cost_model, "shutdown" => 0.0, "startup" => 0.0, "qc2max" => 0.0, "ramp_agc" => 0.0, "qg" => 0.0, "gen_bus" => i, "pmax" => max_flow, "ramp_10" => 0.0, "vg" => 1.05, "mbase" => data["baseMVA"], "source_id" => Any["gen", max_gen_ind+i], "pc2" => 0.0, "index" => i+max_gen_ind, "cost" => [0.0; 0.0; 0.0; 0.0], "qmax" => max_flow, "gen_status" => 1, "qmin" => -max_flow, "qc1min" => 0.0, "qc2min" => 0.0, "pc1" => 0.0, "ramp_q" => 0.0, "ramp_30" => 0.0, "pmin" => -max_flow, "apf" => 0.0)
+            virtual_gen[string(i+max_gen_ind)] = Dict{String, Any}("ncost" => 2, "qc1max" => 0.0, "pg" => 0, "model" => cost_model, "shutdown" => 0.0, "startup" => 0.0, "qc2max" => 0.0, "ramp_agc" => 0.0, "qg" => 0.0, "gen_bus" => i, "pmax" => max_flow, "ramp_10" => 0.0, "vg" => 1.05, "mbase" => data["baseMVA"], "source_id" => Any["gen", max_gen_ind+i], "pc2" => 0.0, "index" => i+max_gen_ind, "cost" => [0.01; 0.0; 0.02; 0.0], "qmax" => max_flow, "gen_status" => 1, "qmin" => -max_flow, "qc1min" => 0.0, "qc2min" => 0.0, "pc1" => 0.0, "ramp_q" => 0.0, "ramp_30" => 0.0, "pmin" => -max_flow, "apf" => 0.0)
         end
     else
         for i in neighbor_bus
@@ -95,31 +121,4 @@ function add_virtual_gen!(data::Dict{String, <:Any},neighbor_bus::Vector, area_i
         end
     end
     return virtual_gen
-end
-
-
-function decompose_coordinator(data::Dict{String, <:Any})
-   
-    areas_id = get_areas_id(data)
-
-    # idintify local buses
-   boundary_bus = unique(reduce(vcat, [get_neighbor_bus(data, area_id) for area_id in areas_id]))
-
-   ## area data
-   data_coordinator = Dict{String,Any}()
-   data_coordinator["area"] = 0
-   data_coordinator["name"]= "$(data["name"])_coordinator"
-   data_coordinator["source_version"] = data["source_version"]
-   data_coordinator["source_type"] = data["source_type"]
-   data_coordinator["baseMVA"] = data["baseMVA"]
-   data_coordinator["per_unit"] = data["per_unit"]
-   data_coordinator["bus"] = Dict{String,Any}([j => bus for (j,bus) in data["bus"] if bus["bus_i"] in boundary_bus])
-   data_coordinator["branch"] = Dict{String,Any}([j => branch for (j,branch) in data["branch"] if branch["f_bus"] in boundary_bus && branch["t_bus"] in boundary_bus && data["bus"]["$(branch["f_bus"])"]["area"] != data["bus"]["$(branch["t_bus"])"]["area"] ])
-   data_coordinator["gen"] = Dict{String,Any}()
-   data_coordinator["shunt"] = Dict{String,Any}()
-   data_coordinator["load"] = Dict{String,Any}()
-   data_coordinator["storage"]= Dict{String,Any}()
-   data_coordinator["switch"]= Dict{String,Any}()
-   data_coordinator["dcline"]= Dict{String,Any}()
-   return data_coordinator
 end

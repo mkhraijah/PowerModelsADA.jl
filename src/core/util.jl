@@ -2,8 +2,8 @@
 #               Helper methods for all distributed algorithms                 #
 ###############################################################################
 
-"partition a system into narea subsystem"
-function partition_system!(data::Dict, narea::Int64; configuration::Symbol=:edge_cut)
+"partition a system into n areas"
+function partition_system!(data::Dict, n::Int64; configuration::Symbol=:edge_cut, print_info::Bool=false)
  
     nbus = length(data["bus"])
     nbranch = length(data["branch"])
@@ -25,15 +25,19 @@ function partition_system!(data::Dict, narea::Int64; configuration::Symbol=:edge
     W = sparse(W)
     h = KaHyPar.HyperGraph(W)
 
-    partitions = KaHyPar.partition(h, narea, configuration=configuration)
-    partitions = Dict([bus_index[i]=>partitions[i] for i in 1:nbus ])
+    info = @capture_out begin
+        partitions = KaHyPar.partition(h, n, configuration=configuration)
+    end
+    partitions = Dict([bus_index[i]=>partitions[i] for i in 1:nbus])
 
     for (i,bus) in data["bus"]
         bus["area"] = partitions[bus["index"]]
     end
 
     arrange_areas_id!(data)
-
+    if print_info
+        println(info)
+    end
 end
 
 
@@ -48,7 +52,7 @@ function calc_dist_gen_cost(data_area::Dict{Int, <:Any})
 end
 
 "compare the distributed algorithm solution with PowerModels centralized solution"
-function compare_solution(data::Dict{String, <:Any}, data_area::Dict{Int, <:Any}, model_type, optimizer)
+function compare_solution(data::Dict{String, <:Any}, data_area::Dict{Int, <:Any}, model_type::DataType, optimizer)
     # Solve Centralized OPF
     Central_solution = _PM.solve_opf(data, model_type, optimizer)
     # Calculate objective function

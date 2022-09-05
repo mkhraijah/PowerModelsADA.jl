@@ -3,18 +3,44 @@
 ###############################################################################
 
 """
-    solve_dopf_atc(data::Dict{String, <:Any}, model_type::DataType, optimizer; tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true, alpha::Real=1000)
+    solve_dopf_atc_coordinated(data::Dict{String, <:Any}, model_type::DataType, optimizer; tol::Float64=1e-4, 
+    max_iteration::Int64=1000, verbose = true, alpha::Real=1000)
 
-Solve the distributed OPF problem using ATC algorithm.
+Solve the distributed OPF problem using ATC algorithm with central coordinator.
+# Arguments:
+- data::Dict{String, <:Any} : dictionary contains case in PowerModel format
+- model_type::DataType : power flow formulation (PowerModel type)
+- optimizer : optimizer JuMP initiation object
+- mismatch_method::String="norm" : mismatch calculation method (norm, max)
+- tol::Float64=1e-4 : mismatch tolerance
+- max_iteration::Int64=1000 : maximum number of iteration
+- verbose::Bool=true : print mismatch after each iteration and result summary 
+- print_optimizer_info::Bool=false : print local optimization info from the solver
+- alpha and beta = algorithm parameters
 """
-function solve_dopf_atc_coordinated(data::Dict{String, <:Any}, model_type::DataType, optimizer; tol::Float64=1e-4, max_iteration::Int64=1000, verbose::Bool=true, alpha::Real=1.05)
+function solve_dopf_atc_coordinated(data::Dict{String, <:Any}, model_type::DataType, 
+    optimizer; mismatch_method::String="norm", tol::Float64=1e-4, 
+    max_iteration::Int64=1000, verbose::Bool=true, print_optimizer_info::Bool=false, 
+    alpha::Real=1.05, beta::Real=1.0)
     
-    data_coordinator, data_area = PMADA.solve_dopf(data, model_type, optimizer, initialize_dopf_atc_coordinator!, initialize_dopf_atc_local!, build_dopf_atc_coordinator, build_dopf_atc_local, update_atc_coordinated!;tol=tol , max_iteration=max_iteration, verbose=verbose, alpha=alpha)
+    solve_dopf_coordinated(data, model_type, optimizer, 
+    atc_coordinated_methods; mismatch_method=mismatch_method,tol=tol , 
+    max_iteration=max_iteration, verbose=verbose, print_optimizer_info=print_optimizer_info, 
+    alpha=alpha, beta=beta)
     
 end
 
+export solve_dopf_atc_coordinated
 
-function initialize_dopf_atc_local!(data::Dict{String, <:Any}, model_type::DataType; tol::Float64=1e-4, max_iteration::Int64=1000, kwargs...)
+"""
+ATC algorithm module contians build and update methods
+"""
+module atc_coordinated_methods
+using ..PMADA, JuMP
+
+"inilitlize the ATC algorithm local area"
+function initialize_method_local(data::Dict{String, <:Any}, model_type::DataType; 
+    tol::Float64=1e-4, max_iteration::Int64=1000, kwargs...)
 
     # initiate primal and dual shared variables
     initialize_variable_shared_local!(data, model_type)
@@ -31,7 +57,9 @@ function initialize_dopf_atc_local!(data::Dict{String, <:Any}, model_type::DataT
 
 end
 
-function initialize_dopf_atc_coordinator!(data::Dict{String, <:Any}, model_type::DataType; tol::Float64=1e-4, max_iteration::Int64=1000, kwargs...)
+"inilitlize the ATC algorithm coordinator"
+function initialize_method_coordinator(data::Dict{String, <:Any}, model_type::DataType; 
+    tol::Float64=1e-4, max_iteration::Int64=1000, kwargs...)
 
     # initiate primal and dual shared variables
     initialize_variable_shared_coordinator!(data, model_type)
@@ -48,54 +76,33 @@ function initialize_dopf_atc_coordinator!(data::Dict{String, <:Any}, model_type:
 
 end
 
-"build PowerModel using ATC algorithm"
-function build_dopf_atc_local(pm::AbstractPowerModel)
+"build PowerModel for ATC algorithm local area"
+function build_method_local(pm::AbstractPowerModel)
 
     # define variables
-    _PM.variable_bus_voltage(pm)
-    _PM.variable_gen_power(pm)
-    _PM.variable_branch_power(pm)
-    _PM.variable_dcline_power(pm)
+    variable_opf(pm)
 
     # define constraints
-    _PM.constraint_model_voltage(pm)
-
-    for i in ids(pm, :ref_buses)
-        _PM.constraint_theta_ref(pm, i)
-    end
-
-    for i in ids(pm, :bus)
-        _PM.constraint_power_balance(pm, i)
-    end
-
-    for i in ids(pm, :branch)
-        _PM.constraint_ohms_yt_from(pm, i)
-        _PM.constraint_ohms_yt_to(pm, i)
-        _PM.constraint_thermal_limit_from(pm, i)
-        _PM.constraint_thermal_limit_to(pm, i)
-        _PM.constraint_voltage_angle_difference(pm, i)
-    end
-
-    for i in ids(pm, :dcline)
-        _PM.constraint_dcline_power_losses(pm, i)
-    end
-
-    objective_min_fuel_and_consensus!(pm, objective_atc_coordinated!)
+    constraint_opf(pm)
+  
+    # define objective function
+    objective_min_fuel_and_consensus!(pm, objective_atc_local)
 end
 
-function build_dopf_atc_coordinator(pm::AbstractPowerModel)
+"build PowerModel for ATC algorithm coordinator"
+function build_method_coordinator(pm::AbstractPowerModel)
 
     # define variables
-    _PM.variable_bus_voltage(pm)
-    _PM.variable_branch_power(pm)
+    variable_opf(pm)
 
-    objective_min_fuel_and_consensus!(pm, objective_atc_coordinated!)
+    # define objective function
+    objective_min_fuel_and_consensus!(pm, objective_atc_coordinator)
 
 end
 
 
-"ATC algorithm objective"
-function objective_atc_coordinated!(pm::AbstractPowerModel)
+"ATC algorithm objective coordinator"
+function objective_atc_coordinator(pm::AbstractPowerModel)
 
     ## atc parameters
     beta = pm.data["beta"]
@@ -110,7 +117,7 @@ function objective_atc_coordinated!(pm::AbstractPowerModel)
     for area in keys(dual_variable)
         for variable in keys(dual_variable[area])
             for idx in keys(dual_variable[area][variable])
-                v = _var(pm, variable, idx)
+                v = PMADA._var(pm, variable, idx)
                 v_central = primal_variable[area][variable][idx]
                 v_dual = dual_variable[area][variable][idx]
  
@@ -122,9 +129,11 @@ function objective_atc_coordinated!(pm::AbstractPowerModel)
     JuMP.@objective(pm.model, Min,  objective)
 end
 
+"ATC algorithm objective local area"
+objective_atc_local(pm::AbstractPowerModel) = objective_atc_coordinator(pm)
 
-
-function update_atc_coordinated!(data::Dict{String, <:Any})
+"update the ATC algorithm coordinator data before each iteration"
+function update_method_coordinator(data::Dict{String, <:Any})
 
     ## ATC parameters
     alpha = data["alpha"]
@@ -149,4 +158,9 @@ function update_atc_coordinated!(data::Dict{String, <:Any})
     end
     ## update ATC parameter
     data["beta"] *= alpha
+end
+
+"update the ATC algorithm local area data before each iteration"
+update_method_local(data::Dict{String, <:Any}) = update_method_coordinator(data)
+
 end

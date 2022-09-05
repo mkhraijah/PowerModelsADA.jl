@@ -1,7 +1,6 @@
 ## Import package
 using PMADA
-using Ipopt
-using JuMP
+using Ipopt 
 
 
 ## Read case with partition file and return dictionary of the paritioned case
@@ -16,19 +15,19 @@ tol = 1e-4
 optimizer = optimizer_with_attributes(Ipopt.Optimizer, "print_level"=>0)
 
 ##  Power Flow Model selection
-model_type = PMADA.DCPPowerModel
+model_type = DCPPowerModel
 
 ##  Distributed algorithm
-data_area = solve_dopf_admm(data, model_type, optimizer, tol=tol, max_iteration=max_iteration, verbose = true, alpha=100000);
+data_area = solve_dopf_admm(data, model_type, optimizer, tol=tol, max_iteration=max_iteration, verbose = false, alpha=100000);
 error_admm = compare_solution(data, data_area, model_type, optimizer)
-data_area = solve_dopf_app(data, model_type, optimizer; tol=tol, max_iteration=max_iteration, verbose = true, alpha=1000);
+data_area = solve_dopf_app(data, model_type, optimizer; tol=tol, max_iteration=max_iteration, verbose = false, alpha=100000);
 error_app = compare_solution(data, data_area, model_type, optimizer)
-data_area = solve_dopf_atc(data, model_type, optimizer, tol=tol, max_iteration=max_iteration, verbose = true, alpha=1.05);
+data_area = solve_dopf_atc(data, model_type, optimizer, tol=tol, max_iteration=max_iteration, verbose = false, alpha=1.05);
 error_atc = compare_solution(data, data_area, model_type, optimizer)
 
 
-data_coordinator, data_area = solve_dopf_admm_coordinated(data, model_type, optimizer; max_iteration=max_iteration, alpha = 1000);
+data_area = solve_dopf_admm_coordinated(data, model_type, optimizer; max_iteration=max_iteration,verbose = false, alpha = 100000);
 error_admm = compare_solution(data, data_area, model_type, optimizer)
-data_coordinator, data_area = solve_dopf_atc_coordinated(data, model_type, optimizer; max_iteration=max_iteration, alpha = 1.05);
+data_area = solve_dopf_atc_coordinated(data, model_type, optimizer; max_iteration=max_iteration,verbose = false, alpha = 1.05);
 error_atc = compare_solution(data, data_area, model_type, optimizer)
 

@@ -2,6 +2,14 @@
 #   Variable initilization and updating for all distirbuted OPF algorithms    #
 ###############################################################################
 
+"define OPF problem variable"
+function variable_opf(pm::AbstractPowerModel)
+    _PM.variable_bus_voltage(pm)
+    _PM.variable_gen_power(pm)
+    _PM.variable_branch_power(pm)
+    _PM.variable_dcline_power(pm)
+end
+
 "initialize the shared variables"
 function initialize_variable_shared!(data::Dict{String, <:Any}, model_type::DataType)
     initialize_primal_variable_shared!(data, model_type)
@@ -44,14 +52,12 @@ function initialize_dual_variable_shared!(data::Dict{String, <:Any}, model_type:
             )
         for area in areas_id if area != area_id])
     )
-
 end
 
 "initialize the shared variables for coordinator"
 function initialize_variable_shared_coordinator!(data::Dict{String, <:Any}, model_type::DataType)
     initialize_primal_variable_shared_coordinator!(data, model_type)
     initialize_dual_variable_shared_coordinator!(data, model_type)
-
 end
 
 "initialize the primal shared variables for coordinator"
@@ -63,9 +69,9 @@ function initialize_primal_variable_shared_coordinator!(data::Dict{String, <:Any
     shared_bus = Dict{Int64, Any}()
     shared_branch = Dict{Int64, Any}()
     for area in areas_id
-        shared_bus[area], shared_branch[area] =  get_shared_component(data, area)
-        shared_bus[area]  = shared_bus[area][2]
-        shared_branch[area] =  shared_branch[area][2]
+        _shared_bus, _shared_branch =  get_shared_component(data, area)
+        shared_bus[area]  = _shared_bus[area]
+        shared_branch[area] =  _shared_branch[area]
     end
     data["shared_primal"] = Dict{String, Any}(
         Dict{String, Any}([
@@ -79,11 +85,10 @@ function initialize_primal_variable_shared_coordinator!(data::Dict{String, <:Any
     )
     data["shared_primal"][string(area_id)] = Dict{String, Any}(
         vcat(
-            [variable => Dict{String, Any}([string(idx) => 0 for idx in shared_bus[area]]) for variable in bus_variables_name for area in areas_id],
-            [variable => Dict{String, Any}([string(idx) => 0 for idx in shared_branch[area]]) for variable in branch_variables_name for area in areas_id]
+            [variable => Dict{String, Any}([string(idx) => 0 for area in areas_id for idx in shared_bus[area]]) for variable in bus_variables_name],
+            [variable => Dict{String, Any}([string(idx) => 0 for area in areas_id for idx in shared_branch[area]]) for variable in branch_variables_name]
         )
     )
-
 end
 
 "initialize the dual shared variables for coordinator"
@@ -94,9 +99,9 @@ function initialize_dual_variable_shared_coordinator!(data::Dict{String, <:Any},
     shared_bus = Dict{Int64, Any}()
     shared_branch = Dict{Int64, Any}()
     for area in areas_id
-        shared_bus[area], shared_branch[area] =  get_shared_component(data, area)
-        shared_bus[area]  = shared_bus[area][2]
-        shared_branch[area] =  shared_branch[area][2]
+        _shared_bus, _shared_branch =  get_shared_component(data, area)
+        shared_bus[area]  = _shared_bus[area]
+        shared_branch[area] =  _shared_branch[area]
     end
     data["shared_dual"] = Dict{String, Any}(
         Dict{String, Any}([
@@ -108,7 +113,6 @@ function initialize_dual_variable_shared_coordinator!(data::Dict{String, <:Any},
             )
         for area in areas_id])
     )
-
 end
 
 "initialize the shared variables"
@@ -143,13 +147,14 @@ function initialize_dual_variable_shared_local!(data::Dict{String, <:Any}, model
     bus_variables_name, branch_variables_name =  variable_shared_names(model_type)
     shared_bus, shared_branch =  get_shared_component(data, area_id)
 
-    data["shared_dual"] = Dict{String, Any}("0" => Dict{String, Any}(
-        vcat(
-            [variable => Dict{String, Any}([string(idx) => 0 for idx in shared_bus[area_id]]) for variable in bus_variables_name],
-            [variable => Dict{String, Any}([string(idx) => 0 for idx in shared_branch[area_id]]) for variable in branch_variables_name]
+    data["shared_dual"] = Dict{String, Any}(
+        "0" => Dict{String, Any}(
+            vcat(
+                [variable => Dict{String, Any}([string(idx) => 0 for idx in shared_bus[area_id]]) for variable in bus_variables_name],
+                [variable => Dict{String, Any}([string(idx) => 0 for idx in shared_branch[area_id]]) for variable in branch_variables_name]
+            )
         )
-    ))
-    
+    )
 end
 
 "idinifiy the nodal and cross variables names"
