@@ -34,7 +34,7 @@ export solve_dopf_admm
 ADMM algorithm module contians build and update methods
 """
 module admm_methods
-using ..PMADA, JuMP
+using ..PMADA
 
 "inilitlize the ADMM algorithm"
 function initialize_method(data::Dict{String, <:Any}, model_type::DataType; tol::Float64=1e-4, max_iteration::Int64=1000, kwargs...)
@@ -75,7 +75,7 @@ function objective_admm(pm::AbstractPowerModel)
     dual_variable = pm.data["shared_dual"]
 
     ## objective function
-    objective = JuMP.objective_function(pm.model)
+    objective = 0
     for area in keys(dual_variable)
         for variable in keys(dual_variable[area])
             for idx in keys(dual_variable[area][variable])
@@ -88,7 +88,7 @@ function objective_admm(pm::AbstractPowerModel)
         end
     end
 
-    JuMP.@objective(pm.model, Min,  objective)
+    return objective
 end
 
 

@@ -34,7 +34,7 @@ export solve_dopf_atc
 ATC algorithm module contians build and update methods
 """
 module atc_methods
-using ..PMADA, JuMP
+using ..PMADA
 
 "inilitlize the ATC algorithm"
 function initialize_method(data::Dict{String, <:Any}, model_type::DataType; 
@@ -80,7 +80,7 @@ function objective_atc(pm::AbstractPowerModel)
     dual_variable = pm.data["shared_dual"]
 
     ## objective function
-    objective = JuMP.objective_function(pm.model)
+    objective = 0
     for area in keys(dual_variable)
         for variable in keys(dual_variable[area])
             for idx in keys(dual_variable[area][variable])
@@ -93,7 +93,7 @@ function objective_atc(pm::AbstractPowerModel)
         end
     end
 
-    JuMP.@objective(pm.model, Min,  objective)
+    return objective
 end
 
 

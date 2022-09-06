@@ -36,7 +36,7 @@ export solve_dopf_atc_coordinated
 ATC algorithm module contians build and update methods
 """
 module atc_coordinated_methods
-using ..PMADA, JuMP
+using ..PMADA
 
 "inilitlize the ATC algorithm local area"
 function initialize_method_local(data::Dict{String, <:Any}, model_type::DataType; 
@@ -102,18 +102,17 @@ end
 
 
 "ATC algorithm objective coordinator"
-function objective_atc_coordinator(pm::AbstractPowerModel)
+function objective_atc_local(pm::AbstractPowerModel)
 
     ## atc parameters
     beta = pm.data["beta"]
 
     ## data
-    area_id = string(get_area_id(pm))
     primal_variable = pm.data["shared_primal"]
     dual_variable = pm.data["shared_dual"]
 
     ## objective function
-    objective = JuMP.objective_function(pm.model)
+    objective = 0
     for area in keys(dual_variable)
         for variable in keys(dual_variable[area])
             for idx in keys(dual_variable[area][variable])
@@ -126,14 +125,14 @@ function objective_atc_coordinator(pm::AbstractPowerModel)
         end
     end
 
-    JuMP.@objective(pm.model, Min,  objective)
+    return objective
 end
 
 "ATC algorithm objective local area"
-objective_atc_local(pm::AbstractPowerModel) = objective_atc_coordinator(pm)
+objective_atc_coordinator(pm::AbstractPowerModel) = objective_atc_local(pm)
 
 "update the ATC algorithm coordinator data before each iteration"
-function update_method_coordinator(data::Dict{String, <:Any})
+function update_method_local(data::Dict{String, <:Any})
 
     ## ATC parameters
     alpha = data["alpha"]
@@ -161,6 +160,6 @@ function update_method_coordinator(data::Dict{String, <:Any})
 end
 
 "update the ATC algorithm local area data before each iteration"
-update_method_local(data::Dict{String, <:Any}) = update_method_coordinator(data)
+update_method_coordinator(data::Dict{String, <:Any}) = update_method_local(data)
 
 end

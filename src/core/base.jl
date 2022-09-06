@@ -47,7 +47,7 @@ function solve_dopf(data::Dict{String, <:Any}, model_type::DataType, optimizer, 
 
         info = @capture_out begin
             ## solve local problem and update solution
-            for i in areas_id
+            Threads.@threads for i in areas_id
                 dopf_method.update_method(data_area[i])
                 solve_local!(data_area[i], model_type, optimizer, dopf_method.build_method)
                 # if model_type <: _PM.AbstractSDPWRMModel
@@ -157,7 +157,7 @@ function solve_dopf_coordinated(data::Dict{String, <:Any}, model_type::DataType,
         end
         info = @capture_out begin
             # solve local problem and update solution
-            for i in areas_id
+            Threads.@threads for i in areas_id
                 solve_local!(data_area[i], model_type, optimizer, dopf_method.build_method_local)
             end
         end

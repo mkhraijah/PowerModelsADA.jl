@@ -37,7 +37,7 @@ export solve_dopf_app
 APP algorithm module contians build and update methods
 """
 module app_methods
-using ..PMADA, JuMP
+using ..PMADA
 
 "inilitlize the APP algorithm"
 function initialize_method(data::Dict{String, <:Any}, model_type::Type; tol::Float64=1e-4, max_iteration::Int64=1000, kwargs...)
@@ -87,7 +87,7 @@ function objective_app(pm::AbstractPowerModel)
 
     ## objective function
 
-    objective = JuMP.objective_function(pm.model)
+    objective = 0
     for area in keys(dual_variable)
         for variable in keys(dual_variable[area])
             for idx in keys(dual_variable[area][variable])
@@ -101,7 +101,7 @@ function objective_app(pm::AbstractPowerModel)
         end
     end
 
-    JuMP.@objective(pm.model, Min,  objective)
+    return objective
 end
 
 "update the APP algorithm before each iteration"

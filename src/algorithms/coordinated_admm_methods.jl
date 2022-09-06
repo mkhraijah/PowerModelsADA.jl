@@ -34,7 +34,7 @@ export solve_dopf_admm_coordinated
 ADMM algorithm module contians build and update methods
 """
 module admm_coordinated_methods
-using ..PMADA, JuMP
+using ..PMADA
 
 "inilitlize the ADMM algorithm local area"
 function initialize_method_local(data::Dict{String, <:Any}, model_type::DataType; 
@@ -94,18 +94,17 @@ end
 
 
 "ADMM algorithm objective coordinator"
-function objective_admm_coordinator(pm::AbstractPowerModel)
+function objective_admm_local(pm::AbstractPowerModel)
 
     ## ADMM parameters
     alpha = pm.data["alpha"]
 
     ## data
-    area_id = string(get_area_id(pm))
     primal_variable = pm.data["shared_primal"]
     dual_variable = pm.data["shared_dual"]
 
     ## objective function
-    objective = JuMP.objective_function(pm.model)
+    objective = 0
     for area in keys(dual_variable)
         for variable in keys(dual_variable[area])
             for idx in keys(dual_variable[area][variable])
@@ -118,14 +117,14 @@ function objective_admm_coordinator(pm::AbstractPowerModel)
         end
     end
 
-    JuMP.@objective(pm.model, Min,  objective)
+    return objective
 end
 
 "ADMM algorithm objective local area"
-objective_admm_local(pm::AbstractPowerModel) = objective_admm_coordinator(pm)
+objective_admm_coordinator(pm::AbstractPowerModel) = objective_admm_local(pm)
 
 "update the ADMM algorithm coordinator data before each iteration"
-function update_method_coordinator(data::Dict{String, <:Any})
+function update_method_local(data::Dict{String, <:Any})
 
     ## ADMM parameters
     alpha = data["alpha"]
@@ -150,6 +149,6 @@ function update_method_coordinator(data::Dict{String, <:Any})
 end
 
 "update the ADMM algorithm local area data before each iteration"
-update_method_local(data::Dict{String, <:Any}) = update_method_coordinator(data)
+update_method_coordinator(data::Dict{String, <:Any}) = update_method_local(data)
 
 end
