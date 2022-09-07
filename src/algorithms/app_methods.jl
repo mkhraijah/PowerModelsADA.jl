@@ -39,6 +39,8 @@ APP algorithm module contians build and update methods
 module app_methods
 using ..PMADA
 
+solve_method = solve_dopf_app
+
 "inilitlize the APP algorithm"
 function initialize_method(data::Dict{String, <:Any}, model_type::Type; tol::Float64=1e-4, max_iteration::Int64=1000, kwargs...)
 

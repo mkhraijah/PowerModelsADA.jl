@@ -4,7 +4,7 @@ using Ipopt
 
 
 ## Read case with partition file and return dictionary of the paritioned case
-case_path = "test/data/case_RTS.m"
+case_path = "test/data/case14.m"
 parition_file_path = "test/data/case14_2areas.csv"
 data = parse_file(case_path)
 assign_area!(data, parition_file_path)
@@ -18,9 +18,9 @@ optimizer = optimizer_with_attributes(Ipopt.Optimizer, "print_level"=>0)
 model_type = DCPPowerModel
 
 ##  Distributed algorithm
-data_area = solve_dopf_admm(data, model_type, optimizer, tol=tol, max_iteration=max_iteration, verbose = false, alpha=100000);
+data_area = solve_dopf_admm(data, model_type, optimizer, tol=tol, max_iteration=max_iteration, verbose = true, alpha=10000);
 error_admm = compare_solution(data, data_area, model_type, optimizer)
-data_area = solve_dopf_app(data, model_type, optimizer; tol=tol, max_iteration=max_iteration, verbose = false, alpha=100000);
+data_area = solve_dopf_app(data, model_type, optimizer; tol=tol, max_iteration=max_iteration, verbose = true, alpha=10000);
 error_app = compare_solution(data, data_area, model_type, optimizer)
 data_area = solve_dopf_atc(data, model_type, optimizer, tol=tol, max_iteration=max_iteration, verbose = false, alpha=1.05);
 error_atc = compare_solution(data, data_area, model_type, optimizer)

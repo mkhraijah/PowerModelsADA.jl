@@ -36,6 +36,8 @@ ATC algorithm module contians build and update methods
 module atc_methods
 using ..PMADA
 
+solve_method = solve_dopf_atc
+
 "inilitlize the ATC algorithm"
 function initialize_method(data::Dict{String, <:Any}, model_type::DataType; 
     tol::Float64=1e-4, max_iteration::Int64=1000, kwargs...)
