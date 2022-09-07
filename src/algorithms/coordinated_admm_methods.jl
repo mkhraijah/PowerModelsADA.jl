@@ -36,7 +36,7 @@ ADMM algorithm module contians build and update methods
 module admm_coordinated_methods
 using ..PMADA
 
-solve_method = solve_dopf_app_coordinated
+solve_method = solve_dopf_admm_coordinated
 
 "inilitlize the ADMM algorithm local area"
 function initialize_method_local(data::Dict{String, <:Any}, model_type::DataType; 
