@@ -18,4 +18,4 @@ Pkg.add("PMADA")
 
 ## Examples
 
-An example demonstrating how to code up and solve the OPF problem with distributed algorithms is found in [Quick Start Guide](@ref quickguide.md) section of the documentation.
+An example demonstrating how to code up and solve the OPF problem with distributed algorithms is found in [Quick Start Guide](https://mkhraijah.github.io/PMADA.jl/dev/quickguide/) section of the documentation.
