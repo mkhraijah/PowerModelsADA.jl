@@ -8,6 +8,7 @@
     verbose = true, print_optimizer_info::Bool=false, alpha::Real=1000)
 
 Solve the distributed OPF problem using ADMM algorithm.
+
 # Arguments:
 - data::Dict{String, <:Any} : dictionary contains case in PowerModel format
 - model_type::DataType : power flow formulation (PowerModel type)
@@ -28,6 +29,15 @@ function solve_dopf_admm(data::Dict{String, <:Any}, model_type::DataType, optimi
     verbose=verbose, print_optimizer_info=print_optimizer_info, alpha=alpha)
 end
 
+function solve_dopf_admm(data::String, model_type::DataType, optimizer; 
+    mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, 
+    verbose::Bool=true, print_optimizer_info::Bool=false, alpha::Real=1000)
+
+    solve_dopf(data, model_type, optimizer, admm_methods; 
+    mismatch_method=mismatch_method, tol=tol , max_iteration=max_iteration, 
+    verbose=verbose, print_optimizer_info=print_optimizer_info, alpha=alpha)
+end
+
 export solve_dopf_admm
 
 """
@@ -36,6 +46,7 @@ ADMM algorithm module contians build and update methods
 module admm_methods
 using ..PMADA
 
+"redefine the main call method inside the module"
 solve_method = solve_dopf_admm
 
 "inilitlize the ADMM algorithm"
@@ -119,3 +130,6 @@ function update_method(data::Dict{String, <:Any})
     end
 end
 end
+
+# export the algorithm methods module and call method
+export admm_methods

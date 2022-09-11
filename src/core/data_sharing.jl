@@ -23,12 +23,13 @@ function send_shared_data(from::Int64, to::Int64, data::Dict{String, <:Any}; ser
     return shared_data
 end
 
-"deserialize and store the received data in the local pm object"
+"deserialize and store the received data in the local data"
 function receive_shared_data!(from::Int64, shared_data::Vector, data::Dict{String, <:Any})
     shared_data = Serialization.deserialize(IOBuffer(shared_data))
     receive_shared_data!(from,shared_data, data)
 end
 
+"store received data in the local data dictionary"
 function receive_shared_data!(from::Int64, shared_data::Dict, data::Dict{String, <:Any})
     for variable in keys(data["shared_primal"][string(from)])
         for idx in keys(data["shared_primal"][string(from)][variable])

@@ -21,8 +21,7 @@ makedocs(
                 "ATC" => "atc.md",
                 "APP" => "app.md",
                 "ALADEN" => "aladin.md"
-            ],
-            "Utilities" => "utilities.md"
+            ]
         ],
         "Tutorials" => [
             "Using PMADA" => "tutorial.md",

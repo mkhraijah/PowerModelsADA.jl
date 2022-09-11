@@ -2,7 +2,17 @@
 #               Helper methods for all distributed algorithms                 #
 ###############################################################################
 
-"partition a system into n areas"
+"""
+    partition_system!(data::Dict, n::Int64; configuration::Symbol=:edge_cut, print_info::Bool=false)
+
+Partition a system into n areas using KaHyPar partition algorithm
+
+# Arguments:
+- data::Dict{String, <:Any} : dictionary contains case in PowerModel format
+- n::Int : number of areas
+- configuration::Symbol : partition meteric (:edge_cut or :connectivity). The defult is :edge_cut
+- print_info::Bool : print partition algorithm information
+"""
 function partition_system!(data::Dict, n::Int64; configuration::Symbol=:edge_cut, print_info::Bool=false)
  
     nbus = length(data["bus"])
@@ -28,18 +38,16 @@ function partition_system!(data::Dict, n::Int64; configuration::Symbol=:edge_cut
     info = @capture_out begin
         partitions = KaHyPar.partition(h, n, configuration=configuration)
     end
-    partitions = Dict([bus_index[i]=>partitions[i] for i in 1:nbus])
+    partitions = Dict([bus_index[i]=>partitions[i]+1 for i in 1:nbus])
 
     for (i,bus) in data["bus"]
         bus["area"] = partitions[bus["index"]]
     end
 
-    arrange_areas_id!(data)
     if print_info
         println(info)
     end
 end
-
 
 "calculate distributed solution operation cost"
 function calc_dist_gen_cost(data_area::Dict{Int, <:Any})
@@ -56,9 +64,9 @@ function compare_solution(data::Dict{String, <:Any}, data_area::Dict{Int, <:Any}
     # Solve Centralized OPF
     Central_solution = _PM.solve_opf(data, model_type, optimizer)
     # Calculate objective function
-    Obj_dist = calc_dist_gen_cost(data_area::Dict{Int, <:Any})
-    Obj_cent = Central_solution["objective"]
+    Obj_distributed = calc_dist_gen_cost(data_area::Dict{Int, <:Any})
+    Obj_centeral = Central_solution["objective"]
     # Calculate optimility gap
-    Relative_Error = (Obj_dist - Obj_cent)/ Obj_cent * 100
+    Relative_Error = abs(Obj_distributed - Obj_centeral)/ Obj_centeral * 100
     return Relative_Error
 end

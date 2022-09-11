@@ -1,15 +1,10 @@
 # Library 
 
+```@meta
+CurrentModule = PMADA
+```
 
-## External 
-### Data 
-
-### Base
-
-## Internal
-
-### Formulation 
-
-
-### Update 
-
+```@autodocs
+Modules = [PMADA]
+Pages   = ["base.jl", "data.jl", "data_sharing.jl", "opf.jl", "util.jl", "variables.jl"]
+```

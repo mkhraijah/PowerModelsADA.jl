@@ -8,6 +8,9 @@ docs/build/assets/themeswap.js
 docs/build/index.html
 docs/build/search.html
 docs/build/search_index.js
+docs/.gitignore
 example/comparison.jl
 Manifest.toml
 .vscode/
+example/comparison_run.pbs
+result.json

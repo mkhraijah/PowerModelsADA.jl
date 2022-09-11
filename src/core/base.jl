@@ -99,6 +99,13 @@ function solve_dopf(data::Dict{String, <:Any}, model_type::DataType, optimizer, 
     return data_area
 end
 
+function solve_dopf(data::String, model_type::DataType, optimizer, dopf_method::Module; mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, verbose::Bool=true, print_optimizer_info::Bool=false, kwargs...)
+
+    data = parse_file(data)
+    solve_dopf(data, model_type, optimizer, dopf_method; mismatch_method=mismatch_method, tol=tol, max_iteration=max_iteration, verbose=verbose, print_optimizer_info=print_optimizer_info, kwargs...)
+
+end
+
 """
     solve_dopf_coordinated(data::Dict{String, <:Any}, model_type::DataType, optimizer, model_type::DataType; mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, verbose = true, kwargs...)
 
@@ -359,16 +366,22 @@ end
 "helper functions to handle area ids, local buses, neighbor buses"
 get_areas_id(data::Dict{String, <:Any}) = unique([bus["area"] for (i, bus) in data["bus"]])
 
+"helper functions to handle area ids, local buses, neighbor buses"
 get_areas_id(pm::AbstractPowerModel) = get_areas_id(pm.data)
 
+"helper functions to handle area ids, local buses, neighbor buses"
 get_area_id(data::Dict{String, <:Any}) = get(data,"area", NaN)
 
+"helper functions to handle area ids, local buses, neighbor buses"
 get_area_id(pm::AbstractPowerModel) = get_area_id(pm.data)
 
+"helper functions to handle area ids, local buses, neighbor buses"
 get_local_bus(data::Dict{String, <:Any}, area::Int) = Vector{Int64}([bus["bus_i"] for (i,bus) in data["bus"] if bus["area"] == area])
 
+"helper functions to handle area ids, local buses, neighbor buses"
 get_local_bus(pm::AbstractPowerModel, area::Int) = get_local_bus(pm.data, area)
 
+"helper functions to handle area ids, local buses, neighbor buses"
 function get_neighbor_bus(data::Dict{String, <:Any}, local_bus::Vector)
     neighbor_bus = Vector{Int64}()
     for (i,branch) in data["branch"]
@@ -381,45 +394,56 @@ function get_neighbor_bus(data::Dict{String, <:Any}, local_bus::Vector)
     return neighbor_bus
 end
 
+"helper functions to handle area ids, local buses, neighbor buses"
 get_neighbor_bus(pm::AbstractPowerModel, local_bus::Vector) = get_neighbor_bus(pm.data, local_bus)
 
+"helper functions to handle area ids, local buses, neighbor buses"
 get_neighbor_bus(data::Dict{String, <:Any}, area::Int) = get_neighbor_bus(data, get_local_bus(data,area))
 
+"helper functions to handle area ids, local buses, neighbor buses"
 get_neighbor_bus(pm::AbstractPowerModel, area::Int) = get_neighbor_bus(pm.data, area)
 
+"helper functions to handle area ids, local buses, neighbor buses"
 function get_areas_bus(data::Dict{String, <:Any})
     areas_id = get_areas_id(data)
     areas_bus = Dict{Int64, Vector{Int64}}()
-    for i in areas_id
-        areas_bus[i] = [bus["bus_i"] for (j,bus) in data["bus"] if bus["area"]==i]
+    for area in areas_id
+        areas_bus[area] = [bus["bus_i"] for (idx,bus) in data["bus"] if bus["area"]==area]
     end
+    areas_bus[0] = [bus["bus_i"] for (idx,bus) in data["bus"]]
     return areas_bus
 end
 
+"helper functions to handle area ids, local buses, neighbor buses"
 get_areas_bus(pm::AbstractPowerModel) = get_areas_bus(pm.data)
 
 "get the shared buses and branches between defined area and all other areas"
-function get_shared_component(data::Dict{String, <:Any}, area::Int64)
-    areas_id = get_areas_id(data)
-    areas_bus = get_areas_bus(data)
+function get_shared_component(data::Dict{String, <:Any}, area_id::Int64)
+    areas_id = PMADA.get_areas_id(data)
+    areas_bus = PMADA.get_areas_bus(data)
     shared_branch = Dict{Int64, Any}()
     shared_bus = Dict{Int64, Any}()
-    for i in areas_id
-        if i != area
-            shared_branch[i] = unique([parse(Int64,j) for (j,branch) in data["branch"] if (branch["f_bus"] in areas_bus[i] && branch["t_bus"] in areas_bus[area]) || (branch["f_bus"] in areas_bus[area] && branch["t_bus"] in areas_bus[i]) ])
+    for area in areas_id
+        if area != area_id
+            shared_branch[area] = unique([parse(Int64,idx) for (idx,branch) in data["branch"] if (branch["f_bus"] in areas_bus[area] && branch["t_bus"] in areas_bus[area_id]) || (branch["f_bus"] in areas_bus[area_id] && branch["t_bus"] in areas_bus[area]) ])
         else
-            shared_branch[i] = unique([parse(Int64,j) for (j,branch) in data["branch"] if xor(branch["f_bus"] in areas_bus[i], branch["t_bus"] in areas_bus[i]) ])
+            shared_branch[area] = unique([parse(Int64,idx) for (idx,branch) in data["branch"] if xor(branch["f_bus"] in areas_bus[area], branch["t_bus"] in areas_bus[area]) ])
         end
-            shared_bus[i] = unique(vcat([branch["f_bus"] for (j,branch) in data["branch"] if parse(Int64,j) in shared_branch[i]], [branch["t_bus"] for (j,branch) in data["branch"] if parse(Int64,j) in shared_branch[i]] ))
+            shared_bus[area] = unique(vcat([branch["f_bus"] for (idx,branch) in data["branch"] if parse(Int64,idx) in shared_branch[area]], [branch["t_bus"] for (idx,branch) in data["branch"] if parse(Int64,idx) in shared_branch[area]] ))
     end
+    shared_bus[0] = unique([idx for area in areas_id for idx in shared_bus[area]])
+    shared_branch[0] = unique([idx for area in areas_id for idx in shared_branch[area]])
     return shared_bus, shared_branch
 end
 
+"get the shared buses and branches between defined area and all other areas"
 get_shared_component(pm::AbstractPowerModel, area::Int64) = get_shared_component(pm.data, area)
 
+"get the shared buses and branches between defined area and all other areas"
 function get_shared_component(data::Dict{String, <:Any})
     area = get_area_id(data)
     get_shared_component(data, area)
 end
 
+"get the shared buses and branches between defined area and all other areas"
 get_shared_component(pm::AbstractPowerModel) = get_shared_component(pm.data)

@@ -7,14 +7,19 @@ Status:
 </p>
 
 
-`PMADA.jl`(Power Models Alternating Distributed Algorithms) is a package built on top of `PowerModels.jl` and `JuMP.jl` packages for solving Optimal Power Flow (OPF) problem using alteranting distributed algorithms. The package utilizes the flexibility of PowerModels by decoupling Problem Specifications from the Formulation Details, in addition to allowing to use different distributed algorithms (e.g. Alternating Direction Method of Multipliers, Analaytical Target Cascading, ...). The package allows for solving the OPF problem using multi cores on the same device or multiple devices in parrallel. 
+## Overview
 
+[`PMADA.jl`](https://github.com/mkhraijah/PMADA.jl) (Power Models Alternating Distributed Algorithms) provides a framework to solve the Optimal Power Flow (OPF) problem using alternating distributed algorithms. The package allows to use different distributed algorithms such as Alternating Direction Method of Multipliers (ADMM) or user-defined algorithms. `PMADA.jl` is built on top of [`PowerModels.jl`](https://github.com/lanl-ansi/PowerModels.jl) to define and solve the subproblems.
 
-## Documentation 
+## Installation
 
+`PMADA.jl` can be installed using the Julia package manager as follow:
 
+```julia
+using Pkg
+Pkg.add("PMADA")
+```
 
 ## Examples
 
-
-## Acknowledgments 
+An example demonstrating how to code up and solve the OPF problem with distributed algorithms is found in [Quick Start Guide](https://mkhraijah.github.io/PMADA.jl/dev/quickguide/) section of the documentation.

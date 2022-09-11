@@ -28,6 +28,15 @@ function solve_dopf_atc(data::Dict{String, <:Any}, model_type::DataType, optimiz
     verbose=verbose, print_optimizer_info=print_optimizer_info, alpha=alpha, beta=beta)
 end
 
+function solve_dopf_atc(data::String, model_type::DataType, optimizer; 
+    mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, 
+    verbose::Bool=true, print_optimizer_info::Bool=false, alpha::Real=1000, beta::Real=1)
+
+    solve_dopf(data, model_type, optimizer, atc_methods; 
+    mismatch_method=mismatch_method, tol=tol , max_iteration=max_iteration, 
+    verbose=verbose, print_optimizer_info=print_optimizer_info, alpha=alpha, beta=beta)
+end
+
 export solve_dopf_atc
 
 """
@@ -36,6 +45,7 @@ ATC algorithm module contians build and update methods
 module atc_methods
 using ..PMADA
 
+"redefine the main call method inside the module"
 solve_method = solve_dopf_atc
 
 "inilitlize the ATC algorithm"
@@ -130,3 +140,6 @@ function update_method(data::Dict{String, <:Any})
 
 end
 end
+
+# export the algorithm methods module and call method
+export atc_methods

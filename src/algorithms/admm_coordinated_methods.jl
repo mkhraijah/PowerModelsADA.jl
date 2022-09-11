@@ -7,6 +7,7 @@
     max_iteration::Int64=1000, verbose = true, alpha::Real=1000)
 
 Solve the distributed OPF problem using ADMM algorithm with central coordinator.
+
 # Arguments:
 - data::Dict{String, <:Any} : dictionary contains case in PowerModel format
 - model_type::DataType : power flow formulation (PowerModel type)
@@ -25,7 +26,15 @@ function solve_dopf_admm_coordinated(data::Dict{String, <:Any}, model_type::Data
     solve_dopf_coordinated(data, model_type, optimizer, 
     admm_coordinated_methods; mismatch_method=mismatch_method, tol=tol , max_iteration=max_iteration, 
     verbose=verbose, print_optimizer_info=print_optimizer_info, alpha=alpha)
+end
+
+function solve_dopf_admm_coordinated(data::String, model_type::DataType, optimizer; 
+    mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, 
+    verbose::Bool=true, print_optimizer_info::Bool=false, alpha::Real=1000)
     
+    solve_dopf_coordinated(data, model_type, optimizer, 
+    admm_coordinated_methods; mismatch_method=mismatch_method, tol=tol , max_iteration=max_iteration, 
+    verbose=verbose, print_optimizer_info=print_optimizer_info, alpha=alpha)
 end
 
 export solve_dopf_admm_coordinated
@@ -36,6 +45,7 @@ ADMM algorithm module contians build and update methods
 module admm_coordinated_methods
 using ..PMADA
 
+"redefine the main call method inside the module"
 solve_method = solve_dopf_admm_coordinated
 
 "inilitlize the ADMM algorithm local area"
@@ -152,5 +162,7 @@ end
 
 "update the ADMM algorithm local area data before each iteration"
 update_method_coordinator(data::Dict{String, <:Any}) = update_method_local(data)
-
 end
+
+# export the algorithm methods module and call method
+export admm_coordinated_methods

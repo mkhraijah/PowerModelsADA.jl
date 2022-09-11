@@ -30,6 +30,17 @@ function solve_dopf_atc_coordinated(data::Dict{String, <:Any}, model_type::DataT
     
 end
 
+function solve_dopf_atc_coordinated(data::String, model_type::DataType, 
+    optimizer; mismatch_method::String="norm", tol::Float64=1e-4, 
+    max_iteration::Int64=1000, verbose::Bool=true, print_optimizer_info::Bool=false, 
+    alpha::Real=1.05, beta::Real=1.0)
+    
+    solve_dopf_coordinated(data, model_type, optimizer, 
+    atc_coordinated_methods; mismatch_method=mismatch_method,tol=tol , 
+    max_iteration=max_iteration, verbose=verbose, print_optimizer_info=print_optimizer_info, 
+    alpha=alpha, beta=beta)
+end
+
 export solve_dopf_atc_coordinated
 
 """
@@ -38,6 +49,7 @@ ATC algorithm module contians build and update methods
 module atc_coordinated_methods
 using ..PMADA
 
+"redefine the main call method inside the module"
 solve_method = solve_dopf_atc_coordinated
 
 "inilitlize the ATC algorithm local area"
@@ -163,5 +175,7 @@ end
 
 "update the ATC algorithm local area data before each iteration"
 update_method_coordinator(data::Dict{String, <:Any}) = update_method_local(data)
-
 end
+
+# export the algorithm methods module and call method
+export atc_coordinated_methods
