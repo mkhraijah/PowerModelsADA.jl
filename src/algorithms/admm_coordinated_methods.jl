@@ -17,7 +17,7 @@ Solve the distributed OPF problem using ADMM algorithm with central coordinator.
 - max_iteration::Int64=1000 : maximum number of iteration
 - verbose::Bool=true : print mismatch after each iteration and result summary 
 - print_optimizer_info::Bool=false : print local optimization info from the solver
-- alpha = algorithm parameters
+- alpha::Real=1000 : algorithm parameters
 """
 function solve_dopf_admm_coordinated(data::Dict{String, <:Any}, model_type::DataType, optimizer; 
     mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, 

@@ -16,7 +16,8 @@ Solve the distributed OPF problem using ATC algorithm with central coordinator.
 - max_iteration::Int64=1000 : maximum number of iteration
 - verbose::Bool=true : print mismatch after each iteration and result summary 
 - print_optimizer_info::Bool=false : print local optimization info from the solver
-- alpha and beta = algorithm parameters
+- alpha::Real=1.05 : algorithm parameters
+- beta::Real=1.0 : algorithm parameters
 """
 function solve_dopf_atc_coordinated(data::Dict{String, <:Any}, model_type::DataType, 
     optimizer; mismatch_method::String="norm", tol::Float64=1e-4, 

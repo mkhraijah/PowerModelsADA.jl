@@ -18,7 +18,9 @@ Solve the distributed OPF problem using APP algorithm.
 - max_iteration::Int64=1000 : maximum number of iteration
 - verbose::Bool=true : print mismatch after each iteration and result summary 
 - print_optimizer_info::Bool=false : print local optimization info from the solver
-- alpha, beta, and gamma = algorithm parameters
+- alpha::Real= 1000 : algorithm parameters
+- beta::Real= 2alpha : algorithm parameters
+- gamma::Real= alpha : algorithm parameters
 """
 function solve_dopf_app(data::Dict{String, <:Any}, model_type::DataType, optimizer; 
     mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, 
