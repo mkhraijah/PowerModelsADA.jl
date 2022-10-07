@@ -63,33 +63,33 @@ data_RTS =  parse_file("../test/data/case_RTS.m")
 
 ## ADMM test
     @testset "admm algorithm with DC power flow" begin
-        data_area = solve_dopf_admm(data_14, DCPPowerModel, milp_solver; alpha=1000, tol=1e-3, max_iteration=1000, verbose = false)
+        data_area = solve_dopf_admm(data_14, DCPPowerModel, milp_solver; alpha=1000, tol=1e-3, max_iteration=1000, verbose = 0)
         dist_cost = calc_dist_gen_cost(data_area)
         @test  isapprox(dist_cost, 7642.59, atol =5)
     end
 
     @testset "coordinated admm algorithm with AC power flow" begin
-        data_area = solve_dopf_admm_coordinated(data_14, ACPPowerModel, nlp_solver; alpha=1000, tol=1e-3, max_iteration=1000, verbose = false)
+        data_area = solve_dopf_admm_coordinated(data_14, ACPPowerModel, nlp_solver; alpha=1000, tol=1e-3, max_iteration=1000, verbose = 0)
         dist_cost = calc_dist_gen_cost(data_area)
         @test isapprox(dist_cost, 8081.52, atol =5)
     end
 
     ## ATC test
     @testset "atc algorithm with DC power flow" begin
-        data_area = solve_dopf_atc(data_14, DCPPowerModel, milp_solver; alpha=1.1, tol=1e-3, max_iteration=1000, verbose = false)
+        data_area = solve_dopf_atc(data_14, DCPPowerModel, milp_solver; alpha=1.1, tol=1e-3, max_iteration=1000, verbose = 0)
         dist_cost = calc_dist_gen_cost(data_area)
         @test isapprox(dist_cost, 7642.59, atol =5)
     end
 
     @testset "coordinated atc algorithm with SOC relaxation of power flow" begin
-        data_area = solve_dopf_atc_coordinated(data_14, SOCWRPowerModel, nlp_solver; alpha=1.1, tol=1e-3, max_iteration=1000, verbose = false)
+        data_area = solve_dopf_atc_coordinated(data_14, SOCWRPowerModel, nlp_solver; alpha=1.1, tol=1e-3, max_iteration=1000, verbose = 0)
         dist_cost = calc_dist_gen_cost(data_area)
         @test isapprox(dist_cost, 8075.12, atol =5)
     end
 
     ## APP test
     @testset "app algorithm with DC power flow" begin
-        data_area = solve_dopf_app(data_14, DCPPowerModel, milp_solver; alpha=1000, tol=1e-3, max_iteration=1000, verbose = false)
+        data_area = solve_dopf_app(data_14, DCPPowerModel, milp_solver; alpha=1000, tol=1e-3, max_iteration=1000, verbose = 0)
         dist_cost = calc_dist_gen_cost(data_area)
         @test isapprox(dist_cost, 7642.59, atol =5)
     end

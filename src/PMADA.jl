@@ -5,7 +5,7 @@ import PowerModels as _PM
 import Serialization
 import LinearAlgebra
 import DelimitedFiles
-import SparseArrays: sparse
+import SparseArrays
 import KaHyPar
 import Suppressor: @capture_out
 

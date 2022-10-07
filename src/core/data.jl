@@ -1,5 +1,5 @@
 ###############################################################################
-# Methods for data wrangling, sharing and obtaining an information from data  #
+#       Methods for data wrangling and extracting information from data       #
 ###############################################################################
 
 
@@ -121,4 +121,140 @@ function add_virtual_gen!(data::Dict{String, <:Any},neighbor_bus::Vector, area_i
         end
     end
     return virtual_gen
+end
+
+
+"""
+arrange area id from 1 to number of areas
+this step is necessary when having area number 0 and using central coordinator
+"""
+function arrange_areas_id!(data::Dict{String, <:Any})
+    areas_id = get_areas_id(data)
+    new_areas_id = collect(1:length(areas_id))
+    area_id_lookup = Dict(areas_id[i] => i for i in new_areas_id)
+    for (i,bus) in data["bus"]
+        bus["area"] = area_id_lookup[bus["area"]]
+    end
+end
+
+"helper functions to handle area ids, local buses, neighbor buses"
+get_areas_id(data::Dict{String, <:Any}) = unique([bus["area"] for (i, bus) in data["bus"]])
+
+"helper functions to handle area ids, local buses, neighbor buses"
+get_areas_id(pm::AbstractPowerModel) = get_areas_id(pm.data)
+
+"helper functions to handle area ids, local buses, neighbor buses"
+get_area_id(data::Dict{String, <:Any}) = get(data,"area", NaN)
+
+"helper functions to handle area ids, local buses, neighbor buses"
+get_area_id(pm::AbstractPowerModel) = get_area_id(pm.data)
+
+"helper functions to handle area ids, local buses, neighbor buses"
+get_local_bus(data::Dict{String, <:Any}, area::Int) = Vector{Int64}([bus["bus_i"] for (i,bus) in data["bus"] if bus["area"] == area])
+
+"helper functions to handle area ids, local buses, neighbor buses"
+get_local_bus(pm::AbstractPowerModel, area::Int) = get_local_bus(pm.data, area)
+
+"helper functions to handle area ids, local buses, neighbor buses"
+function get_neighbor_bus(data::Dict{String, <:Any}, local_bus::Vector)
+    neighbor_bus = Vector{Int64}()
+    for (i,branch) in data["branch"]
+        if branch["f_bus"] in local_bus && !(branch["t_bus"] in local_bus)
+            push!(neighbor_bus,branch["t_bus"])
+        elseif !(branch["f_bus"] in local_bus) && branch["t_bus"] in local_bus
+            push!(neighbor_bus,branch["f_bus"])
+        end
+    end
+    return neighbor_bus
+end
+
+"helper functions to handle area ids, local buses, neighbor buses"
+get_neighbor_bus(pm::AbstractPowerModel, local_bus::Vector) = get_neighbor_bus(pm.data, local_bus)
+
+"helper functions to handle area ids, local buses, neighbor buses"
+get_neighbor_bus(data::Dict{String, <:Any}, area::Int) = get_neighbor_bus(data, get_local_bus(data,area))
+
+"helper functions to handle area ids, local buses, neighbor buses"
+get_neighbor_bus(pm::AbstractPowerModel, area::Int) = get_neighbor_bus(pm.data, area)
+
+"helper functions to handle area ids, local buses, neighbor buses"
+function get_areas_bus(data::Dict{String, <:Any})
+    areas_id = get_areas_id(data)
+    areas_bus = Dict{Int64, Vector{Int64}}()
+    for area in areas_id
+        areas_bus[area] = [bus["bus_i"] for (idx,bus) in data["bus"] if bus["area"]==area]
+    end
+    areas_bus[0] = [bus["bus_i"] for (idx,bus) in data["bus"]]
+    return areas_bus
+end
+
+"helper functions to handle area ids, local buses, neighbor buses"
+get_areas_bus(pm::AbstractPowerModel) = get_areas_bus(pm.data)
+
+"get the shared buses and branches between defined area and all other areas"
+function get_shared_component(data::Dict{String, <:Any}, area_id::Int64)
+    areas_id = PMADA.get_areas_id(data)
+    areas_bus = PMADA.get_areas_bus(data)
+    shared_branch = Dict{Int64, Any}()
+    shared_bus = Dict{Int64, Any}()
+    for area in areas_id
+        if area != area_id
+            shared_branch[area] = unique([parse(Int64,idx) for (idx,branch) in data["branch"] if (branch["f_bus"] in areas_bus[area] && branch["t_bus"] in areas_bus[area_id]) || (branch["f_bus"] in areas_bus[area_id] && branch["t_bus"] in areas_bus[area]) ])
+        else
+            shared_branch[area] = unique([parse(Int64,idx) for (idx,branch) in data["branch"] if xor(branch["f_bus"] in areas_bus[area], branch["t_bus"] in areas_bus[area]) ])
+        end
+            shared_bus[area] = unique(vcat([branch["f_bus"] for (idx,branch) in data["branch"] if parse(Int64,idx) in shared_branch[area]], [branch["t_bus"] for (idx,branch) in data["branch"] if parse(Int64,idx) in shared_branch[area]] ))
+    end
+    shared_bus[0] = unique([idx for area in areas_id for idx in shared_bus[area]])
+    shared_branch[0] = unique([idx for area in areas_id for idx in shared_branch[area]])
+    return shared_bus, shared_branch
+end
+
+"get the shared buses and branches between defined area and all other areas"
+get_shared_component(pm::AbstractPowerModel, area::Int64) = get_shared_component(pm.data, area)
+
+"get the shared buses and branches between defined area and all other areas"
+function get_shared_component(data::Dict{String, <:Any})
+    area = get_area_id(data)
+    get_shared_component(data, area)
+end
+
+"get the shared buses and branches between defined area and all other areas"
+get_shared_component(pm::AbstractPowerModel) = get_shared_component(pm.data)
+
+function calc_number_areas_variables(data::Dict{String, <:Any}, model_type::DataType)
+    areas_id = get_areas_id(data)
+    data_area = Dict{Int64, Any}()
+    num_variables = Dict{Int64, Any}()
+    for area in areas_id
+        data_area = decompose_system(data, area)
+        num_variables[area] = calc_number_all_variables(data_area, model_type)
+    end
+    return num_variables
+end
+
+function calc_number_shared_variables(data::Dict{String, <:Any}, model_type::DataType)
+    areas_id = PMADA.get_areas_id(data)
+    area_id = PMADA.get_area_id(data)
+    shared_variable = PMADA._initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", "flat")
+    num = PMADA.calc_number_variables(shared_variable)
+    return num
+end
+
+function calc_number_all_variables(data::Dict{String, <:Any}, model_type::DataType)
+    variables = initialize_all_variable(data, model_type)
+    num = calc_number_variables(variables)
+    return num
+end
+
+function calc_number_variables(data::Dict{String, <:Any})
+    num = 0 
+    for (key,val) in data
+        if isa(val, Dict{String, <:Any})
+            num += calc_number_variables(val)
+        else
+            num += length(val)
+        end
+    end
+    return num
 end

@@ -5,11 +5,14 @@
 "get the shared data with or without serialization"
 function send_shared_data(from::Int64, to::Int64, data::Dict{String, <:Any}; serialize::Bool=false)
 
-    shared_data = Dict{String, Any}([
-        variable => 
-            Dict{String, Any}([idx => data["shared_primal"][string(from)][variable][idx]
-            for idx in keys(data["shared_primal"][string(to)][variable]) ])
-        for variable in keys(data["shared_primal"][string(to)]) ])
+    shared_data_key = filter(x -> startswith(string(x), "shared"), keys(data))
+
+    shared_data = Dict{String, Any}([key => Dict{String, Any}([
+        variable => Dict{String, Any}([
+            idx => data[key][string(from)][variable][idx] 
+            for idx in keys(data[key][string(to)][variable]) ])
+        for variable in keys(data[key][string(to)]) ])
+    for key in shared_data_key ])
 
     if serialize
         # IObuffer function to convert object to byte streams
@@ -30,11 +33,18 @@ function receive_shared_data!(from::Int64, shared_data::Vector, data::Dict{Strin
 end
 
 "store received data in the local data dictionary"
-function receive_shared_data!(from::Int64, shared_data::Dict, data::Dict{String, <:Any})
-    for variable in keys(data["shared_primal"][string(from)])
-        for idx in keys(data["shared_primal"][string(from)][variable])
-            if !isnan(shared_data[variable][idx])
-                data["shared_primal"][string(from)][variable][idx] = shared_data[variable][idx]
+function receive_shared_data!(from::Int64, shared_data::Dict{String, <:Any}, data::Dict{String, <:Any})
+    for shared_data_key in keys(shared_data)
+        for variable in keys(data[shared_data_key][string(from)])
+            for idx in keys(data[shared_data_key][string(from)][variable])
+                if !isnan(shared_data[shared_data_key][variable][idx])
+                    if isa(shared_data[shared_data_key][variable][idx], String)
+                        value = parse(Float64, shared_data[shared_data_key][variable][idx])
+                    else
+                        value = shared_data[shared_data_key][variable][idx]
+                    end
+                    data[shared_data_key][string(from)][variable][idx] = value
+                end
             end
         end
     end

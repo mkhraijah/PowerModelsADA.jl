@@ -32,7 +32,7 @@ function partition_system!(data::Dict, n::Int64; configuration::Symbol=:edge_cut
         W[f_bus,indx] = 1
         W[t_bus,indx] = 1
     end
-    W = sparse(W)
+    W = SparseArrays.sparse(W)
     h = KaHyPar.HyperGraph(W)
 
     info = @capture_out begin
