@@ -6,7 +6,7 @@
 ADMM algorithm module contians build and update methods
 """
 module admm_methods
-using ..PMADA
+using ..PowerModelsADA
 
 "solve distributed OPF using ADMM algorithm"
 function solve_method(data, model_type::DataType, optimizer; 
@@ -65,7 +65,7 @@ function objective_admm(pm::AbstractPowerModel)
     for area in keys(dual_variable)
         for variable in keys(dual_variable[area])
             for idx in keys(dual_variable[area][variable])
-                v = PMADA._var(pm, variable, idx)
+                v = PowerModelsADA._var(pm, variable, idx)
                 v_central = (shared_variable[area_id][variable][idx] + shared_variable[area][variable][idx])/2
                 v_dual = dual_variable[area][variable][idx]
  

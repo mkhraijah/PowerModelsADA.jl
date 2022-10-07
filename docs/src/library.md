@@ -1,10 +1,10 @@
 # Library 
 
 ```@meta
-CurrentModule = PMADA
+CurrentModule = PowerModelsADA
 ```
 
 ```@autodocs
-Modules = [PMADA]
+Modules = [PowerModelsADA]
 Pages   = ["base.jl", "data.jl", "data_sharing.jl", "opf.jl", "util.jl", "variables.jl"]
 ```

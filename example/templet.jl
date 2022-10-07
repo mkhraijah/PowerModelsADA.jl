@@ -6,7 +6,7 @@
 Templet for xx distributed algorithm
 """
 module xx_methods
-using ..PMADA
+using ..PowerModelsADA
 
 "solve distributed OPF using XX algorithm"
 function solve_method(data, model_type::DataType, optimizer; 

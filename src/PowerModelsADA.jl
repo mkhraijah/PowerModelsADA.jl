@@ -1,4 +1,4 @@
-module PMADA
+module PowerModelsADA
 
 import JuMP
 import PowerModels as _PM

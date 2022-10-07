@@ -2,7 +2,7 @@
 
 
 ```@meta
-CurrentModule = PMADA
+CurrentModule = PowerModelsADA
 ```
 
 ```@docs
@@ -10,5 +10,5 @@ solve_dopf_app
 ```
 
 ```@autodocs
-Modules = [PMADA.app_methods]
+Modules = [PowerModelsADA.app_methods]
 ```

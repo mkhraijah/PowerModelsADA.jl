@@ -193,8 +193,8 @@ get_areas_bus(pm::AbstractPowerModel) = get_areas_bus(pm.data)
 
 "get the shared buses and branches between defined area and all other areas"
 function get_shared_component(data::Dict{String, <:Any}, area_id::Int64)
-    areas_id = PMADA.get_areas_id(data)
-    areas_bus = PMADA.get_areas_bus(data)
+    areas_id = get_areas_id(data)
+    areas_bus = get_areas_bus(data)
     shared_branch = Dict{Int64, Any}()
     shared_bus = Dict{Int64, Any}()
     for area in areas_id
@@ -234,10 +234,10 @@ function calc_number_areas_variables(data::Dict{String, <:Any}, model_type::Data
 end
 
 function calc_number_shared_variables(data::Dict{String, <:Any}, model_type::DataType)
-    areas_id = PMADA.get_areas_id(data)
-    area_id = PMADA.get_area_id(data)
-    shared_variable = PMADA._initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", "flat")
-    num = PMADA.calc_number_variables(shared_variable)
+    areas_id = get_areas_id(data)
+    area_id = get_area_id(data)
+    shared_variable = _initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", "flat")
+    num = calc_number_variables(shared_variable)
     return num
 end
 

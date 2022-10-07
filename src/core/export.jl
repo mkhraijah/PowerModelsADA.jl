@@ -1,8 +1,8 @@
 ###############################################################################
-#                            Export PMADA methods                             #
+#                            Export PowerModelsADA methods                             #
 ###############################################################################
 
-# PMADA methods
+# PowerModelsADA methods
 export
 solve_dopf,
 solve_dopf_coordinated,

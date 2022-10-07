@@ -1,7 +1,7 @@
 # Data Structure
 
 ```@meta
-CurrentModule = PMADA
+CurrentModule = PowerModelsADA
 ```
 
 
@@ -18,15 +18,15 @@ data = parse_file(case_path)
 ```
 
 ### Partitioning
-To check the areas in a `PowerModels` data, use `PMADA.get_areas_id(data)` to get all areas ids in `data`. If the data dictionary dosen't contain more than one area, there are two methods to parition the system `assign_area!` or `partition_system!`
+To check the areas in a `PowerModels` data, use `PowerModelsADA.get_areas_id(data)` to get all areas ids in `data`. If the data dictionary dosen't contain more than one area, there are two methods to parition the system `assign_area!` or `partition_system!`
 
 ```@docs
 assign_area!
 partition_system!
 ```
-An example of partition file is shown in [parition example](https://github.com/mkhraijah/PMADA.jl/blob/main/test/data/case14_2areas.csv).
+An example of partition file is shown in [parition example](https://github.com/mkhraijah/PowerModelsADA.jl/blob/main/test/data/case14_2areas.csv).
 
-Before running the distirbuted algorithm, `PMADA.jl` internally decmpose the original system into subsystems. It decuple the tie-lines by introducing dummy buses and virtual generators at the tie-lines ends. This process is pefromed using `decompose_system` function. 
+Before running the distirbuted algorithm, `PowerModelsADA.jl` internally decmpose the original system into subsystems. It decuple the tie-lines by introducing dummy buses and virtual generators at the tie-lines ends. This process is pefromed using `decompose_system` function. 
 
 ```@docs
 decompose_system

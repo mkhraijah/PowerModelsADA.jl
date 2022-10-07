@@ -1,12 +1,12 @@
 # Tutorial 
 
-PMADA solve the OPF problem using either pre-defined distributed algorithm or user-defined algorithm. This page shows example of solving the OPF problem using the pre-defined algorithms and how to define a new alternating distributed algorithm. 
+PowerModelsADA solve the OPF problem using either pre-defined distributed algorithm or user-defined algorithm. This page shows example of solving the OPF problem using the pre-defined algorithms and how to define a new alternating distributed algorithm. 
 
 ## Run Distributed Algorithm
-To solve the OPF algorithm, we need first to import `PMADA` package and an optimization solver. In this case we use `Ipopt` a NLP solver. You can install the solver using `using Pkg, Pkg.add("Ipopt")`. Then run the following code while you are inside the PMADA package directory. 
+To solve the OPF algorithm, we need first to import `PowerModelsADA` package and an optimization solver. In this case we use `Ipopt` a NLP solver. You can install the solver using `using Pkg, Pkg.add("Ipopt")`. Then run the following code while you are inside the PowerModelsADA package directory. 
 ```julia
 ## Import package
-using PMADA
+using PowerModelsADA
 using Ipopt 
 ```
 
@@ -58,7 +58,7 @@ Another way to solve the OPF problem in more controlled method. We can use the f
 ```julia
 
 ## Import package
-using PMADA
+using PowerModelsADA
 using Ipopt 
 
 ## Settings and optimizer initiation

@@ -1,4 +1,4 @@
-using PMADA
+using PowerModelsADA
 
 import JuMP
 import HiGHS
@@ -17,7 +17,7 @@ PowerModels.silence()
 data_14 =  parse_file("../test/data/case14.m")
 data_RTS =  parse_file("../test/data/case_RTS.m")
 
-@testset "PMADA" begin
+@testset "PowerModelsADA" begin
 
 ## assign area test
     @testset "assign area to busses" begin

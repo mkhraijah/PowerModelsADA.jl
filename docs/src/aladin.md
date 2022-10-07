@@ -2,7 +2,7 @@
 
 
 ```@meta
-CurrentModule = PMADA
+CurrentModule = PowerModelsADA
 ```
 
 ```

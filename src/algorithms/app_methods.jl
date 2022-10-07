@@ -6,7 +6,7 @@
 APP algorithm module contians build and update methods
 """
 module app_methods
-using ..PMADA
+using ..PowerModelsADA
 
 "solve distributed OPF using APP algorithm"
 function solve_method(data, model_type::DataType, optimizer; 
@@ -72,7 +72,7 @@ function objective_app(pm::AbstractPowerModel)
     for area in keys(dual_variable)
         for variable in keys(dual_variable[area])
             for idx in keys(dual_variable[area][variable])
-                v = PMADA._var(pm, variable, idx)
+                v = PowerModelsADA._var(pm, variable, idx)
                 v_neighbor = shared_variable[area][variable][idx]
                 v_local = shared_variable[area_id][variable][idx]
                 v_dual = dual_variable[area][variable][idx]

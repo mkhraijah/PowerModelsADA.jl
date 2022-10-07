@@ -1,7 +1,7 @@
-name = "PMADA"
+name = "PowerModelsADA"
 uuid = "bf5a6c5f-0285-47d6-bb57-79927775d05d"
 authors = ["Mohannad Alkhraijah"]
-repo = "https://github.com/mkhraijah/PMADA.jl"
+repo = "https://github.com/mkhraijah/PowerModelsADA.jl"
 version = "0.0.1"
 
 [deps]

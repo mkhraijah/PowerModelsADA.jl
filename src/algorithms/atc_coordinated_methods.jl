@@ -6,7 +6,7 @@
 ATC algorithm module contians build and update methods
 """
 module atc_coordinated_methods
-using ..PMADA
+using ..PowerModelsADA
 
 "solve distributed OPF using ATC algorithm with central coordinator"
 function solve_method(data, model_type::DataType, 
@@ -95,7 +95,7 @@ function objective_atc_local(pm::AbstractPowerModel)
     for area in keys(dual_variable)
         for variable in keys(dual_variable[area])
             for idx in keys(dual_variable[area][variable])
-                v = PMADA._var(pm, variable, idx)
+                v = PowerModelsADA._var(pm, variable, idx)
                 v_central = shared_variable[area][variable][idx]
                 v_dual = dual_variable[area][variable][idx]
  

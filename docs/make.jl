@@ -1,9 +1,9 @@
 push!(LOAD_PATH,"../src/")
-using Documenter, PMADA
+using Documenter, PowerModelsADA
 
 makedocs(
-    modules = [PMADA],
-    sitename = "PMADA.jl",
+    modules = [PowerModelsADA],
+    sitename = "PowerModelsADA.jl",
     authors = "Mohannad Alkhraijah",
     format = Documenter.HTML(
         analytics = "",
@@ -24,7 +24,7 @@ makedocs(
             ]
         ],
         "Tutorials" => [
-            "Using PMADA" => "tutorial.md",
+            "Using PowerModelsADA" => "tutorial.md",
         "User-defined Algorithm" => "newalgorithm.md"
         ],
         "Library" => "library.md"
@@ -32,5 +32,5 @@ makedocs(
 )
 
 deploydocs(
-    repo = "github.com/mkhraijah/PMADA.jl"
+    repo = "github.com/mkhraijah/PowerModelsADA.jl"
 )

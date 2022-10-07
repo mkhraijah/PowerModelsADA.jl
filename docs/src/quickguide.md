@@ -3,16 +3,16 @@
 AC OPF using ADMM
 
 ```julia
-using PMADA
+using PowerModelsADA
 using Ipopt
 
-model_type = PMADA.ACPPowerModel
-run_dopf_admm("matpower/case3.m", model_type, Ipopt.Optimizer; tol=1e-4, max_iteration=1000, verbose = true, alpha=1000)
+model_type = ACPPowerModel
+run_dopf_admm("test/data/case_RTS.m", model_type, Ipopt.Optimizer; verbose=1)
 ```
 
 ## Getting Results
 
 Results are stored in the data dictionary contains subsystems information
 ```julia
-result = run_dopf_admm("matpower/case3.m", model_type, Ipopt.Optimizer; tol=1e-4, max_iteration=1000, verbose = true, alpha=1000)
+result = run_dopf_admm("test/data/case_RTS.m", model_type, Ipopt.Optimizer; verbose=1)
 ```

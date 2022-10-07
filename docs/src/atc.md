@@ -2,7 +2,7 @@
 
 
 ```@meta
-CurrentModule = PMADA
+CurrentModule = PowerModelsADA
 ```
 
 ```@docs
@@ -11,5 +11,5 @@ solve_dopf_atc_coordinated
 ```
 
 ```@autodocs
-Modules = [PMADA.atc_methods, PMADA.atc_coordinated_methods]
+Modules = [PowerModelsADA.atc_methods, PowerModelsADA.atc_coordinated_methods]
 ```
