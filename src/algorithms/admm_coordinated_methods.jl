@@ -26,14 +26,11 @@ function initialize_method_local(data::Dict{String, <:Any}, model_type::DataType
 
     initialize_dual_variable_local!(data, model_type)
 
-    # solution dictionary
-    initialize_solution!(data, model_type)
-
     # distributed algorithm parameters
-    initialize_dopf_parameters!(data; kwargs...)
+    initialize_dopf_parameters!(data, model_type; kwargs...)
  
-    # ADMM parameters
-    data["alpha"] = get(kwargs, :alpha, 1000)
+    # initiate ADMM parameters
+    data["parameter"] = Dict("alpha"=> get(kwargs, :alpha, 1000))
 end
 
 "inilitlize the ADMM algorithm coordinator"
@@ -44,14 +41,11 @@ function initialize_method_coordinator(data::Dict{String, <:Any}, model_type::Da
 
     initialize_dual_variable_coordinator!(data, model_type)
 
-    # initiate solution dictionary
-    initialize_solution!(data, model_type)
-
     # initiate distributed algorithm parameters
-    initialize_dopf_parameters!(data; kwargs...)
+    initialize_dopf_parameters!(data, model_type; kwargs...)
 
     # initiate ADMM parameters
-    data["alpha"] = get(kwargs, :alpha, 1000)
+    data["parameter"] = Dict("alpha"=> get(kwargs, :alpha, 1000))
 end
 
 "build PowerModel for ADMM algorithm local area"
@@ -80,10 +74,10 @@ end
 "ADMM algorithm objective coordinator"
 function objective_admm_local(pm::AbstractPowerModel)
     # parameters
-    alpha = pm.data["alpha"]
+    alpha = pm.data["parameter"]["alpha"]
 
     # data
-    shared_variable = pm.data["shared_variable"]
+    shared_variable_received = pm.data["received_shared_variable"]
     dual_variable = pm.data["dual_variable"]
 
     # objective function
@@ -92,9 +86,9 @@ function objective_admm_local(pm::AbstractPowerModel)
         for variable in keys(dual_variable[area])
             for idx in keys(dual_variable[area][variable])
                 v = PowerModelsADA._var(pm, variable, idx)
-                v_central = shared_variable[area][variable][idx]
+                v_central = shared_variable_received[area][variable][idx]
                 v_dual = dual_variable[area][variable][idx]
- 
+
                 objective += alpha/2 * (v - v_central)^2 + v_dual * (v - v_central)
             end
         end
@@ -106,52 +100,37 @@ end
 "ADMM algorithm objective local area"
 objective_admm_coordinator(pm::AbstractPowerModel) = objective_admm_local(pm)
 
-"update the ADMM algorithm coordinator data before each iteration"
-function update_method_local_before(data::Dict{String, <:Any})
+"update the ADMM algorithm coordinator data after each iteration"
+function update_method_local(data::Dict{String, <:Any})
     # parameters
-    alpha = data["alpha"]
+    alpha = data["parameter"]["alpha"]
 
     # data
-    area_id = string(get_area_id(data))
-    shared_variable = data["shared_variable"]
+    shared_variable_local = data["shared_variable"]
+    shared_variable_received = data["received_shared_variable"]
     dual_variable = data["dual_variable"]
 
     # update dual variable
     for area in keys(dual_variable)
         for variable in keys(dual_variable[area])
             for idx in keys(dual_variable[area][variable])
-                v_primal = shared_variable[area_id][variable][idx]
-                v_local =  shared_variable[area][variable][idx]
+                v_local = shared_variable_local[area][variable][idx]
+                v_central =  shared_variable_received[area][variable][idx]
                 v_dual = dual_variable[area][variable][idx]
 
-                data["dual_variable"][area][variable][idx]= v_dual  + alpha * (v_primal - v_local)
+                data["dual_variable"][area][variable][idx]= v_dual + alpha * (v_local - v_central)
             end
         end
     end
-end
 
-"update the ADMM algorithm local area data before each iteration"
-update_method_coordinator_before(data::Dict{String, <:Any}) = update_method_local_before(data)
-
-"update the ADMM algorithm local area data between each iteration"
-function update_method_local_between(data::Dict{String, <:Any})
-
-end
-
-"update the ADMM algorithm coordinator data between each iteration"
-update_method_coordinator_between(data::Dict{String, <:Any}) = update_method_local_between(data)
-
-"update the ADMM algorithm coordinator data after each iteration"
-function update_method_local_after(data::Dict{String, <:Any})
-    
-    save_solution!(data)
     calc_mismatch!(data)
+    save_solution!(data)
     update_flag_convergance!(data)
     update_iteration!(data)
 end
 
 "update the ADMM algorithm coordinator data after each iteration"
-update_method_coordinator_after(data::Dict{String, <:Any}) = update_method_local_after(data)
+update_method_coordinator(data::Dict{String, <:Any}) = update_method_local(data)
 
 end
 

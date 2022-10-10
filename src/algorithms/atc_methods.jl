@@ -25,16 +25,15 @@ function initialize_method(data::Dict{String, <:Any}, model_type::DataType; kwar
     initialize_shared_variable!(data, model_type)
 
     initialize_dual_variable!(data, model_type)
-    
-    # solution dictionary
-    initialize_solution!(data, model_type)
 
     # distributed algorithm parameters
-    initialize_dopf_parameters!(data; kwargs...)
+    initialize_dopf_parameters!(data, model_type; kwargs...)
 
-    # ATC parameters
-    data["alpha"] = get(kwargs, :alpha, 1.05)
-    data["beta"] =  get(kwargs, :beta, 1)
+    # initiate ATC parameters
+    data["parameter"] = Dict( 
+        "alpha" => get(kwargs, :alpha, 1.05),
+        "beta" => get(kwargs, :beta, 1))
+
 end
 
 "build method for Distributed PowerModel using ATC algorithm"
@@ -54,11 +53,11 @@ end
 function objective_atc(pm::AbstractPowerModel)
 
     ## ATC parameters
-    beta = pm.data["beta"]
+    beta = pm.data["parameter"]["beta"]
 
     ## data
-    area_id = string(get_area_id(pm))
-    shared_variable = pm.data["shared_variable"]
+    shared_variable_local = pm.data["shared_variable"]
+    shared_variable_received = pm.data["received_shared_variable"]
     dual_variable = pm.data["dual_variable"]
 
     ## objective function
@@ -67,7 +66,7 @@ function objective_atc(pm::AbstractPowerModel)
         for variable in keys(dual_variable[area])
             for idx in keys(dual_variable[area][variable])
                 v = PowerModelsADA._var(pm, variable, idx)
-                v_central = (shared_variable[area_id][variable][idx] + shared_variable[area][variable][idx])/2
+                v_central = (shared_variable_local[area][variable][idx] + shared_variable_received[area][variable][idx])/2
                 v_dual = dual_variable[area][variable][idx]
 
                 objective += (beta * (v - v_central))^2 + v_dual * (v - v_central)
@@ -78,16 +77,16 @@ function objective_atc(pm::AbstractPowerModel)
     return objective
 end
 
-"update the ATC algorithm data before each iteration"
-function update_method_before(data::Dict{String, <:Any})
-
+"update the ATC algorithm data after each iteration"
+function update_method(data::Dict{String, <:Any})
+    
     ## ATC parameters
-    alpha = data["alpha"]
-    beta  = data["beta"]
+    alpha = data["parameter"]["alpha"]
+    beta  = data["parameter"]["beta"]
 
     ## data
-    area_id = string(get_area_id(data))
-    shared_variable = data["shared_variable"]
+    shared_variable_local = data["shared_variable"]
+    shared_variable_received = data["received_shared_variable"]
     dual_variable = data["dual_variable"]
 
     ## update dual variable
@@ -95,8 +94,8 @@ function update_method_before(data::Dict{String, <:Any})
     for area in keys(dual_variable)
         for variable in keys(dual_variable[area])
             for idx in keys(dual_variable[area][variable])
-                v_primal = shared_variable[area_id][variable][idx]
-                v_central = (shared_variable[area_id][variable][idx] + shared_variable[area][variable][idx])/2
+                v_primal = shared_variable_local[area][variable][idx]
+                v_central = (shared_variable_local[area][variable][idx] + shared_variable_received[area][variable][idx])/2
                 v_dual = dual_variable[area][variable][idx]
 
                 data["dual_variable"][area][variable][idx] = v_dual  + 2 * beta^2 * (v_primal - v_central)
@@ -105,14 +104,10 @@ function update_method_before(data::Dict{String, <:Any})
     end
 
     ## update ATC parameter
-    data["beta"] *= alpha
-end
+    data["parameter"]["beta"] *= alpha
 
-"update the ATC algorithm data after each iteration"
-function update_method_after(data::Dict{String, <:Any})
-    
-    save_solution!(data)
     calc_mismatch!(data)
+    save_solution!(data)
     update_flag_convergance!(data)
     update_iteration!(data)
 end

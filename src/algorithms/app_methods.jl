@@ -27,16 +27,14 @@ function initialize_method(data::Dict{String, <:Any}, model_type::Type; kwargs..
 
     initialize_dual_variable!(data, model_type)
 
-    # solution dictionary
-    initialize_solution!(data, model_type)
-
     # distributed algorithm parameters
-    initialize_dopf_parameters!(data; kwargs...)
+    initialize_dopf_parameters!(data, model_type; kwargs...)
 
-    # APP parameters
-    data["alpha"] = get(kwargs, :alpha, 1000)
-    data["beta"] = get(kwargs, :beta, 2*data["alpha"])
-    data["gamma"] = get(kwargs, :gamma, data["alpha"])
+    # initiate APP parameters
+    data["parameter"] = Dict( 
+        "alpha" => get(kwargs, :alpha, 1000),
+        "beta" => get(kwargs, :beta, 2*get(kwargs, :alpha, 1000)),
+        "gamma" => get(kwargs, :gamma, get(kwargs, :alpha, 1000)))
 
 end
 
@@ -57,13 +55,13 @@ end
 function objective_app(pm::AbstractPowerModel)
 
     ## APP parameters
-    alpha = pm.data["alpha"]
-    beta  = pm.data["beta"]
-    gamma = pm.data["gamma"]
+    alpha = pm.data["parameter"]["alpha"]
+    beta  = pm.data["parameter"]["beta"]
+    gamma = pm.data["parameter"]["gamma"]
 
     ## data
-    area_id = string(get_area_id(pm))
-    shared_variable = pm.data["shared_variable"]
+    shared_variable_local = pm.data["shared_variable"]
+    shared_variable_received = pm.data["received_shared_variable"]
     dual_variable = pm.data["dual_variable"]
 
     ## objective function
@@ -73,8 +71,8 @@ function objective_app(pm::AbstractPowerModel)
         for variable in keys(dual_variable[area])
             for idx in keys(dual_variable[area][variable])
                 v = PowerModelsADA._var(pm, variable, idx)
-                v_neighbor = shared_variable[area][variable][idx]
-                v_local = shared_variable[area_id][variable][idx]
+                v_neighbor = shared_variable_received[area][variable][idx]
+                v_local = shared_variable_local[area][variable][idx]
                 v_dual = dual_variable[area][variable][idx]
 
                 objective += beta/2 *  (v - v_local)^2 + gamma * v * (v_local - v_neighbor) + v * v_dual
@@ -85,36 +83,32 @@ function objective_app(pm::AbstractPowerModel)
     return objective
 end
 
-"update the APP algorithm before each iteration"
-function update_method_before(data::Dict{String, <:Any})
-
+"update the APP algorithm data after each iteration"
+function update_method(data::Dict{String, <:Any})
+    
     ## APP parameters
-    alpha = data["alpha"]
+    alpha = data["parameter"]["alpha"]
 
     ## data
-    area_id = string(get_area_id(data))
-    shared_variable = data["shared_variable"]
+    shared_variable_local = data["shared_variable"]
+    shared_variable_received = data["received_shared_variable"]
     dual_variable = data["dual_variable"]
 
     ## update dual variable
     for area in keys(dual_variable)
         for variable in keys(dual_variable[area])
             for idx in keys(dual_variable[area][variable])
-                v_neighbor = shared_variable[area][variable][idx]
-                v_local = shared_variable[area_id][variable][idx]
+                v_neighbor = shared_variable_received[area][variable][idx]
+                v_local = shared_variable_local[area][variable][idx]
                 v_dual = dual_variable[area][variable][idx]
 
                 data["dual_variable"][area][variable][idx] = v_dual  + alpha * (v_local - v_neighbor)
             end
         end
     end
-end
 
-"update the APP algorithm data after each iteration"
-function update_method_after(data::Dict{String, <:Any})
-    
-    save_solution!(data)
     calc_mismatch!(data)
+    save_solution!(data)
     update_flag_convergance!(data)
     update_iteration!(data)
 end

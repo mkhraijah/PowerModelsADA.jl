@@ -6,9 +6,12 @@
 "initialize the primal shared variables"
 function initialize_shared_variable!(data::Dict{String, <:Any}, model_type::DataType; method::String="flat")
     area_id = get_area_id(data)
-    areas_id =  get_areas_id(data)
-   
+    areas_id = get_areas_id(data)
+    deleteat!(areas_id, areas_id .== area_id) # remove the same area from the list of areas_id
+
     data["shared_variable"] = _initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", method)
+
+    data["received_shared_variable"] = _initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", method)
 end
 
 "initialize the dual shared variables"
@@ -26,16 +29,21 @@ end
 "initialize the primal shared variables for coordinator"
 function initialize_shared_variable_coordinator!(data::Dict{String, <:Any}, model_type::DataType; method::String="flat")
     area_id = get_area_id(data)
-    areas_id =  get_areas_id(data)
+    areas_id = get_areas_id(data)
 
-    data["shared_variable"] = _initialize_shared_variable(data, model_type, area_id ,[areas_id; area_id], "shared_variable", method)
+    data["shared_variable"] = _initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", method)
+
+    data["received_shared_variable"] = _initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", method)
+
+
+    # data["shared_variable"] = _initialize_shared_variable(data, model_type, area_id ,[areas_id; area_id], "shared_variable", method)
 
 end
 
 "initialize the dual shared variables for coordinator"
 function initialize_dual_variable_coordinator!(data::Dict{String, <:Any}, model_type::DataType; method::String="flat")
     area_id = get_area_id(data)
-    areas_id =  get_areas_id(data)
+    areas_id = get_areas_id(data)
    
     data["dual_variable"] = _initialize_shared_variable(data, model_type, area_id, areas_id, "dual_variable", method)
     
@@ -46,7 +54,11 @@ end
 function initialize_shared_variable_local!(data::Dict{String, <:Any}, model_type::DataType; method::String="flat")
     area_id = get_area_id(data)
     
-    data["shared_variable"] = _initialize_shared_variable(data, model_type, area_id ,[0, area_id], "shared_variable", method)
+    data["shared_variable"] = _initialize_shared_variable(data, model_type, area_id, [0], "shared_variable", method)
+
+    data["received_shared_variable"] = _initialize_shared_variable(data, model_type, area_id, [0], "shared_variable", method)
+
+    # data["shared_variable"] = _initialize_shared_variable(data, model_type, area_id ,[0, area_id], "shared_variable", method)
 
 end
 
@@ -112,7 +124,7 @@ return a dictionary contains all the problem variables. Can be used to store the
 - model_type::DataType : power flow formulation (PowerModel type)
 """
 function initialize_all_variable(data::Dict{String, <:Any}, model_type::DataType)
-    bus_variables_name, branch_variables_name, gen_variables_name =  variable_names(model_type)
+    bus_variables_name, branch_variables_name, gen_variables_name = variable_names(model_type)
     all_variables = Dict{String, Dict}()
     for variable in bus_variables_name
         all_variables[variable] = Dict([idx => initial_value(data, variable, parse(Int64,idx), 0, "flat", "shared_variable")  for idx in keys(data["bus"])])
@@ -194,7 +206,9 @@ function variable_names(model_type::DataType)
         return ["w"], ["pf", "pt", "qf", "qt", "wr", "wi"], ["pg", "qg"]
     elseif model_type <: QCRMPowerModel
         return ["vm", "va" , "w"], ["pf", "pt", "qf", "qt", "wr", "wi", "vv", "ccm", "cs", "si", "td"], ["pg", "qg"]
-    else
+    elseif model_type <: AbstractPowerModel
         error("PowerModel type is not supported yet!")
+    else
+        error("model_type $model_type is not PowerModel type!")
     end
 end
