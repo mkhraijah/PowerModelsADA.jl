@@ -22,13 +22,18 @@ end
 "inilitlize the ATC algorithm local area"
 function initialize_method_local(data::Dict{String, <:Any}, model_type::DataType; kwargs...)
 
+    area_id = get_area_id(data)
+    initilization_method = get(kwargs, :initilization_method, "flat")
+
     # primal and dual shared variables
-    initialize_shared_variable_local!(data, model_type)
+    data["shared_variable"] = initialize_shared_variable(data, model_type, area_id, [0], "shared_variable", initilization_method)
 
-    initialize_dual_variable_local!(data, model_type)
+    data["received_variable"] = initialize_shared_variable(data, model_type, area_id, [0], "shared_variable", initilization_method)
 
-    # distributed algorithm parameters
-    initialize_dopf_parameters!(data, model_type; kwargs...)
+    data["dual_variable"] = initialize_shared_variable(data, model_type, area_id ,[0], "dual_variable", initilization_method)
+
+    # distributed algorithm settings
+    initialize_dopf!(data, model_type; kwargs...)
  
     # initiate ATC parameters
     data["parameter"] = Dict( 
@@ -41,13 +46,19 @@ end
 "inilitlize the ATC algorithm coordinator"
 function initialize_method_coordinator(data::Dict{String, <:Any}, model_type::DataType; kwargs...)
 
+    area_id = get_area_id(data)
+    areas_id = get_areas_id(data)
+    initilization_method = get(kwargs, :initilization_method, "flat")
+
     # initiate primal and dual shared variables
-    initialize_shared_variable_coordinator!(data, model_type)
+    data["shared_variable"] = initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", initilization_method)
 
-    initialize_dual_variable_coordinator!(data, model_type)
+    data["received_variable"] = initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", initilization_method)
 
-    # initiate distributed algorithm parameters
-    initialize_dopf_parameters!(data, model_type; kwargs...)
+    data["dual_variable"] = initialize_shared_variable(data, model_type, area_id, areas_id, "dual_variable", initilization_method)
+
+    # distributed algorithm settings
+    initialize_dopf!(data, model_type; kwargs...)
 
     # initiate ATC parameters
     data["parameter"] = Dict( 
@@ -87,7 +98,7 @@ function objective_atc_local(pm::AbstractPowerModel)
     beta = pm.data["parameter"]["beta"]
 
     ## data
-    shared_variable_received = pm.data["received_shared_variable"]
+    shared_variable_received = pm.data["received_variable"]
     dual_variable = pm.data["dual_variable"]
 
     ## objective function
@@ -120,7 +131,7 @@ function update_method_local(data::Dict{String, <:Any})
 
     ## data
     shared_variable_local = data["shared_variable"]
-    shared_variable_received = data["received_shared_variable"]
+    shared_variable_received = data["received_variable"]
     dual_variable = data["dual_variable"]
 
     ## update dual variable

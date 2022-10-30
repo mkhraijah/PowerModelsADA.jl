@@ -43,12 +43,12 @@ function solve_dopf(data::Dict{String, <:Any}, model_type::DataType, optimizer, 
     flag_convergance = false
 
     # start iteration
-    while iteration < max_iteration && flag_convergance == false
+    while iteration < max_iteration && !flag_convergance
 
         # solve local problem and update solution
         info = @capture_out begin
             Threads.@threads for i in areas_id
-                result = _PM.solve_model(data_area[i], model_type, optimizer, dopf_method.build_method, solution_processors=dopf_method.post_processors)
+                result = solve_model(data_area[i], model_type, optimizer, dopf_method.build_method, solution_processors=dopf_method.post_processors)
                 update_data!(data_area[i], result["solution"])
             end
         end
@@ -136,12 +136,12 @@ function solve_dopf_coordinated(data::Dict{String, <:Any}, model_type::DataType,
     flag_convergance = false
 
     ## start iteration
-    while iteration < max_iteration && flag_convergance == false
+    while iteration < max_iteration && !flag_convergance
 
         # solve local area problems in parallel
         info1 = @capture_out begin
             Threads.@threads for i in areas_id
-                result = _PM.solve_model(data_area[i], model_type, optimizer, dopf_method.build_method_local, solution_processors=dopf_method.post_processors_local)
+                result = solve_model(data_area[i], model_type, optimizer, dopf_method.build_method_local, solution_processors=dopf_method.post_processors_local)
                 update_data!(data_area[i], result["solution"])
             end
         end
@@ -154,7 +154,7 @@ function solve_dopf_coordinated(data::Dict{String, <:Any}, model_type::DataType,
 
         # solve coordinator problem 
         info2 = @capture_out begin
-            result = _PM.solve_model(data_coordinator, model_type, optimizer, dopf_method.build_method_coordinator, solution_processors=dopf_method.post_processors_coordinator)
+            result = solve_model(data_coordinator, model_type, optimizer, dopf_method.build_method_coordinator, solution_processors=dopf_method.post_processors_coordinator)
             update_data!(data_coordinator, result["solution"])
         end
 
@@ -191,13 +191,13 @@ function solve_dopf_coordinated(data::String, model_type::DataType, optimizer, d
 end
 
 "initialize dopf parameters"
-function initialize_dopf_parameters!(data::Dict{String, <:Any}, model_type::DataType; kwargs...)
+function initialize_dopf!(data::Dict{String, <:Any}, model_type::DataType; kwargs...)
     # options
     data["option"] = Dict{String, Any}()
     data["option"]["tol"] = get(kwargs, :tol, 1e-4)
-    data["option"]["max_iteration"] =  get(kwargs, :max_iteration, 1000)
-    data["option"]["mismatch_method"] =  get(kwargs, :mismatch_method, "norm")
-    data["option"]["model_type"] =  model_type
+    data["option"]["max_iteration"] = get(kwargs, :max_iteration, 1000)
+    data["option"]["mismatch_method"] = get(kwargs, :mismatch_method, "norm")
+    data["option"]["model_type"] = model_type
 
     # counters
     data["counter"] = Dict{String, Any}()
@@ -261,7 +261,7 @@ function calc_mismatch!(data::Dict{String, <:Any}; p::Int64=2 )
     area_id = string(get_area_id(data)) 
     mismatch_method = data["option"]["mismatch_method"]
     shared_variable_local = data["shared_variable"]
-    shared_variable_received = data["received_shared_variable"]
+    shared_variable_received = data["received_variable"]
 
     mismatch = Dict{String, Any}([
         area => Dict{String, Any}([

@@ -8,38 +8,38 @@
 # ALADIN algorithm module contians build and update methods
 # """
 
-module aladin_methods
+module aladin_coordinated_methods
 
 using JuMP
 using SparseArrays
 using LinearAlgebra
-using PowerModelsADA
+using ..PowerModelsADA
 
 "inilitlize the ALADIN algorithm local area"
 function initialize_method_local(data::Dict{String, <:Any}, model_type::DataType; kwargs...)
 
-    area_id = PowerModelsADA.get_area_id(data)
-    areas_id = PowerModelsADA.get_areas_id(data)
+    area_id = get_area_id(data)
+    areas_id = get_areas_id(data)
     deleteat!(areas_id, areas_id .== area_id) # remove the same area from the list of areas_id
 
     # initiate primal and dual shared variables
 
     data["shared_variable"] = initialize_shared_variable(data, model_type, area_id, [0], "shared_variable", "flat")
 
-    # data["received_shared_variable"] = initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", "flat")
+    # data["received_variable"] = initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", "flat")
 
     data["shared_dual_variable"] = Dict{String, Dict{String, Any}}("0" => initialize_shared_variable(data, model_type, area_id, areas_id, "dual_variable", "flat"))
 
-    data["received_shared_dual_variable"] = Dict{String, Dict{String, Any}}("0" => initialize_shared_variable(data, model_type, area_id, areas_id, "dual_variable", "flat"))
+    data["received_dual_variable"] = Dict{String, Dict{String, Any}}("0" => initialize_shared_variable(data, model_type, area_id, areas_id, "dual_variable", "flat"))
 
     data["shared_sensitivities"] = Dict{String, Dict{String, Any}}("0" => Dict("g"=>Dict{String, Any}(), "C"=>Dict{String, Any}(), "B"=> Dict{String, Any}() ))
 
     data["local_solution"] = initialize_all_variable(data, model_type)
 
-    data["received_shared_delta"] = Dict{String, Dict{String, Any}}("0" => initialize_all_variable(data, model_type, "zeros"))
+    data["received_delta"] = Dict{String, Dict{String, Any}}("0" => initialize_all_variable(data, model_type, "zeros"))
 
-    # initiate distributed algorithm parameters
-    initialize_dopf_parameters!(data, model_type; kwargs...)
+    # initiate algorithm settings
+    initialize_dopf!(data, model_type; kwargs...)
     
     # initiate ALADIN parameters
     p = get(kwargs, :p, 1000)
@@ -67,22 +67,22 @@ function initialize_method_coordinator(data::Dict{String, <:Any}, model_type::Da
     areas_id = get_areas_id(data)
     # initiate primal and dual shared variables
 
-    data["received_shared_sensitivities"] = Dict{String,Any}([string(area) => Dict{String, Any}() for area in areas_id])
-    data["received_shared_variable"] = initialize_shared_variable(data, model_type, 0 ,areas_id, "shared_variable", "flat")
+    data["received_sensitivities"] = Dict{String,Any}([string(area) => Dict{String, Any}() for area in areas_id])
+    data["received_variable"] = initialize_shared_variable(data, model_type, 0 ,areas_id, "shared_variable", "flat")
     data["shared_dual_variable"] = Dict{String,Any}()
-    data["received_shared_dual_variable"] = Dict{String,Any}()
+    data["received_dual_variable"] = Dict{String,Any}()
     data["shared_delta"] = Dict{String,Any}()
     for i in areas_id
         data_area = decompose_system(data_system, i)
         areas = deepcopy(areas_id)
         deleteat!(areas, areas .== i)
         data["shared_dual_variable"][string(i)] = initialize_shared_variable(data, model_type, i ,areas, "dual_variable", "flat")
-        data["received_shared_dual_variable"][string(i)] = initialize_shared_variable(data, model_type, i ,areas, "dual_variable", "flat")
+        data["received_dual_variable"][string(i)] = initialize_shared_variable(data, model_type, i ,areas, "dual_variable", "flat")
         data["shared_delta"][string(i)] = initialize_all_variable(data_area, model_type)
     end
 
     # initiate distributed algorithm parameters
-    initialize_dopf_parameters!(data, model_type; kwargs...)
+    initialize_dopf!(data, model_type; kwargs...)
 
     mu = get(kwargs, :mu, 1000)
     r_mu = get(kwargs, :r_mu, 2)
@@ -136,8 +136,8 @@ function update_method_local(data::Dict{String, <:Any})
 
     ## data
     dual_variable_local = data["shared_dual_variable"]["0"]
-    dual_variable_central = data["received_shared_dual_variable"]["0"]
-    delta = data["received_shared_delta"]["0"]
+    dual_variable_central = data["received_dual_variable"]["0"]
+    delta = data["received_delta"]["0"]
 
     solution = data["solution"]
     local_solution = data["local_solution"]
@@ -182,13 +182,13 @@ end
 function build_method_local(pm::PowerModelsADA.AbstractPowerModel)
 
     # define variables
-    PowerModelsADA.variable_opf(pm)
+    variable_opf(pm)
 
     # define constraints
-    PowerModelsADA.constraint_opf(pm)
+    constraint_opf(pm)
 
     # define objective function
-    PowerModelsADA.objective_min_fuel_and_consensus!(pm, objective_aladin_local)
+    objective_min_fuel_and_consensus!(pm, objective_aladin_local)
 end
 
 
@@ -487,9 +487,9 @@ function solve_coordinator!(data, optimizer)
     
     mu = data["parameter"]["mu"]
 
-    shared_variable = data["received_shared_variable"]
-    dual_variable = data["received_shared_dual_variable"]
-    sensitivities = data["received_shared_sensitivities"]
+    shared_variable = data["received_variable"]
+    dual_variable = data["received_dual_variable"]
+    sensitivities = data["received_sensitivities"]
     delta = data["shared_delta"]
     qp_dual_variable = data["shared_dual_variable"]
 
@@ -530,7 +530,7 @@ function solve_coordinator!(data, optimizer)
 
 
     for area in keys(x)
-        n_constraints = size(first(first(data["received_shared_sensitivities"][area]["C"])[2])[2])[1]
+        n_constraints = size(first(first(data["received_sensitivities"][area]["C"])[2])[2])[1]
         for n in 1:n_constraints
             @constraint(model, sum(sensitivities[area]["C"][variable][idx][n]*x[area][variable][idx] for variable in keys(x[area]) for idx in keys(x[area][variable])) == 0)
         end
@@ -571,8 +571,8 @@ function update_method_coordinator(data::Dict{String, <:Any})
         data["parameter"]["mu"] = data["parameter"]["r_mu"]*data["parameter"]["mu"]
     end
 
-    PowerModelsADA.save_solution!(data)
-    PowerModelsADA.update_iteration!(data)
+    save_solution!(data)
+    update_iteration!(data)
 
 end
 
@@ -599,12 +599,12 @@ Solve the distributed OPF problem using ADMM algorithm with central coordinator.
 """
 function solve_dopf_aladin_coordinated(data::Union{Dict{String, <:Any}, String}, model_type::DataType, optimizer; mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, print_level::Int64=1, p::Real=1000, mu::Real=1000, p_upper::Real=1e6, mu_upper::Real=2e6, r_p::Real=1.5, r_mu::Real=2, a1::Real=1, a2::Real=1, a3::Real=1, q_gamma::Real=0, sigma::Dict{String, <:Any}=Dict())
 
+
     # obtain and standardize case data
     if isa(data, String)
         data = parse_file(data)
     end
-    PowerModelsADA._PM.standardize_cost_terms!(data, order=2)
-    arrange_areas_id!(data)
+    _PM.standardize_cost_terms!(data, order=2)
 
     # arrange sigma parameter
     if isempty(sigma)
@@ -612,6 +612,7 @@ function solve_dopf_aladin_coordinated(data::Union{Dict{String, <:Any}, String},
     end
 
     # obtain and arrange areas id
+    arrange_areas_id!(data)
     areas_id = get_areas_id(data)
 
     # decompose the system into subsystems
@@ -621,32 +622,36 @@ function solve_dopf_aladin_coordinated(data::Union{Dict{String, <:Any}, String},
     end
 
     # initilize distributed power model parameters
-    data_coordinator = aladin_methods.initialize_method_coordinator(data, model_type; mismatch_method=mismatch_method, max_iteration=max_iteration, tol=tol, p=p, a1=a1, a2=a2, a3=a3, mu=mu, r_p=r_p, r_mu=r_mu, p_upper=p_upper, mu_upper=mu_upper, q_gamma=q_gamma, sigma=sigma)
+    data_coordinator = aladin_coordinated_methods.initialize_method_coordinator(data, model_type; mismatch_method=mismatch_method, max_iteration=max_iteration, tol=tol, a1=a1, a2=a2, a3=a3, mu=mu, r_mu=r_mu, mu_upper=mu_upper, q_gamma=q_gamma, sigma=sigma)
     for i in areas_id
-        aladin_methods.initialize_method_local(data_area[i], model_type; mismatch_method=mismatch_method, max_iteration=max_iteration, tol=tol, p=p, a1=a1, a2=a2, a3=a3, mu=mu, r_p=r_p, r_mu=r_mu, p_upper=p_upper, mu_upper=mu_upper, q_gamma=q_gamma, sigma=sigma)
+        aladin_coordinated_methods.initialize_method_local(data_area[i], model_type; mismatch_method=mismatch_method, max_iteration=max_iteration, tol=tol, p=p, a1=a1, a2=a2, a3=a3, r_p=r_p, p_upper=p_upper, q_gamma=q_gamma, sigma=sigma)
     end
 
     ## initialaize the algorithms global counters
-    iteration = 1
+    iteration = 0
     flag_convergance = false
 
     ## start iteration
-    while iteration < max_iteration && flag_convergance == false
+    while iteration < max_iteration && !flag_convergance
 
         # solve local area problems in parallel
-        for i in areas_id
-            result = PowerModelsADA._PM.solve_model(data_area[i], model_type, optimizer, aladin_methods.build_method_local, solution_processors=aladin_methods.post_processors_local)
-            update_data!(data_area[i], result["solution"])
+        info1 = @capture_out begin
+            Threads.@threads for i in areas_id
+                result = solve_model(data_area[i], model_type, optimizer, aladin_coordinated_methods.build_method_local, solution_processors=aladin_coordinated_methods.post_processors_local)
+                update_data!(data_area[i], result["solution"])
+            end
         end
 
         # share solution of local areas with the coordinator
-        for area in areas_id # sender subsystem
-            shared_data = prepare_shared_data(data_area[area], 0, serialize = false)
-            receive_shared_data!(data_coordinator, shared_data, area)
+        for i in areas_id # sender subsystem
+            shared_data = prepare_shared_data(data_area[i], 0, serialize = false)
+            receive_shared_data!(data_coordinator, shared_data, i)
         end
 
         # solve coordinator problem 
-        aladin_methods.solve_coordinator!(data_coordinator, optimizer)
+        info2 = @capture_out begin
+            aladin_coordinated_methods.solve_coordinator!(data_coordinator, optimizer)
+        end
 
         # share coordinator solution with local areas
         for i in areas_id # sender subsystem
@@ -655,9 +660,9 @@ function solve_dopf_aladin_coordinated(data::Union{Dict{String, <:Any}, String},
         end
 
         # update local areas and coordinator problems after
-        aladin_methods.update_method_coordinator(data_coordinator)
+        aladin_coordinated_methods.update_method_coordinator(data_coordinator)
         for i in areas_id
-            aladin_methods.update_method_local(data_area[i])
+            aladin_coordinated_methods.update_method_local(data_area[i])
         end
 
         # check global convergance and update iteration counters
@@ -665,7 +670,7 @@ function solve_dopf_aladin_coordinated(data::Union{Dict{String, <:Any}, String},
         iteration += 1
 
         # print solution
-        print_iteration(data_area, print_level, [])
+        print_iteration(data_area, print_level, [info1; info2])
 
     end
 
@@ -674,3 +679,6 @@ function solve_dopf_aladin_coordinated(data::Union{Dict{String, <:Any}, String},
 
     return data_area
 end
+
+# export the algorithm methods module and call method
+export aladin_coordinated_methods, solve_dopf_aladin_coordinated

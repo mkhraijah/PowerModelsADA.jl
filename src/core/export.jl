@@ -31,16 +31,10 @@ get_areas_bus,
 get_shared_component,
 variable_names,
 variable_shared_names,
-initialize_dopf_parameters!,
+initialize_dopf!,
 initialize_solution!,
 initialize_all_variable,
 initialize_shared_variable,
-initialize_shared_variable!,
-initialize_dual_variable!,
-initialize_shared_variable_coordinator!,
-initialize_dual_variable_coordinator!,
-initialize_shared_variable_local!,
-initialize_dual_variable_local!,
 objective_min_fuel_and_consensus!,
 variable_opf,
 constraint_opf,
@@ -75,4 +69,4 @@ for type in powermodels
 end
 
 # PowerModels functions
-export ids, ref, var, con, sol, nw_ids, nws, optimize_model!, nw_id_default, ismultinetwork, update_data!, parse_file, AbstractPowerModel
+export AbstractPowerModel, parse_file, ids, ref, var, con, sol, nw_ids, nws, optimize_model!, nw_id_default, ismultinetwork, solve_model, update_data!, silence

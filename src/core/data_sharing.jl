@@ -29,8 +29,9 @@ end
 "store received data in the local data dictionary"
 function receive_shared_data!(data::Dict{String, <:Any}, shared_data::Dict{String, <:Any}, from_area::Int64)
     for shared_data_key in keys(shared_data)
-        if haskey(data, "received_$shared_data_key")
-            data["received_$shared_data_key"][string(from_area)] = shared_data[shared_data_key]
+        key = shared_data_key[8:end]
+        if haskey(data, "received_$key")
+            data["received_$key"][string(from_area)] = shared_data[shared_data_key]
         end
     end
 end

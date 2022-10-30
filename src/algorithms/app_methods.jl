@@ -22,13 +22,20 @@ end
 "inilitlize the APP algorithm"
 function initialize_method(data::Dict{String, <:Any}, model_type::Type; kwargs...)
 
+    area_id = get_area_id(data)
+    areas_id = get_areas_id(data)
+    deleteat!(areas_id, areas_id .== area_id) # remove the same area from the list of areas_id
+    initilization_method = get(kwargs, :initilization_method, "flat")
+
     # primal and dual shared variables
-    initialize_shared_variable!(data, model_type)
+    data["shared_variable"] = initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", initilization_method)
 
-    initialize_dual_variable!(data, model_type)
+    data["received_variable"] = initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", initilization_method)
 
-    # distributed algorithm parameters
-    initialize_dopf_parameters!(data, model_type; kwargs...)
+    data["dual_variable"] = initialize_shared_variable(data, model_type, area_id, areas_id, "dual_variable", initilization_method)
+
+    # distributed algorithm settings
+    initialize_dopf!(data, model_type; kwargs...)
 
     # initiate APP parameters
     data["parameter"] = Dict( 
@@ -61,7 +68,7 @@ function objective_app(pm::AbstractPowerModel)
 
     ## data
     shared_variable_local = pm.data["shared_variable"]
-    shared_variable_received = pm.data["received_shared_variable"]
+    shared_variable_received = pm.data["received_variable"]
     dual_variable = pm.data["dual_variable"]
 
     ## objective function
@@ -91,7 +98,7 @@ function update_method(data::Dict{String, <:Any})
 
     ## data
     shared_variable_local = data["shared_variable"]
-    shared_variable_received = data["received_shared_variable"]
+    shared_variable_received = data["received_variable"]
     dual_variable = data["dual_variable"]
 
     ## update dual variable

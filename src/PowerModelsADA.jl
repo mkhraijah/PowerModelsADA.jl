@@ -9,7 +9,7 @@ import SparseArrays
 import KaHyPar
 import Suppressor: @capture_out
 
-import PowerModels: AbstractPowerModel, parse_file, ids, ref, var, con, sol, nw_ids, nws, optimize_model!, nw_id_default, ismultinetwork, update_data!
+import PowerModels: AbstractPowerModel, parse_file, ids, ref, var, con, sol, nw_ids, nws, optimize_model!, nw_id_default, ismultinetwork, solve_model, update_data!, silence
 
 include("core/base.jl")
 include("core/variables.jl")
