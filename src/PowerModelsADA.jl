@@ -25,6 +25,7 @@ include("algorithms/atc_methods.jl")
 include("algorithms/app_methods.jl")
 include("algorithms/admm_coordinated_methods.jl")
 include("algorithms/atc_coordinated_methods.jl")
+include("algorithms/aladin_coordinated_methods.jl")
 
 
 end

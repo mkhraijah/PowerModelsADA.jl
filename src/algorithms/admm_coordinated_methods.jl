@@ -11,11 +11,11 @@ using ..PowerModelsADA
 "solve distributed OPF using ADMM algorithm with central coordinator"
 function solve_method(data, model_type::DataType, optimizer; 
     mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, 
-    save_data=["solution", "mismatch"], verbose::Int64=1, alpha::Real=1000)
+    save_data=["solution", "mismatch"], print_level::Int64=1, alpha::Real=1000)
     
     solve_dopf_coordinated(data, model_type, optimizer, admm_coordinated_methods; 
     mismatch_method=mismatch_method, tol=tol, max_iteration=max_iteration, 
-    save_data=save_data, verbose=verbose, alpha=alpha)
+    save_data=save_data, print_level=print_level, alpha=alpha)
 end
 
 "inilitlize the ADMM algorithm local area"
@@ -132,11 +132,15 @@ end
 "update the ADMM algorithm coordinator data after each iteration"
 update_method_coordinator(data::Dict{String, <:Any}) = update_method_local(data)
 
+post_processors_local = [update_solution!, update_shared_variable!]
+
+post_processors_coordinator = [update_solution!, update_shared_variable!]
+
 end
 
 """
     solve_dopf_admm_coordinated(data::Dict{String, <:Any}, model_type::DataType, optimizer; tol::Float64=1e-4, 
-    max_iteration::Int64=1000, verbose::Int64=1, alpha::Real=1000)
+    max_iteration::Int64=1000, print_level::Int64=1, alpha::Real=1000)
 
 Solve the distributed OPF problem using ADMM algorithm with central coordinator.
 
@@ -147,15 +151,15 @@ Solve the distributed OPF problem using ADMM algorithm with central coordinator.
 - mismatch_method::String="norm" : mismatch calculation method (norm, max)
 - tol::Float64=1e-4 : mismatch tolerance
 - max_iteration::Int64=1000 : maximum number of iteration
-- verbose::Int64=1 : print mismatch after each iteration and result summary 
+- print_level::Int64=1 : print mismatch after each iteration and result summary 
 - print_optimizer_info::Bool=false : print local optimization info from the solver
 - alpha::Real=1000 : algorithm parameters
 """
 solve_dopf_admm_coordinated(data, model_type::DataType, optimizer; 
 mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, 
-verbose::Int64=1, alpha::Real=1000) = admm_coordinated_methods.solve_method(data, model_type, optimizer; 
+print_level::Int64=1, alpha::Real=1000) = admm_coordinated_methods.solve_method(data, model_type, optimizer; 
 mismatch_method=mismatch_method, tol=tol, max_iteration=max_iteration, 
-verbose=verbose, alpha=alpha)
+print_level=print_level, alpha=alpha)
 
 # export the algorithm methods module and call method
 export admm_coordinated_methods, solve_dopf_admm_coordinated

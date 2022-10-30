@@ -11,12 +11,12 @@ using ..PowerModelsADA
 "solve distributed OPF using APP algorithm"
 function solve_method(data, model_type::DataType, optimizer; 
     mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, 
-    save_data=["solution"], verbose::Int64=1, 
+    save_data=["solution"], print_level::Int64=1, 
     alpha::Real=1000, beta::Real=2alpha, gamma::Real=alpha)
 
     solve_dopf(data, model_type, optimizer, app_methods; 
     mismatch_method=mismatch_method, tol=tol, max_iteration=max_iteration, 
-    save_data=save_data, verbose=verbose, alpha=alpha, beta=beta, gamma=gamma)
+    save_data=save_data, print_level=print_level, alpha=alpha, beta=beta, gamma=gamma)
 end
 
 "inilitlize the APP algorithm"
@@ -113,13 +113,13 @@ function update_method(data::Dict{String, <:Any})
     update_iteration!(data)
 end
 
-
+post_processors = [update_solution!, update_shared_variable!]
 end
 
 """
     solve_dopf_app(data::Dict{String, <:Any}, model_type::DataType, optimizer; 
     mismatch_method::String="norm",tol::Float64=1e-4, max_iteration::Int64=1000, 
-    verbose::Int64=1, alpha::Real=1000, beta::Real, gamma::Real)
+    print_level::Int64=1, alpha::Real=1000, beta::Real, gamma::Real)
 
 Solve the distributed OPF problem using APP algorithm.
 # Arguments:
@@ -129,7 +129,7 @@ Solve the distributed OPF problem using APP algorithm.
 - mismatch_method::String="norm" : mismatch calculation method (norm, max)
 - tol::Float64=1e-4 : mismatch tolerance
 - max_iteration::Int64=1000 : maximum number of iteration
-- verbose::Int64=1 : print mismatch after each iteration and result summary 
+- print_level::Int64=1 : print mismatch after each iteration and result summary 
 - alpha::Real= 1000 : algorithm parameters
 - beta::Real= 2alpha : algorithm parameters
 - gamma::Real= alpha : algorithm parameters

@@ -9,9 +9,9 @@ function initialize_shared_variable!(data::Dict{String, <:Any}, model_type::Data
     areas_id = get_areas_id(data)
     deleteat!(areas_id, areas_id .== area_id) # remove the same area from the list of areas_id
 
-    data["shared_variable"] = _initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", method)
+    data["shared_variable"] = initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", method)
 
-    data["received_shared_variable"] = _initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", method)
+    data["received_shared_variable"] = initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", method)
 end
 
 "initialize the dual shared variables"
@@ -20,7 +20,7 @@ function initialize_dual_variable!(data::Dict{String, <:Any}, model_type::DataTy
     areas_id =  get_areas_id(data)
    
     deleteat!(areas_id, areas_id .== area_id) # remove the same area from the list of areas_id
-    data["dual_variable"] = _initialize_shared_variable(data, model_type, area_id, areas_id, "dual_variable", method)
+    data["dual_variable"] = initialize_shared_variable(data, model_type, area_id, areas_id, "dual_variable", method)
 
 end
 
@@ -31,12 +31,12 @@ function initialize_shared_variable_coordinator!(data::Dict{String, <:Any}, mode
     area_id = get_area_id(data)
     areas_id = get_areas_id(data)
 
-    data["shared_variable"] = _initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", method)
+    data["shared_variable"] = initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", method)
 
-    data["received_shared_variable"] = _initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", method)
+    data["received_shared_variable"] = initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", method)
 
 
-    # data["shared_variable"] = _initialize_shared_variable(data, model_type, area_id ,[areas_id; area_id], "shared_variable", method)
+    # data["shared_variable"] = initialize_shared_variable(data, model_type, area_id ,[areas_id; area_id], "shared_variable", method)
 
 end
 
@@ -45,7 +45,7 @@ function initialize_dual_variable_coordinator!(data::Dict{String, <:Any}, model_
     area_id = get_area_id(data)
     areas_id = get_areas_id(data)
    
-    data["dual_variable"] = _initialize_shared_variable(data, model_type, area_id, areas_id, "dual_variable", method)
+    data["dual_variable"] = initialize_shared_variable(data, model_type, area_id, areas_id, "dual_variable", method)
     
 end
 
@@ -54,11 +54,11 @@ end
 function initialize_shared_variable_local!(data::Dict{String, <:Any}, model_type::DataType; method::String="flat")
     area_id = get_area_id(data)
     
-    data["shared_variable"] = _initialize_shared_variable(data, model_type, area_id, [0], "shared_variable", method)
+    data["shared_variable"] = initialize_shared_variable(data, model_type, area_id, [0], "shared_variable", method)
 
-    data["received_shared_variable"] = _initialize_shared_variable(data, model_type, area_id, [0], "shared_variable", method)
+    data["received_shared_variable"] = initialize_shared_variable(data, model_type, area_id, [0], "shared_variable", method)
 
-    # data["shared_variable"] = _initialize_shared_variable(data, model_type, area_id ,[0, area_id], "shared_variable", method)
+    # data["shared_variable"] = initialize_shared_variable(data, model_type, area_id ,[0, area_id], "shared_variable", method)
 
 end
 
@@ -66,14 +66,14 @@ end
 function initialize_dual_variable_local!(data::Dict{String, <:Any}, model_type::DataType; method::String="flat")
     area_id = get_area_id(data)
 
-    data["dual_variable"] = _initialize_shared_variable(data, model_type, area_id ,[0], "dual_variable", method)
+    data["dual_variable"] = initialize_shared_variable(data, model_type, area_id ,[0], "dual_variable", method)
 end
 
 # Template for variable shared
 "initialize shared variable dictionary"
-function _initialize_shared_variable(data::Dict{String, <:Any}, model_type::DataType, from::Int64 ,to::Vector{Int64}, shared_variable::String, method::String="flat")
-    bus_variables_name, branch_variables_name =  variable_shared_names(model_type)
-    shared_bus, shared_branch =  get_shared_component(data, from)
+function initialize_shared_variable(data::Dict{String, <:Any}, model_type::DataType, from::Int64 ,to::Vector{Int64}, shared_variable::String, method::String="flat")
+    bus_variables_name, branch_variables_name = variable_shared_names(model_type)
+    shared_bus, shared_branch = get_shared_component(data, from)
 
     return Dict{String, Any}([
         string(area) => Dict{String, Any}(
@@ -98,8 +98,10 @@ assign initial value based on initialization method
 """
 function initial_value(data::Dict{String, <:Any}, variable::String, idx::Int64, area::Int64, method::String="flat", shared_variable::String="shared_variable")::Float64
 
-    if method in ["flat" , "flat_start"]
-        if shared_variable == "shared_variable" && var in ["vm", "w", "wr"]
+    if method in ["zero", "zeros"]
+        return 0
+    elseif method in ["flat" , "flat_start"]
+        if shared_variable == "shared_variable" && variable in ["vm", "w", "wr"]
             return 1
         else
             return 0
@@ -123,17 +125,17 @@ return a dictionary contains all the problem variables. Can be used to store the
 - data::Dict{String, <:Any} : dictionary contains case in PowerModel format
 - model_type::DataType : power flow formulation (PowerModel type)
 """
-function initialize_all_variable(data::Dict{String, <:Any}, model_type::DataType)
+function initialize_all_variable(data::Dict{String, <:Any}, model_type::DataType, method::String="flat")
     bus_variables_name, branch_variables_name, gen_variables_name = variable_names(model_type)
     all_variables = Dict{String, Dict}()
     for variable in bus_variables_name
-        all_variables[variable] = Dict([idx => initial_value(data, variable, parse(Int64,idx), 0, "flat", "shared_variable")  for idx in keys(data["bus"])])
+        all_variables[variable] = Dict([idx => initial_value(data, variable, parse(Int64,idx), 0, method, "shared_variable")  for idx in keys(data["bus"])])
     end
     for variable in branch_variables_name
-        all_variables[variable] = Dict([idx => initial_value(data, variable, parse(Int64,idx), 0, "flat", "shared_variable")  for idx in keys(data["branch"])])
+        all_variables[variable] = Dict([idx => initial_value(data, variable, parse(Int64,idx), 0, method, "shared_variable")  for idx in keys(data["branch"])])
     end
     for variable in gen_variables_name
-        all_variables[variable] = Dict([idx => initial_value(data, variable, parse(Int64,idx), 0, "flat", "shared_variable")  for idx in keys(data["gen"])])
+        all_variables[variable] = Dict([idx => initial_value(data, variable, parse(Int64,idx), 0, method, "shared_variable")  for idx in keys(data["gen"])])
     end
     return all_variables
 end

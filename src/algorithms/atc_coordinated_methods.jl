@@ -12,11 +12,11 @@ using ..PowerModelsADA
 function solve_method(data, model_type::DataType, 
     optimizer; mismatch_method::String="norm", tol::Float64=1e-4, 
     max_iteration::Int64=1000, save_data=["solution", "mismatch"], 
-    verbose::Int64=1, alpha::Real=1.05, beta::Real=1.0)
+    print_level::Int64=1, alpha::Real=1.05, beta::Real=1.0)
     
     solve_dopf_coordinated(data, model_type, optimizer, atc_coordinated_methods; 
     mismatch_method=mismatch_method, tol=tol, max_iteration=max_iteration, 
-    save_data=save_data, verbose=verbose, alpha=alpha, beta=beta)
+    save_data=save_data, print_level=print_level, alpha=alpha, beta=beta)
 end
 
 "inilitlize the ATC algorithm local area"
@@ -33,7 +33,8 @@ function initialize_method_local(data::Dict{String, <:Any}, model_type::DataType
     # initiate ATC parameters
     data["parameter"] = Dict( 
         "alpha" => get(kwargs, :alpha, 1.05),
-        "beta" => get(kwargs, :beta, 1))
+        "beta" => get(kwargs, :beta, 1),
+        "beta_max" => get(kwargs, :beta_max, 1e6))
 
 end
 
@@ -51,7 +52,8 @@ function initialize_method_coordinator(data::Dict{String, <:Any}, model_type::Da
     # initiate ATC parameters
     data["parameter"] = Dict( 
         "alpha" => get(kwargs, :alpha, 1.05),
-        "beta" => get(kwargs, :beta, 1))
+        "beta" => get(kwargs, :beta, 1),
+        "beta_max" => get(kwargs, :beta_max, 1e6))
 
 end
 
@@ -114,6 +116,7 @@ function update_method_local(data::Dict{String, <:Any})
     ## ATC parameters
     alpha = data["parameter"]["alpha"]
     beta  = data["parameter"]["beta"]
+    beta_max  = data["parameter"]["beta_max"]
 
     ## data
     shared_variable_local = data["shared_variable"]
@@ -134,7 +137,9 @@ function update_method_local(data::Dict{String, <:Any})
     end
 
     ## update ATC parameter
-    data["parameter"]["beta"] *= alpha
+    if beta < beta_max
+        data["parameter"]["beta"] *= alpha
+    end
 
     calc_mismatch!(data)
     save_solution!(data)
@@ -145,11 +150,15 @@ end
 "update the ATC algorithm coordinator data after each iteration"
 update_method_coordinator(data::Dict{String, <:Any}) = update_method_local(data)
 
+post_processors_local = [update_solution!, update_shared_variable!]
+
+post_processors_coordinator = [update_solution!, update_shared_variable!]
+
 end
 
 """
     solve_dopf_atc_coordinated(data::Dict{String, <:Any}, model_type::DataType, optimizer; tol::Float64=1e-4, 
-    max_iteration::Int64=1000, verbose = true, alpha::Real=1000)
+    max_iteration::Int64=1000, print_level = true, alpha::Real=1000)
 
 Solve the distributed OPF problem using ATC algorithm with central coordinator.
 # Arguments:
@@ -159,7 +168,7 @@ Solve the distributed OPF problem using ATC algorithm with central coordinator.
 - mismatch_method::String="norm" : mismatch calculation method (norm, max)
 - tol::Float64=1e-4 : mismatch tolerance
 - max_iteration::Int64=1000 : maximum number of iteration
-- verbose::Int64=1 : print mismatch after each iteration and result summary 
+- print_level::Int64=1 : print mismatch after each iteration and result summary 
 - alpha::Real=1.05 : algorithm parameters
 - beta::Real=1.0 : algorithm parameters
 """

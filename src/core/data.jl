@@ -40,23 +40,18 @@ decompose a system into areas defined by bus area.
 """
 function decompose_system(data::Dict{String, <:Any})
     areas_id = get_areas_id(data)
-    data_area = Dict{Int64, Any}()
-    for i in areas_id
-        data_area[i] = decompose_system(data, i)
-    end
+    data_area = Dict{Int64, Any}([i => decompose_system(data, i) for i in areas_id])
     return data_area
 end
 
 "decompose an area with area id"
-function decompose_system(data::Dict{String, <:Any}, area_id::Int)
-
+function decompose_system(data::Dict{String, <:Any}, area_id::Int64)
     # idintify local buses
     local_bus = get_local_bus(data, area_id)
     neighbor_bus = get_neighbor_bus(data, area_id)
 
-    ## generators list
-    virtual_gen =  add_virtual_gen!(data, neighbor_bus, area_id)
-    area_gen = Dict{String, Any}([i => gen for (i,gen) in data["gen"] if gen["gen_bus"] in local_bus])
+    ## add virtual generators
+    virtual_gen = add_virtual_gen(data, neighbor_bus, area_id)
 
     ## area data
     data_area = Dict{String,Any}()
@@ -66,9 +61,9 @@ function decompose_system(data::Dict{String, <:Any}, area_id::Int)
     data_area["source_type"] = data["source_type"]
     data_area["baseMVA"] = data["baseMVA"]
     data_area["per_unit"] = data["per_unit"]
-    data_area["bus"] = Dict{String,Any}([j => bus for (j,bus) in data["bus"] if bus["bus_i"] in [local_bus;neighbor_bus]])
-    data_area["branch"] = Dict{String,Any}([j => branch for (j,branch) in data["branch"] if branch["f_bus"] in local_bus || branch["t_bus"] in local_bus])
-    data_area["gen"] = merge(area_gen, virtual_gen)
+    data_area["bus"] = Dict{String,Any}([j => bus for (j,bus) in data["bus"] if bus["bus_i"] in [local_bus;neighbor_bus] && bus["bus_type"] != 4])
+    data_area["branch"] = Dict{String,Any}([j => branch for (j,branch) in data["branch"] if (branch["f_bus"] in local_bus || branch["t_bus"] in local_bus) && branch["br_status"] == 1])
+    data_area["gen"] = merge(Dict{String, Any}([i => gen for (i,gen) in data["gen"] if gen["gen_bus"] in local_bus && gen["gen_status"] == 1]), virtual_gen)
     data_area["shunt"] = Dict{String, Any}([i => shunt for (i,shunt) in data["shunt"] if shunt["shunt_bus"] in local_bus])
     data_area["load"] = Dict{String, Any}([i => load for (i,load) in data["load"] if load["load_bus"] in local_bus])
     data_area["storage"]= Dict{String, Any}([i => storage for (i,storage) in data["storage"] if gen["storage_bus"] in local_bus])
@@ -106,7 +101,7 @@ function decompose_coordinator(data::Dict{String, <:Any})
 end
 
 "add virtual geneartors at the neighboring buses of an area"
-function add_virtual_gen!(data::Dict{String, <:Any},neighbor_bus::Vector, area_id::Int)
+function add_virtual_gen(data::Dict{String, <:Any}, neighbor_bus::Vector, area_id::Int)
     max_gen_ind = maximum([parse(Int,i) for i in keys(data["gen"])])
     virtual_gen = Dict{String, Any}()
     cost_model = data["gen"][string(max_gen_ind)]["model"]
@@ -123,6 +118,24 @@ function add_virtual_gen!(data::Dict{String, <:Any},neighbor_bus::Vector, area_i
     return virtual_gen
 end
 
+# "add virtual bus at the tie-lines with other areas"
+# function _add_virtual_bus!(data::Dict{String, <:Any}, neighbor_bus::Vector, area_id::Int)
+#     max_bus_ind = maximum([parse(Int,i) for i in keys(data["bus"])])
+#     vmax = first(data["bus"])[2]["vmax"]
+#     vmin = first(data["bus"])[2]["vmin"]
+
+#     virtual_bus = Dict{String, Any}()
+#     for i in neighbor_bus
+#         bus_area = data["bus"][string(i)]["area"]
+#         base_kv = data["bus"][string(i)]["base_kv"]
+#         common_lines = [idx for (idx,branch) in data["branch"] if (branch["f_bus"] == i && data["bus"][string(branch["t_bus"])]["area"] == area_id) || (branch["t_bus"] == i && data["bus"][string(branch["f_bus"])]["area"] == area_id) ]
+#         for j in common_lines
+#             bus_id = parse(Int64, j) + max_bus_ind
+#             virtual_bus[string(bus_id)] = Dict{String, Any}("zone" => bus_area, "bus_i" => bus_id, "bus_type" => 1, "vmax" => vmax, "source_id" => Any["bus", bus_id], "area"=> bus_area, "vmin" => vmin, "index" => 0.0, "va" => 1.0, "vm" => 0.0,  "base_kv" => base_kv)
+#         end
+#     end
+#     return virtual_bus
+# end
 
 """
 arrange area id from 1 to number of areas
@@ -159,10 +172,12 @@ get_local_bus(pm::AbstractPowerModel, area::Int) = get_local_bus(pm.data, area)
 function get_neighbor_bus(data::Dict{String, <:Any}, local_bus::Vector)
     neighbor_bus = Vector{Int64}()
     for (i,branch) in data["branch"]
-        if branch["f_bus"] in local_bus && !(branch["t_bus"] in local_bus)
-            push!(neighbor_bus,branch["t_bus"])
-        elseif !(branch["f_bus"] in local_bus) && branch["t_bus"] in local_bus
-            push!(neighbor_bus,branch["f_bus"])
+        if branch["br_status"] == 1
+            if branch["f_bus"] in local_bus && !(branch["t_bus"] in local_bus)
+                push!(neighbor_bus,branch["t_bus"])
+            elseif !(branch["f_bus"] in local_bus) && branch["t_bus"] in local_bus
+                push!(neighbor_bus,branch["f_bus"])
+            end
         end
     end
     return neighbor_bus
@@ -199,11 +214,12 @@ function get_shared_component(data::Dict{String, <:Any}, area_id::Int64)
     shared_bus = Dict{Int64, Any}()
     for area in areas_id
         if area != area_id
-            shared_branch[area] = unique([parse(Int64,idx) for (idx,branch) in data["branch"] if (branch["f_bus"] in areas_bus[area] && branch["t_bus"] in areas_bus[area_id]) || (branch["f_bus"] in areas_bus[area_id] && branch["t_bus"] in areas_bus[area]) ])
+            shared_branch[area] = unique([parse(Int64,idx) for (idx,branch) in data["branch"] if branch["br_status"] == 1 && ((branch["f_bus"] in areas_bus[area] && branch["t_bus"] in areas_bus[area_id]) || (branch["f_bus"] in areas_bus[area_id] && branch["t_bus"] in areas_bus[area])) ])
         else
-            shared_branch[area] = unique([parse(Int64,idx) for (idx,branch) in data["branch"] if xor(branch["f_bus"] in areas_bus[area], branch["t_bus"] in areas_bus[area]) ])
+            shared_branch[area] = unique([parse(Int64,idx) for (idx,branch) in data["branch"] if branch["br_status"] == 1 && xor(branch["f_bus"] in areas_bus[area], branch["t_bus"] in areas_bus[area]) ])
         end
-            shared_bus[area] = unique(vcat([branch["f_bus"] for (idx,branch) in data["branch"] if parse(Int64,idx) in shared_branch[area]], [branch["t_bus"] for (idx,branch) in data["branch"] if parse(Int64,idx) in shared_branch[area]] ))
+        
+        shared_bus[area] = unique(vcat([branch["f_bus"] for (idx,branch) in data["branch"] if parse(Int64,idx) in shared_branch[area]], [branch["t_bus"] for (idx,branch) in data["branch"] if parse(Int64,idx) in shared_branch[area]] ))
     end
     shared_bus[0] = unique([idx for area in areas_id for idx in shared_bus[area]])
     shared_branch[0] = unique([idx for area in areas_id for idx in shared_branch[area]])
@@ -236,7 +252,7 @@ end
 function calc_number_shared_variables(data::Dict{String, <:Any}, model_type::DataType)
     areas_id = get_areas_id(data)
     area_id = get_area_id(data)
-    shared_variable = _initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", "flat")
+    shared_variable = initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", "flat")
     num = calc_number_variables(shared_variable)
     return num
 end

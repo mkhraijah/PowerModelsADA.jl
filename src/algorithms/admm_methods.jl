@@ -11,11 +11,11 @@ using ..PowerModelsADA
 "solve distributed OPF using ADMM algorithm"
 function solve_method(data, model_type::DataType, optimizer; 
     mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, 
-    save_data=["solution", "mismatch"], verbose::Int64=1, alpha::Real=1000)
+    save_data=["solution", "mismatch"], print_level::Int64=1, alpha::Real=1000)
 
     solve_dopf(data, model_type, optimizer, admm_methods; 
     mismatch_method=mismatch_method, tol=tol, max_iteration=max_iteration, 
-    save_data=save_data, verbose=verbose, alpha=alpha)
+    save_data=save_data, print_level=print_level, alpha=alpha)
 end
 
 "inilitlize the ADMM algorithm"
@@ -76,7 +76,7 @@ end
 
 "update the ADMM algorithm data after each iteration"
 function update_method(data::Dict{String, <:Any})
-    
+
     # parameters
     alpha = data["parameter"]["alpha"]
 
@@ -104,12 +104,13 @@ function update_method(data::Dict{String, <:Any})
     update_iteration!(data)
 end
 
+post_processors = [update_solution!, update_shared_variable!]
 end
 
 """
     solve_dopf_admm(data::Dict{String, <:Any}, model_type::DataType, optimizer; 
     mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, 
-    verbose::Int64=1, print_optimizer_info::Bool=false, alpha::Real=1000)
+    print_level::Int64=1, print_optimizer_info::Bool=false, alpha::Real=1000)
 
 Solve the distributed OPF problem using ADMM algorithm.
 
@@ -120,7 +121,7 @@ Solve the distributed OPF problem using ADMM algorithm.
 - mismatch_method::String="norm" : mismatch calculation method (norm, max)
 - tol::Float64=1e-4 : mismatch tolerance
 - max_iteration::Int64=1000 : maximum number of iteration
-- verbose::Int64=1 : print mismatch after each iteration and result summary 
+- print_level::Int64=1 : print mismatch after each iteration and result summary 
 - print_optimizer_info::Bool=false : print local optimization info from the solver
 - alpha::Real=1000 : algorithm parameters
 """

@@ -11,11 +11,11 @@ using ..PowerModelsADA
 "solve distributed OPF using ATC algorithm"
 function solve_method(data, model_type::DataType, optimizer; 
     mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, 
-    save_data=["solution", "mismatch"], verbose::Int64=1, alpha::Real=1000, beta::Real=1)
+    save_data=["solution", "mismatch"], print_level::Int64=1, alpha::Real=1000, beta::Real=1, beta_max::Real=1e8)
 
     solve_dopf(data, model_type, optimizer, atc_methods; 
     mismatch_method=mismatch_method, tol=tol, max_iteration=max_iteration, 
-    save_data=save_data, verbose=verbose, alpha=alpha, beta=beta)
+    save_data=save_data, print_level=print_level, alpha=alpha, beta=beta, beta_max=beta_max)
 end
 
 "inilitlize the ATC algorithm"
@@ -32,7 +32,8 @@ function initialize_method(data::Dict{String, <:Any}, model_type::DataType; kwar
     # initiate ATC parameters
     data["parameter"] = Dict( 
         "alpha" => get(kwargs, :alpha, 1.05),
-        "beta" => get(kwargs, :beta, 1))
+        "beta" => get(kwargs, :beta, 1),
+        "beta_max" => get(kwargs, :beta_max, 1e6))
 
 end
 
@@ -83,6 +84,7 @@ function update_method(data::Dict{String, <:Any})
     ## ATC parameters
     alpha = data["parameter"]["alpha"]
     beta  = data["parameter"]["beta"]
+    beta_max = data["parameter"]["beta_max"]
 
     ## data
     shared_variable_local = data["shared_variable"]
@@ -104,7 +106,9 @@ function update_method(data::Dict{String, <:Any})
     end
 
     ## update ATC parameter
-    data["parameter"]["beta"] *= alpha
+    if beta < beta_max
+        data["parameter"]["beta"] *= alpha
+    end
 
     calc_mismatch!(data)
     save_solution!(data)
@@ -112,12 +116,14 @@ function update_method(data::Dict{String, <:Any})
     update_iteration!(data)
 end
 
+post_processors = [update_solution!, update_shared_variable!]
+
 end
 
 """
     solve_dopf_atc(data::Dict{String, <:Any}, model_type::DataType, optimizer; 
     mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, 
-    verbose = true, print_optimizer_info::Bool=false, alpha::Real=1000, beta::Real = 1)
+    print_level = true, print_optimizer_info::Bool=false, alpha::Real=1000, beta::Real = 1)
 
 Solve the distributed OPF problem using ATC algorithm.
 # Arguments:
@@ -127,15 +133,15 @@ Solve the distributed OPF problem using ATC algorithm.
 - mismatch_method::String="norm" : mismatch calculation method (norm, max)
 - tol::Float64=1e-4 : mismatch tolerance
 - max_iteration::Int64=1000 : maximum number of iteration
-- verbose::Int64=1 : print mismatch after each iteration and result summary 
+- print_level::Int64=1 : print mismatch after each iteration and result summary 
 - alpha::Real=1.05 : algorithm parameters
 - beta::Real=1.0 : algorithm parameters
 """
 solve_dopf_atc(data, model_type::DataType, optimizer; 
 mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, 
-verbose::Int64=1, alpha::Real=1000, beta::Real=1) = atc_methods.solve_method(data, model_type, optimizer; 
+print_level::Int64=1, alpha::Real=1000, beta::Real=1) = atc_methods.solve_method(data, model_type, optimizer; 
 mismatch_method=mismatch_method, tol=tol, max_iteration=max_iteration, 
-verbose=verbose, alpha=alpha, beta=beta)
+print_level=print_level, alpha=alpha, beta=beta)
 
 # export the algorithm methods module and call method
 export atc_methods, solve_dopf_atc
