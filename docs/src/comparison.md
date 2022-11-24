@@ -1,13 +1,17 @@
 # Comparison Results 
 
-The results of using `PowerModelsADA`v0.1 on 9 selected test cases with three distributed algorithms and 5 power flow formulations are shown here. We run the three distributed algorithms on a high-performance computing service with a 16-core CPU and 16GB of RAM. The results here used PowerModelsADA v0.1 in Julia v1.6. The results use Ipopt solver for the polar and rectangular ACOPF and Gurobi for the DC approximation, and SOCP and QC relaxations of the OPF.
+The results of using `PowerModelsADA`v0.1 on 9 test cases from **[PGLib-OPF](https://github.com/power-grid-lib/pglib-opf)** is shown here. We benchmark three distributed algorithms with 5 power flow formulations.
 
 
-### Polar AC OPF
+### Simulation Setup
 
-| Algorithm   	|      	| ADMM    	|      	| ATC    	|      	| APP     	|      	|
-|-------------	|:-----:|---------:	|------:	|--------:	|------:	|---------:	|------:	|
-| Case name   	| Area 	|   Time  	| Itr. 	|  Time  	| Itr. 	|   Time  	| Itr. 	|
+We run the three distributed algorithms on a high-performance computing service with a 16-core CPU and 16GB of RAM. The results here used PowerModelsADA v0.1 in Julia v1.6. We use Ipopt solver for the polar and rectangular ACOPF and Gurobi for the DC approximation, and SOCP and QC relaxations of the OPF.
+
+### Polar Form ACOPF
+
+| **Algorithm** |      	| **ADMM**  |      	| **ATC**   |      	| **APP**   |      	|
+|-------------	|:-----:|---------:	|------:|--------:	|------:|---------:	|------:|
+| **Case name** |**Area**| **Time** |**Itr.**| **Time** |**Itr.**| **Time** |**Itr.**|
 | 14_ieee     	| 2    	| 0.45    	| 16   	| 0.78   	| 27   	| 0.82    	| 31   	|
 | 24_ieee_rts 	| 4    	| 8.09    	| 100  	| 4.56   	| 66   	| 10.80   	| 142  	|
 | 30_ieee     	| 3    	| 1.17    	| 23   	| 1.39   	| 27   	| 1.56    	| 31   	|
@@ -19,11 +23,11 @@ The results of using `PowerModelsADA`v0.1 on 9 selected test cases with three di
 | 588_sdet    	| 8    	| 1818.97 	| 1877 	| 660.10 	| 625  	| 1280.41 	| 1278 	|
 
 
-### Rectangular AC OPF
+### Rectangular Form ACOPF
 
-| Algorithm   	|       | ADMM    	|      	| ATC   	|      	| APP     	|      	|
-|-------------	|:-----: |    |--------:	|------:	|--------:	|------:	|-------:	|------:	|
-| Case name   	| Area  |   Time  	| Itr. 	|  Time 	| Itr. 	|   Time  	| Itr. 	|
+| **Algorithm** |      	| **ADMM**  |      	| **ATC**   |      	| **APP**   |      	|
+|-------------	|:-----:|---------:	|------:|--------:	|------:|---------:	|------:|
+| **Case name** |**Area**| **Time** |**Itr.**| **Time** |**Itr.**| **Time** |**Itr.**|
 | 14_ieee     	| 2     | 0.61    	| 19   	| 1.22  	| 28   	| 1.06    	| 32   	|
 | 24_ieee_rts 	| 4     | 15.29   	| 133  	| 9.10  	| 77   	| 20.36   	| 205  	|
 | 30_ieee     	| 3     | 1.91    	| 27   	| 2.40  	| 33   	| 1.55    	| 23   	|
@@ -37,9 +41,9 @@ The results of using `PowerModelsADA`v0.1 on 9 selected test cases with three di
 
 ### DC Approximation 
 
-| Algorithm:   	|       | ADMM   	|      	| ATC    	|      	| APP   	|      	|
-|-------------	|:------: |--------:	|------:	|--------:	|------:	|-------:	|------:	|
-| Case name   	| Area  |  Time  	| Itr. 	|  Time  	| Itr. 	|  Time 	| Itr. 	|
+| **Algorithm** |      	| **ADMM**  |      	| **ATC**   |      	| **APP**   |      	|
+|-------------	|:-----:|---------:	|------:|--------:	|------:|---------:	|------:|
+| **Case name** |**Area**| **Time** |**Itr.**| **Time** |**Itr.**| **Time** |**Itr.**|
 | 14_ieee     	| 2     |   0.10 	|   14 	|   0.23 	|   34 	|  1.13 	|   20 	|
 | 24\_ieee_rts 	| 4     |   3.79 	|  204 	|   1.67 	|   62 	|  3.71 	|  198 	|
 | 30_ieee     	| 3     |   0.18 	|   21 	|   0.35 	|   45 	|  0.27 	|   35 	|
@@ -53,9 +57,9 @@ The results of using `PowerModelsADA`v0.1 on 9 selected test cases with three di
 
 ### SOCP Relaxation 
 
-| Algorithm   	|        | ADMM    	|      	| ATC   	|      	| APP     	|      	|
-|-------------	|:-------: |--------:	|------:	|--------:	|------:	|-------:	|------:	|
-| Case name   	| Area   |   Time  	| Itr. 	|  Time 	| Itr. 	|   Time  	| Itr. 	|
+| **Algorithm** |      	| **ADMM**  |      	| **ATC**   |      	| **APP**   |      	|
+|-------------	|:-----:|---------:	|------:|--------:	|------:|---------:	|------:|
+| **Case name** |**Area**| **Time** |**Itr.**| **Time** |**Itr.**| **Time** |**Itr.**|
 | 14_ieee     	| 2      | 0.49    	| 15   	| 0.76  	| 31   	| 0.75    	| 17   	|
 | 24_ieee_rts 	| 4      | 2.81    	| 52   	| 2.55  	| 35   	| 3.15    	| 51   	|
 | 30_ieee     	| 3      | 0.47    	| 11   	| 1.35  	| 33   	| 1.46    	| 25   	|
@@ -69,9 +73,9 @@ The results of using `PowerModelsADA`v0.1 on 9 selected test cases with three di
 
 ### QC Relaxation 
 
-| Algorithm   	|       | ADMM   	|      	| ATC    	|      	| APP    	|      	|
-|-------------	|:----: |--------:|------:	|--------:	|------:	|-------:	|------:	|
-| Case name   	| Area  |  Time  	| Itr. 	|  Time  	| Itr. 	|  Time  	| Itr. 	|
+| **Algorithm** |      	| **ADMM**  |      	| **ATC**   |      	| **APP**   |      	|
+|-------------	|:-----:|---------:	|------:|--------:	|------:|---------:	|------:|
+| **Case name** |**Area**| **Time** |**Itr.**| **Time** |**Itr.**| **Time** |**Itr.**|
 | 14_ieee     	| 2     | 0.64   	| 18   	| 0.75   	| 23   	| 0.46   	| 14   	|
 | 24_ieee_rts 	| 4     | 5.47   	| 58   	| 3.62   	| 53   	| 5.57   	| 65   	|
 | 30_ieee     	| 3     | 0.88   	| 14   	| 1.43   	| 33   	| 1.99   	| 26   	|

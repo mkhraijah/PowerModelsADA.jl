@@ -10,7 +10,7 @@ Partition a system into n areas using KaHyPar partition algorithm
 # Arguments:
 - data::Dict{String, <:Any} : dictionary contains case in PowerModel format
 - n::Int : number of areas
-- configuration::Symbol : partition meteric (:edge_cut or :connectivity). The defult is :edge_cut
+- configuration::Symbol : partition meteric (:edge_cut or :connectivity). The default is :edge_cut
 - print_info::Bool : print partition algorithm information
 """
 function partition_system!(data::Dict, n::Int64; configuration::Symbol=:edge_cut, print_info::Bool=false)
@@ -66,7 +66,7 @@ function compare_solution(data::Dict{String, <:Any}, data_area::Dict{Int, <:Any}
     # Calculate objective function
     Obj_distributed = calc_dist_gen_cost(data_area::Dict{Int, <:Any})
     Obj_centeral = Central_solution["objective"]
-    # Calculate optimility gap
+    # Calculate optimality gap
     Relative_Error = abs(Obj_distributed - Obj_centeral)/ Obj_centeral * 100
     return Relative_Error
 end

@@ -1,5 +1,5 @@
 ###############################################################################
-#              Base method for all distirbuted OPF algorithms                 #
+#              Base method for all distributed OPF algorithms                 #
 ###############################################################################
 
 """
@@ -11,14 +11,14 @@ Solve OPF problem using fully distributed algorithm.
 - model_type::DataType : power flow formulation (PowerModel type)
 - optimizer : optimizer JuMP initiation object
 - dopf_method::Module : module contains the distributed algorithm methods as follows:
-    - initialize_method::Function : initliize the algorithm parameters and shared variables
+    - initialize_method::Function : initialize the algorithm parameters and shared variables
     - update_method::Function : update the algorithm after each iteration
     - build_method::Function : problem formulation
 - mismatch_method::String="norm" : mismatch calculation method (norm, max)
 - tol::Float64=1e-4 : mismatch tolerance
 - max_iteration::Int64=1000 : maximum number of iteration
 - print_level::Int64=1 : 0 - no print, 1 - print mismatch after each iteration and result summary, 2 - print optimizer output
-- save_data::Vector{String}=[] : vector contains the keys of the dictioaries to be saved at each iteration in "previous_solution". For example, save_data=["solution", "shared_variable", "mismatch"]
+- save_data::Vector{String}=[] : vector contains the keys of the dictionaries to be saved at each iteration in "previous_solution". For example, save_data=["solution", "shared_variable", "mismatch"]
 - kwargs = algorithm-specific and initialization parameters
 """
 function solve_dopf(data_area::Dict{Int, <:Any}, model_type::DataType, optimizer, dopf_method::Module; print_level::Int64=1, kwargs...)
@@ -33,7 +33,7 @@ function solve_dopf(data_area::Dict{Int, <:Any}, model_type::DataType, optimizer
     # get global parameters
     max_iteration = get(kwargs, :max_iteration, 1000)
 
-    # initialaize the algorithms global counters
+    # initialize the algorithms global counters
     iteration = 1
     flag_convergence = false
 
@@ -103,8 +103,8 @@ Solve OPF problem using distributed algorithm with central coordinator.
 - model_type::DataType : power flow formulation (PowerModel type)
 - optimizer : optimizer JuMP initiation object
 - dopf_method::Module : module contains the distributed algorithm methods as follows:
-    - initialize_method_local::Function : initliize the local algorithm parameters and shared variables
-    - initialize_method_coordinator::Function : initliize the coordinator algorithm parameters and shared variables
+    - initialize_method_local::Function : initialize the local algorithm parameters and shared variables
+    - initialize_method_coordinator::Function : initialize the coordinator algorithm parameters and shared variables
     - update_method_local::Function : update the local data after each iteration
     - update_method_coordinator::Function : update the coordinator data after each iteration
     - build_method_local::Function : local problem formulation
@@ -134,7 +134,7 @@ function solve_dopf_coordinated(data::Dict{Int64, <:Any}, model_type::DataType, 
     ## get global parameters
     max_iteration = get(kwargs, :max_iteration, 1000)
 
-    # initialaize the algorithms global counters
+    # initialize the algorithms global counters
     iteration = 1
     flag_convergence = false
 
@@ -406,7 +406,7 @@ function print_convergence(data::Dict, print_level::Int64)
         if flag_convergence
             println("*******************************************************")
             println("")
-            println("Consistency achived within $tol mismatch tolerence")
+            println("Consistency achievedwithin $tol mismatch tolerence")
             println("Number of iterations = $iteration")
             
             objective = calc_dist_gen_cost(data)
@@ -416,7 +416,7 @@ function print_convergence(data::Dict, print_level::Int64)
         else
             println("*******************************************************")
             println("")
-            println("Consistency did not achived within $tol mismatch tolerence and $iteration iteration")
+            println("Consistency did not achievedwithin $tol mismatch toleranceand $iteration iteration")
             println("Shared variables mismatch = $mismatch")
             println("")
             println("*******************************************************")

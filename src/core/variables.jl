@@ -1,5 +1,5 @@
 ###############################################################################
-#   Variable initialization and updating for all distirbuted OPF algorithms    #
+#   Variable initialization and updating for all distributed OPF algorithms   #
 ###############################################################################
 
 # Template for variable shared
@@ -112,7 +112,7 @@ function _var(pm::AbstractPowerModel, key::String, idx::String)
     return var
 end
 
-"idinifiy the shared bus and branch variables names"
+"identifythe shared bus and branch variables names"
 function variable_shared_names(model_type::DataType)
     if model_type <: Union{DCPPowerModel, DCMPPowerModel}
         return ["va"], ["pf"]
@@ -137,7 +137,7 @@ function variable_shared_names(model_type::DataType)
     end
 end
 
-"idinifiy all the variables names"
+"identifyall the variables names"
 function variable_names(model_type::DataType)
     if model_type <: Union{DCPPowerModel, DCMPPowerModel}
         return ["va"], ["pf"], ["pg"]

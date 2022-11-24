@@ -3,7 +3,7 @@
 ###############################################################################
 
 """
-Templet for xx distributed algorithm
+template for xx distributed algorithm
 """
 module xx_methods
 using ..PowerModelsADA
@@ -11,25 +11,25 @@ using ..PowerModelsADA
 "solve distributed OPF using XX algorithm"
 function solve_method(data, model_type::DataType, optimizer; 
     mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, 
-    verbose::Int64=1, parameters...)
+    print_level::Int64=1, parameters...)
 
     solve_dopf(data, model_type, optimizer, xx_methods; 
     mismatch_method=mismatch_method, tol=tol, max_iteration=max_iteration, 
-    verbose=verbose, parameters...)
+    print_level=print_level, parameters...)
 end
 
-"inilitlize the XX algorithm"
+"initialize the XX algorithm"
 function initialize_method(data::Dict{String, <:Any}, model_type::Type; tol::Float64=1e-4, max_iteration::Int64=1000, kwargs...)
 
     # initiate primal and dual shared variables
-    initialize_variable_shared!(data, model_type)
+    data["shared_variable"] = Dict(to_area=> variable_name=>value)
+    data["received_variable"] = Dict(from_area=> variable_name=>value)
 
-    # initiate distributed algorithm parameters
-    initialize_dopf_parameters!(data; tol=tol, max_iteration=max_iteration)
+    # distributed algorithm settings
+    initialize_dopf!(data, model_type; kwargs...)
 
-    # initiate APP parameters
-    parameters = get(kwargs, :parameters, 1000)
-    data["parameters"] = parameters
+    # xx parameters
+    data["parameter"] = Dict("alpha"=> get(kwargs, :alpha, 1000))
 
 end
 
@@ -46,7 +46,7 @@ function build_method(pm::AbstractPowerModel)
     objective_min_fuel_and_consensus!(pm, objective_function)
 end
 
-"set the APP algorithm objective"
+"set the xx algorithm objective"
 function objective_function(pm::AbstractPowerModel)
 
     ###
@@ -55,23 +55,16 @@ function objective_function(pm::AbstractPowerModel)
     return objective
 end
 
-"update the xx algorithm before each iteration"
-function update_method_before(data::Dict{String, <:Any})
-
-    ###
-
-    ###
-end
-
 "update the xx algorithm data after each iteration"
-function update_method_after(data::Dict{String, <:Any})
+function update_method(data::Dict{String, <:Any})
     
     ###
 
     ###
 
-    calc_mismatch!(data, data["mismatch_method"])
-    update_flag_convergance!(data, data["tol"])
+    calc_mismatch!(data)
+    update_flag_convergence!(data)
+    save_solution!(data)
     update_iteration!(data)
 end
 
@@ -81,9 +74,9 @@ end
 """
     solve_dopf_xx(data::Dict{String, <:Any}, model_type::DataType, optimizer; 
     mismatch_method::String="norm",tol::Float64=1e-4, max_iteration::Int64=1000, 
-    verbose::Int64=1, parameters)
+    print_level::Int64=1, parameters)
 
-Solve the distributed OPF problem using APP algorithm.
+Solve the distributed OPF problem using xx algorithm.
 # Arguments:
 - data::Dict{String, <:Any} : dictionary contains case in PowerModel format
 - model_type::DataType : power flow formulation (PowerModel type)
@@ -91,7 +84,7 @@ Solve the distributed OPF problem using APP algorithm.
 - mismatch_method::String="norm" : mismatch calculation method (norm, max)
 - tol::Float64=1e-4 : mismatch tolerance
 - max_iteration::Int64=1000 : maximum number of iteration
-- verbose::Int64=1 : print mismatch after each iteration and result summary 
+- print_level::Int64=1 : print mismatch after each iteration and result summary 
 """
 solve_dopf_xx = xx_methods.solve_method
 

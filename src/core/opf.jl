@@ -1,5 +1,5 @@
 ###############################################################################
-#             OPF problem variable, objetive, and constraints                 #
+#             OPF problem variable, objective, and constraints                #
 ###############################################################################
 
 "define OPF problem variable"

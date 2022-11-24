@@ -1,11 +1,11 @@
 ###############################################################################
-#            Build methods for ADMM algorithm with coordinator                #
+#          Build methods for ALADIN algorithm with coordinator                #
 ###############################################################################
 
 
 
 # """
-# ALADIN algorithm module contians build and update methods
+# ALADIN algorithm module contains build and update methods
 # """
 
 module aladin_coordinated_methods
@@ -15,14 +15,14 @@ using SparseArrays
 using LinearAlgebra
 using ..PowerModelsADA
 
-"inilitlize the ALADIN algorithm local area"
+"initialize the ALADIN algorithm local area"
 function initialize_method_local(data::Dict{String, <:Any}, model_type::DataType; kwargs...)
 
     area_id = get_area_id(data)
     areas_id = get_areas_id(data)
     deleteat!(areas_id, areas_id .== area_id) # remove the same area from the list of areas_id
 
-    # initiate primal and dual shared variables
+    # initialize primal and dual shared variables
 
     data["shared_variable"] = initialize_shared_variable(data, model_type, area_id, 0, "shared_variable", "flat")
 
@@ -36,10 +36,10 @@ function initialize_method_local(data::Dict{String, <:Any}, model_type::DataType
 
     data["received_delta"] = Dict{String, Dict{String, Any}}("0" => initialize_all_variable(data, model_type, "received_delta", "zeros"))
 
-    # initiate algorithm settings
+    # initialize algorithm settings
     initialize_dopf!(data, model_type; kwargs...)
     
-    # initiate ALADIN parameters
+    # initialize ALADIN parameters
     p = get(kwargs, :p, 1000)
     r_p = get(kwargs, :r_p, 1.3)
     p_upper = get(kwargs, :p_upper, 1e6)
@@ -56,14 +56,14 @@ function initialize_method_local(data::Dict{String, <:Any}, model_type::DataType
 end
 
 
-"inilitlize the ALADIN algorithm coordinator"
+"initialize the ALADIN algorithm coordinator"
 function initialize_method_coordinator(data::Dict{String, <:Any}, model_type::DataType; kwargs...)
 
     data_system = data
     data = deepcopy(data_system)
     data = decompose_coordinator(data)
     areas_id = get_areas_id(data)
-    # initiate primal and dual shared variables
+    # initialize primal and dual shared variables
 
     data["received_sensitivities"] = Dict{String,Any}([string(area) => Dict{String, Any}() for area in areas_id])
     data["received_variable"] = initialize_shared_variable(data, model_type, 0 ,areas_id, "received_variable", "flat")
@@ -79,7 +79,7 @@ function initialize_method_coordinator(data::Dict{String, <:Any}, model_type::Da
         data["shared_delta"][string(i)] = initialize_all_variable(data_area, model_type, "shared_delta")
     end
 
-    # initiate distributed algorithm parameters
+    # initialize distributed algorithm parameters
     initialize_dopf!(data, model_type; kwargs...)
 
     mu = get(kwargs, :mu, 1000)
@@ -678,5 +678,5 @@ function solve_dopf_aladin_coordinated(data::Union{Dict{String, <:Any}, String},
     return data_area
 end
 
-# export the algorithm methods module and call method
+# export the algorithm methods module and solve method
 export aladin_coordinated_methods, solve_dopf_aladin_coordinated

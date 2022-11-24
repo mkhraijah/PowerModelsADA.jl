@@ -3,7 +3,7 @@
 ###############################################################################
 
 """
-ATC algorithm module contians build and update methods
+ATC algorithm module contains build and update methods
 """
 module atc_methods
 using ..PowerModelsADA
@@ -13,7 +13,7 @@ function solve_method(data, model_type::DataType, optimizer; mismatch_method::St
     solve_dopf(data, model_type, optimizer, atc_methods; mismatch_method=mismatch_method, tol=tol, max_iteration=max_iteration, save_data=save_data, print_level=print_level, alpha=alpha, beta=beta, beta_max=beta_max, initialization_method=initialization_method)
 end
 
-"inilitlize the ATC algorithm"
+"initialize the ATC algorithm"
 function initialize_method(data::Dict{String, <:Any}, model_type::DataType; kwargs...)
 
     area_id = get_area_id(data)
@@ -31,7 +31,7 @@ function initialize_method(data::Dict{String, <:Any}, model_type::DataType; kwar
     # distributed algorithm settings
     initialize_dopf!(data, model_type; kwargs...)
 
-    # initiate ATC parameters
+    # initialize ATC parameters
     data["parameter"] = Dict( 
         "alpha" => get(kwargs, :alpha, 1.05),
         "beta" => get(kwargs, :beta, 1),
@@ -141,5 +141,5 @@ Solve the distributed OPF problem using ATC algorithm.
 """
 solve_dopf_atc = atc_methods.solve_method
 
-# export the algorithm methods module and call method
+# export the algorithm methods module and solve method
 export atc_methods, solve_dopf_atc

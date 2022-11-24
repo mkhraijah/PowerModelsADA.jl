@@ -3,7 +3,7 @@
 ###############################################################################
 
 """
-ATC algorithm module contians build and update methods
+ATC algorithm module contains build and update methods
 """
 module atc_coordinated_methods
 using ..PowerModelsADA
@@ -13,7 +13,7 @@ function solve_method(data, model_type::DataType, optimizer; mismatch_method::St
     solve_dopf_coordinated(data, model_type, optimizer, atc_coordinated_methods; mismatch_method=mismatch_method, tol=tol, max_iteration=max_iteration, save_data=save_data, print_level=print_level, alpha=alpha, beta=beta, initialization_method=initialization_method)
 end
 
-"inilitlize the ATC algorithm local area"
+"initialize the ATC algorithm local area"
 function initialize_method_local(data::Dict{String, <:Any}, model_type::DataType; kwargs...)
 
     area_id = get_area_id(data)
@@ -29,7 +29,7 @@ function initialize_method_local(data::Dict{String, <:Any}, model_type::DataType
     # distributed algorithm settings
     initialize_dopf!(data, model_type; kwargs...)
  
-    # initiate ATC parameters
+    # initialize ATC parameters
     data["parameter"] = Dict( 
         "alpha" => get(kwargs, :alpha, 1.05),
         "beta" => get(kwargs, :beta, 1),
@@ -37,14 +37,14 @@ function initialize_method_local(data::Dict{String, <:Any}, model_type::DataType
 
 end
 
-"inilitlize the ATC algorithm coordinator"
+"initialize the ATC algorithm coordinator"
 function initialize_method_coordinator(data::Dict{String, <:Any}, model_type::DataType; kwargs...)
 
     area_id = get_area_id(data)
     areas_id = get_areas_id(data)
     initialization_method = get(kwargs, :initialization_method, "flat")
 
-    # initiate primal and dual shared variables
+    # initialize primal and dual shared variables
     data["shared_variable"] = initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", initialization_method)
 
     data["received_variable"] = initialize_shared_variable(data, model_type, area_id, areas_id, "received_variable", initialization_method)
@@ -54,7 +54,7 @@ function initialize_method_coordinator(data::Dict{String, <:Any}, model_type::Da
     # distributed algorithm settings
     initialize_dopf!(data, model_type; kwargs...)
 
-    # initiate ATC parameters
+    # initialize ATC parameters
     data["parameter"] = Dict( 
         "alpha" => get(kwargs, :alpha, 1.05),
         "beta" => get(kwargs, :beta, 1),
@@ -179,5 +179,5 @@ Solve the distributed OPF problem using ATC algorithm with central coordinator.
 """
 solve_dopf_atc_coordinated = atc_coordinated_methods.solve_method
 
-# export the algorithm methods module and call method
+# export the algorithm methods module and solve method
 export atc_coordinated_methods, solve_dopf_atc_coordinated

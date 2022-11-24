@@ -3,7 +3,7 @@
 ###############################################################################
 
 """
-ADMM algorithm module contians build and update methods
+ADMM algorithm module contains build and update methods
 """
 module admm_methods
 using ..PowerModelsADA
@@ -13,7 +13,7 @@ function solve_method(data, model_type::DataType, optimizer; kwargs...)
     solve_dopf(data, model_type, optimizer, admm_methods; kwargs...)
 end
 
-"inilitlize the ADMM algorithm"
+"initialize the ADMM algorithm"
 function initialize_method(data::Dict{String, <:Any}, model_type::DataType; kwargs...)
 
     area_id = PowerModelsADA.get_area_id(data)
@@ -128,5 +128,5 @@ Solve the distributed OPF problem using ADMM algorithm.
 """
 solve_dopf_admm = admm_methods.solve_method
 
-# export the algorithm methods module and call method
+# export the algorithm methods module and solve method
 export admm_methods, solve_dopf_admm

@@ -21,13 +21,13 @@ function assign_area!(data::Dict{String, <:Any}, partition::Vector{Pair{Int64, I
     assign_area!(data, Dict(partition))
 end
 
-"assign area to the PowerModel data using a matrix with [bus, area] colmuns or rows"
+"assign area to the PowerModel data using a matrix with [bus, area] columnsor rows"
 function assign_area!(data::Dict{String, <:Any}, partition::Array{Int64, 2})
     if size(partition)[2] != 2 && length(data["bus"]) != 2
         partition = partition'
         if size(partition)[2] != 2
             #through error
-            error("Partitioning data doesn't contin correct area assignment")
+            error("Partitioning data doesn't containcorrect area assignment")
         end
     end
     assign_area!(data, Dict(partition[i,1] => partition[i,2] for i in 1:size(partition)[1] ))
@@ -46,7 +46,7 @@ end
 
 "decompose an area with area id"
 function decompose_system(data::Dict{String, <:Any}, area_id::Int64)
-    # idintify local buses
+    # identifylocal buses
     local_bus = get_local_bus(data, area_id)
     neighbor_bus = get_neighbor_bus(data, area_id)
 
@@ -78,7 +78,7 @@ function decompose_coordinator(data::Dict{String, <:Any})
    
     areas_id = get_areas_id(data)
 
-    # idintify local buses
+    # identifylocal buses
     boundary_bus = unique(reduce(vcat, [get_neighbor_bus(data, area_id) for area_id in areas_id]))
 
     ## area data
@@ -100,7 +100,7 @@ function decompose_coordinator(data::Dict{String, <:Any})
     return data_coordinator
 end
 
-"add virtual geneartors at the neighboring buses of an area"
+"add virtual generators at the neighboring buses of an area"
 function add_virtual_gen(data::Dict{String, <:Any}, neighbor_bus::Vector, area_id::Int)
     max_gen_ind = maximum([parse(Int,i) for i in keys(data["gen"])])
     virtual_gen = Dict{String, Any}()
