@@ -18,7 +18,7 @@ all_areas = get_areas_id(data)
 
 ## Distributed algorithm
 ## ADMM with fully distributed structure
-data_area = solve_dopf_admm(data, model_type, optimizer, tol=tol, max_iteration=100, print_level = 1, alpha=1000, save_data=["solution", "mismatch","counter","shared_flag_convergance","shared_convergance_iteration"], all_areas=all_areas, termination_method="local")
+data_area = solve_dopf_admm(data, model_type, optimizer, tol=tol, max_iteration=100, print_level = 1, alpha=1000, save_data=["solution", "mismatch","counter","shared_flag_convergence","shared_convergence_iteration"], all_areas=all_areas, termination_method="local")
 error_admm = compare_solution(data, data_area, model_type, optimizer)
 
 ## APP with fully distributed structure

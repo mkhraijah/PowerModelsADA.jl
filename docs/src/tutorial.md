@@ -2,6 +2,16 @@
 
 `PowerModelsADA` solve the OPF problem using either pre-defined distributed algorithm or user-defined algorithm. This page shows example of solving the OPF problem using the pre-defined algorithms and how to define a new alternating distributed algorithm. 
 
+The distributed algorithm-specific functions are stored in modules. Each module constrains at least three main functions: initialization, building, and update functions. Each module contains a solve function that solve the OPF by passing the case, solver, and power flow model.
+
+The distributed algorithm module and solve function are: 
+- ADMM: modules: `admm_methods` and `admm_coordinated_methods`. solve functions: `solve_dopf_admm` and `solve_dopf_admm_coordinated`
+- ATC: modules: `atc_methods` and `atc_coordinated_methods`. solve functions: `solve_dopf_atc` and `solve_dopf_atc_coordinated`
+- APP: modules: `app_methods`. solve functions: `solve_dopf_app`
+- ALADIN: modules: `aladin_coordinated_methods`. solve function: `solve_dopf_aladin_coordinated`
+
+
+
 ## Run Distributed Algorithm
 To solve the OPF algorithm, we need first to import `PowerModelsADA` package and an optimization solver. In this case we use `Ipopt` a NLP solver. You can install the solver using `using Pkg, Pkg.add("Ipopt")`. Then run the following code while you are inside the PowerModelsADA package directory. 
 ```julia
@@ -21,7 +31,7 @@ data = parse_file(case_path)
 assign_area!(data, partition_file_path)
 
 ```
-Now, the case study is loaded and ready to solve the OPF problem using distributed algorithms. We first need to define parameters, load solver, and select power flow formulation `model_type` as follow: 
+Now, the case study is loaded and ready to be used to solve the OPF problem using distributed algorithms. We first need to define parameters, load solver, and select power flow formulation `model_type` as follow: 
 
 
 ```julia
@@ -37,21 +47,14 @@ model_type = DCPPowerModel
 
 ```
 
-To solve the OPF problem using ADMM algorithm using the call function, we use the following code: 
+To solve the OPF problem using ADMM algorithm using the solve function, we use the following code: 
 
 ```julia
 data_area = solve_dopf_admm(data, model_type, optimizer, tol=tol, max_iteration=max_iteration, verbose = false, alpha=alpha);
 error_admm = compare_solution(data, data_area, model_type, optimizer)
 ```
 
-To solve the OPF problem using APP algorithm, we use the following code: 
-
-```julia
-data_area = solve_dopf_app(data, model_type, optimizer, tol=tol, max_iteration=max_iteration, verbose = false, alpha=alpha);
-error_admm = compare_solution(data, data_area, model_type, optimizer)
-```
-
-Another way to solve the OPF problem with more control on the distributed algorithm flow. We can use the following code: 
+Another way to solve the OPF problem with more granular control on the distributed algorithm flow. We can use the following code: 
 
 ```julia
 
@@ -83,7 +86,7 @@ while iteration < max_iteration && flag_convergence == false
     ## share solution with neighbors, the shared data is first obtained to facilitate distributed implementation  
     for i in areas_id # sender subsystem
         for j in areas_id # receiver subsystem
-            if i != j && string(i) in keys(data_area[j]["shared_primal"])
+            if i != j && string(i) in keys(data_area[j]["shared_variable"])
                 shared_data = send_shared_data(i, j, data_area[i])
                 receive_shared_data!(i, shared_data, data_area[j])
             end

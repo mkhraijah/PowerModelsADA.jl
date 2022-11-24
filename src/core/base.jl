@@ -402,7 +402,7 @@ function print_convergence(data::Dict, print_level::Int64)
         iteration = first(data)[2]["counter"]["iteration"]
         mismatch = calc_global_mismatch(data)
         tol =first(data)[2]["option"]["tol"]
-        flag_convergence = reduce( &, data[i]["counter"]["flag_convergence"])
+        flag_convergence = update_global_flag_convergence(data)
         if flag_convergence
             println("*******************************************************")
             println("")
