@@ -14,14 +14,15 @@ max_iteration = 1000
 tol = 1e-2
 optimizer = optimizer_with_attributes(Ipopt.Optimizer, "print_level"=>0)
 model_type = ACPPowerModel
+all_areas = get_areas_id(data)
 
 ## Distributed algorithm
 ## ADMM with fully distributed structure
-data_area = solve_dopf_admm(data, model_type, optimizer, tol=tol, max_iteration=max_iteration, print_level = 1, alpha=10000, save_data=["solution", "mismatch"]);
+data_area = solve_dopf_admm(data, model_type, optimizer, tol=tol, max_iteration=100, print_level = 1, alpha=1000, save_data=["solution", "mismatch","counter","shared_flag_convergance","shared_convergance_iteration"], all_areas=all_areas, termination_method="local")
 error_admm = compare_solution(data, data_area, model_type, optimizer)
 
 ## APP with fully distributed structure
-data_area = solve_dopf_app(data, model_type, optimizer; tol=tol, max_iteration=max_iteration, print_level = 1, alpha=10000, save_data=["solution", "mismatch","local"]);
+data_area = solve_dopf_app(data, model_type, optimizer; tol=tol, max_iteration=max_iteration, print_level = 1, alpha=10000, save_data=["solution", "mismatch"]);
 error_app = compare_solution(data, data_area, model_type, optimizer)
 
 ## ATC with fully distributed structure

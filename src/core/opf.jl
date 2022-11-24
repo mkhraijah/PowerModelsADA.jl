@@ -10,7 +10,7 @@ function variable_opf(pm::AbstractPowerModel)
     _PM.variable_dcline_power(pm)
 end
 
-"define objective function from PowerModels and algorithm specific objective"
+"define objective function using PowerModels and algorithm-specific objective"
 function objective_min_fuel_and_consensus!(pm::AbstractPowerModel, objective_method::Function=no_objective)
     # if subsystem has generator minimize the cost of generator and consistency otherwise minimize consistency only
     if isempty(pm.data["gen"])

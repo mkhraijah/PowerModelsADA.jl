@@ -1,51 +1,54 @@
 ###############################################################################
-#   Variable initilization and updating for all distirbuted OPF algorithms    #
+#   Variable initialization and updating for all distirbuted OPF algorithms    #
 ###############################################################################
 
 # Template for variable shared
 "initialize shared variable dictionary"
-function initialize_shared_variable(data::Dict{String, <:Any}, model_type::DataType, from::Int64 ,to::Vector{Int64}, shared_variable::String, method::String="flat")
+function initialize_shared_variable(data::Dict{String, <:Any}, model_type::DataType, from::Int64 ,to::Vector{Int64}, dics_name::String="shared_variable", initialization_method::String="flat")
     bus_variables_name, branch_variables_name = variable_shared_names(model_type)
     shared_bus, shared_branch = get_shared_component(data, from)
 
-    return Dict{String, Any}([
-        string(area) => Dict{String, Any}(
-            vcat(
-                [variable => Dict{String, Any}([string(idx) => initial_value(data, variable, idx, area, method, shared_variable) for idx in shared_bus[area]]) for variable in bus_variables_name],
-                [variable => Dict{String, Any}([string(idx) => initial_value(data, variable, idx, area, method, shared_variable) for idx in shared_branch[area]]) for variable in branch_variables_name]
+    if initialization_method in ["previous", "previous_solution", "warm", "warm_start"]
+        if !haskey(data, dics_name)
+            error("no previous solutions exist to use warm start")
+        else
+            variables_dics = data[dics_name]
+        end
+    else
+        variables_dics = Dict{String, Any}([
+            string(area) => Dict{String, Any}(
+                vcat(
+                    [variable => Dict{String, Any}([string(idx) => initial_value(variable, initialization_method) for idx in shared_bus[area]]) for variable in bus_variables_name],
+                    [variable => Dict{String, Any}([string(idx) => initial_value(variable, initialization_method) for idx in shared_branch[area]]) for variable in branch_variables_name]
+                )
             )
-        )
-    for area in to])
+        for area in to])
+    end
+
+    return variables_dics
+end
+
+function initialize_shared_variable(data::Dict{String, <:Any}, model_type::DataType, from::Int64 ,to::Int64, dics_name::String="shared_variable", initialization_method::String="flat")
+    bus_variables_name, branch_variables_name = variable_shared_names(model_type)
+    shared_bus, shared_branch = get_shared_component(data, from)
+
+    initialize_shared_variable(data, model_type, from, [to], dics_name, initialization_method)
 end
 
 """
-    initial_value(data::Dict{String, <:Any}, var::String, idx::Int, method::String="flat")
+    initial_value(data::Dict{String, <:Any}, var::String, idx::Int, initialization_method::String="flat")
 
 assign initial value based on initialization method
 
 # Arguments:
-- data::Dict{String, <:Any} : dictionary contains case in PowerModel format
-- var::String : variable names
-- idx::Int : variable index
-- method::String : initialization method ("flat", "previous_solution")
+- variable::String : variable names
+- initialization_method::String : ("flat", "previous_solution")
 """
-function initial_value(data::Dict{String, <:Any}, variable::String, idx::Int64, area::Int64, method::String="flat", shared_variable::String="shared_variable")::Float64
-
-    if method in ["zero", "zeros"]
-        return 0
-    elseif method in ["flat" , "flat_start"]
-        if shared_variable == "shared_variable" && variable in ["vm", "w", "wr"]
-            return 1
-        else
-            return 0
-        end
-    elseif method in ["previous", "previous_solution", "warm", "warm_start"]
-        if !haskey(data, shared_variable)
-            error("no previous solution exist to use warm start")
-        end
-        return data[shared_variable][string(area)][variable][idx]
+function initial_value(variable::String, initialization_method::String="flat")::Float64
+    if initialization_method in ["flat" , "flat_start"] && variable in ["vm", "w", "wr"]
+        return 1
     else
-        error("the initlization method is not supported")
+        return 0
     end
 end
 
@@ -58,23 +61,32 @@ return a dictionary contains all the problem variables. Can be used to store the
 - data::Dict{String, <:Any} : dictionary contains case in PowerModel format
 - model_type::DataType : power flow formulation (PowerModel type)
 """
-function initialize_all_variable(data::Dict{String, <:Any}, model_type::DataType, method::String="flat")
+function initialize_all_variable(data::Dict{String, <:Any}, model_type::DataType, dics_name::String="solution", initialization_method::String="flat")
     bus_variables_name, branch_variables_name, gen_variables_name = variable_names(model_type)
-    all_variables = Dict{String, Dict}()
-    for variable in bus_variables_name
-        all_variables[variable] = Dict([idx => initial_value(data, variable, parse(Int64,idx), 0, method, "shared_variable")  for idx in keys(data["bus"])])
-    end
-    for variable in branch_variables_name
-        all_variables[variable] = Dict([idx => initial_value(data, variable, parse(Int64,idx), 0, method, "shared_variable")  for idx in keys(data["branch"])])
-    end
-    for variable in gen_variables_name
-        all_variables[variable] = Dict([idx => initial_value(data, variable, parse(Int64,idx), 0, method, "shared_variable")  for idx in keys(data["gen"])])
+
+    if initialization_method in ["previous", "previous_solution", "warm", "warm_start"]
+        if !haskey(data, dics_name)
+            error("no previous solutions exist to use warm start")
+        else
+            all_variables = data[dics_name]
+        end
+    else
+        all_variables = Dict{String, Dict}()
+        for variable in bus_variables_name
+            all_variables[variable] = Dict([idx => initial_value(variable, initialization_method) for idx in keys(data["bus"])])
+        end
+        for variable in branch_variables_name
+            all_variables[variable] = Dict([idx => initial_value(variable, initialization_method) for idx in keys(data["branch"])])
+        end
+        for variable in gen_variables_name
+            all_variables[variable] = Dict([idx => initial_value(variable, initialization_method) for idx in keys(data["gen"])])
+        end
     end
     return all_variables
 end
 
-function initialize_solution!(data::Dict{String, <:Any}, model_type::DataType)
-    data["solution"] = initialize_all_variable(data, model_type)
+function initialize_solution!(data::Dict{String, <:Any}, model_type::DataType, dics_name::String="solution", initialization_method::String="flat")
+    data["solution"] = initialize_all_variable(data, model_type, dics_name, initialization_method)
 end
 
 "return JuMP variable object from PowerModel object"
@@ -108,6 +120,8 @@ function variable_shared_names(model_type::DataType)
         return [], ["pf"]
     elseif model_type <: DCPLLPowerModel
         return ["va"], ["pf", "pt"]
+    elseif model_type <: LPACCPowerModel
+        return ["va", "phi"], ["pf", "pt", "qf", "qt", "cs"]
     elseif model_type <: ACPPowerModel
         return ["va", "vm"], ["pf", "pt", "qf", "qt"]
     elseif model_type <: ACRPowerModel
@@ -131,6 +145,8 @@ function variable_names(model_type::DataType)
         return [], ["pf"], ["pg"]
     elseif model_type <: DCPLLPowerModel
         return ["va"], ["pf", "pt"], ["pg"]
+    elseif model_type <: LPACCPowerModel
+        return ["va", "phi"], ["pf", "pt", "qf", "qt", "cs"], ["pg", "qg"]
     elseif model_type <: ACPPowerModel
         return ["va", "vm"], ["pf", "pt", "qf", "qt"], ["pg", "qg"]
     elseif model_type <: ACRPowerModel

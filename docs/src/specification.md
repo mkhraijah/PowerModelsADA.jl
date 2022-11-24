@@ -1,4 +1,4 @@
-# Problem Specification and Algorithm Selection 
+# Technical Specifications
 TODO
 
 ## Power Flow Formulation 
@@ -7,5 +7,5 @@ TODO
 ## Optimization Solver
 TODO
 
-## Distirbuted Algorithm 
+## Distributed Algorithm 
 TODO

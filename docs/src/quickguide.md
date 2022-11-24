@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-AC OPF using ADMM
+To solve the OPF problem using the ADMM
 
 ```julia
 using PowerModelsADA
@@ -12,7 +12,7 @@ run_dopf_admm("test/data/case_RTS.m", model_type, Ipopt.Optimizer; verbose=1)
 
 ## Getting Results
 
-Results are stored in the data dictionary contains subsystems information
+The solve function stores the result in a data dictionary contains subsystems information
 ```julia
-result = run_dopf_admm("test/data/case_RTS.m", model_type, Ipopt.Optimizer; verbose=1)
+result = run_dopf_admm("test/data/case_RTS.m", model_type, Ipopt.Optimizer; print_level=1)
 ```

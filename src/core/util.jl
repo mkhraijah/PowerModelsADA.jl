@@ -70,3 +70,45 @@ function compare_solution(data::Dict{String, <:Any}, data_area::Dict{Int, <:Any}
     Relative_Error = abs(Obj_distributed - Obj_centeral)/ Obj_centeral * 100
     return Relative_Error
 end
+
+
+"get the number of variables in each area"
+function calc_number_areas_variables(data::Dict{String, <:Any}, model_type::DataType)
+    areas_id = get_areas_id(data)
+    data_area = Dict{Int64, Any}()
+    num_variables = Dict{Int64, Any}()
+    for area in areas_id
+        data_area = decompose_system(data, area)
+        num_variables[area] = calc_number_all_variables(data_area, model_type)
+    end
+    return num_variables
+end
+
+"get the number of shared variable in a area"
+function calc_number_shared_variables(data::Dict{String, <:Any}, model_type::DataType)
+    areas_id = get_areas_id(data)
+    area_id = get_area_id(data)
+    shared_variable = initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", "flat")
+    num = calc_number_variables(shared_variable)
+    return num
+end
+
+"get the number of variables in an area"
+function calc_number_all_variables(data::Dict{String, <:Any}, model_type::DataType)
+    variables = initialize_all_variable(data, model_type)
+    num = calc_number_variables(variables)
+    return num
+end
+
+"get the number of variables"
+function calc_number_variables(data::Dict{String, <:Any})
+    num = 0 
+    for (key,val) in data
+        if isa(val, Dict{String, <:Any})
+            num += calc_number_variables(val)
+        else
+            num += length(val)
+        end
+    end
+    return num
+end

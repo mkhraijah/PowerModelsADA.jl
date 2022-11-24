@@ -15,7 +15,7 @@ makedocs(
         "Manual" => [
             "Quick Start Guide" => "quickguide.md",
             "Data Structure" => "data_structure.md",
-            "Problem Specification and Algorithm Selection" => "specification.md" , 
+            "Technical Specifications" => "specification.md" , 
             "Distributed Algorithms" => [
                 "ADMM" => "admm.md",
                 "ATC" => "atc.md",
@@ -27,7 +27,9 @@ makedocs(
             "Using PowerModelsADA" => "tutorial.md",
         "User-defined Algorithm" => "newalgorithm.md"
         ],
-        "Library" => "library.md"
+        "Library" => "library.md",
+        "Comparison Results" => "comparison.md"
+
     ]
 )
 

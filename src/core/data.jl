@@ -154,6 +154,9 @@ end
 get_areas_id(data::Dict{String, <:Any}) = unique([bus["area"] for (i, bus) in data["bus"]])
 
 "helper functions to handle area ids, local buses, neighbor buses"
+get_areas_id(data::Dict{Int, <:Any}) = collect(keys(data))
+
+"helper functions to handle area ids, local buses, neighbor buses"
 get_areas_id(pm::AbstractPowerModel) = get_areas_id(pm.data)
 
 "helper functions to handle area ids, local buses, neighbor buses"
@@ -237,40 +240,3 @@ end
 
 "get the shared buses and branches between defined area and all other areas"
 get_shared_component(pm::AbstractPowerModel) = get_shared_component(pm.data)
-
-function calc_number_areas_variables(data::Dict{String, <:Any}, model_type::DataType)
-    areas_id = get_areas_id(data)
-    data_area = Dict{Int64, Any}()
-    num_variables = Dict{Int64, Any}()
-    for area in areas_id
-        data_area = decompose_system(data, area)
-        num_variables[area] = calc_number_all_variables(data_area, model_type)
-    end
-    return num_variables
-end
-
-function calc_number_shared_variables(data::Dict{String, <:Any}, model_type::DataType)
-    areas_id = get_areas_id(data)
-    area_id = get_area_id(data)
-    shared_variable = initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", "flat")
-    num = calc_number_variables(shared_variable)
-    return num
-end
-
-function calc_number_all_variables(data::Dict{String, <:Any}, model_type::DataType)
-    variables = initialize_all_variable(data, model_type)
-    num = calc_number_variables(variables)
-    return num
-end
-
-function calc_number_variables(data::Dict{String, <:Any})
-    num = 0 
-    for (key,val) in data
-        if isa(val, Dict{String, <:Any})
-            num += calc_number_variables(val)
-        else
-            num += length(val)
-        end
-    end
-    return num
-end

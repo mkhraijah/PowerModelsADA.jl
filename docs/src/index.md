@@ -5,16 +5,31 @@ CurrentModule = PowerModelsADA
 ```
 ## Overview
 
-[PowerModelsADA.jl](https://github.com/mkhraijah/PowerModelsADA.jl) (Power Models Alternating Distributed Algorithms) provides a framework to solve the Optimal Power Flow (OPF) problem using alternating distributed algorithms. The package allows to use different distributed algorithms such as Alternating Direction Method of Multipliers (ADMM) or user-defined algorithms. PowerModelsADA is built on top of `PowerModels.jl` to define and solve the subproblems.
+[PowerModelsADA.jl](https://github.com/mkhraijah/PowerModelsADA.jl) (Power Models Alternating Distributed Algorithms) provides a framework to solve Optimal Power Flow (OPF) problems using alternating distributed algorithms. The package allows to use different distributed algorithms. PowerModelsADA is built on top of `PowerModels.jl` and `JuMP.jl` to model and solve the subproblems.
 
-## Installation
 
-PowerModelsADA can be installed using the Julia package manager with
+## Distributed Algorithms 
+`PowerModelsADA` framework is designed to easily incorporated alternating distributed algorithm. The framework provides means to decompose test case into multiple areas, model the subproblems using `PowerModels`, solve the supropblems in parallel using multi threading, communicate the shared data between the areas, and calculate the mismatches to decide if the termination criteria are satisfied.
 
-```julia
+The current version of `PowerModelsADA` implements four distributed algorithms: 
+
+- Alternating Direction Method of Multipliers (ADMM)
+- Analytical Target Cascading (ATC)
+- Auxiliary Problem Principle (APP)
+- Augmented Lagrangian Alternating Direction Inexact Newton (ALADIN)
+ 
+ `PowerModelsADA` can be extended to include variations of the existing algorithm or a new user-defined algorithms. More details about the formulations and algorithm implementations are shown in [Technical Specifications](https://mkhraijah.github.io/PowerModelsADA.jl/dev/specification/)
+
+<!-- ## Installation -->
+
+
+<!-- PowerModelsADA can be installed using the Julia package manager with -->
+
+<!-- ```julia
 using Pkg
 Pkg.add("PowerModelsADA")
-```
+``` 
+-->
 
 ## Examples
 

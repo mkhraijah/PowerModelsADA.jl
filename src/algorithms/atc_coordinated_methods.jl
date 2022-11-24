@@ -9,28 +9,22 @@ module atc_coordinated_methods
 using ..PowerModelsADA
 
 "solve distributed OPF using ATC algorithm with central coordinator"
-function solve_method(data, model_type::DataType, 
-    optimizer; mismatch_method::String="norm", tol::Float64=1e-4, 
-    max_iteration::Int64=1000, save_data=["solution", "mismatch"], 
-    print_level::Int64=1, alpha::Real=1.05, beta::Real=1.0)
-    
-    solve_dopf_coordinated(data, model_type, optimizer, atc_coordinated_methods; 
-    mismatch_method=mismatch_method, tol=tol, max_iteration=max_iteration, 
-    save_data=save_data, print_level=print_level, alpha=alpha, beta=beta)
+function solve_method(data, model_type::DataType, optimizer; mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, save_data=["solution", "mismatch"], print_level::Int64=1, alpha::Real=1.05, beta::Real=1.0, initialization_method::String="flat")
+    solve_dopf_coordinated(data, model_type, optimizer, atc_coordinated_methods; mismatch_method=mismatch_method, tol=tol, max_iteration=max_iteration, save_data=save_data, print_level=print_level, alpha=alpha, beta=beta, initialization_method=initialization_method)
 end
 
 "inilitlize the ATC algorithm local area"
 function initialize_method_local(data::Dict{String, <:Any}, model_type::DataType; kwargs...)
 
     area_id = get_area_id(data)
-    initilization_method = get(kwargs, :initilization_method, "flat")
+    initialization_method = get(kwargs, :initialization_method, "flat")
 
     # primal and dual shared variables
-    data["shared_variable"] = initialize_shared_variable(data, model_type, area_id, [0], "shared_variable", initilization_method)
+    data["shared_variable"] = initialize_shared_variable(data, model_type, area_id, [0], "shared_variable", initialization_method)
 
-    data["received_variable"] = initialize_shared_variable(data, model_type, area_id, [0], "shared_variable", initilization_method)
+    data["received_variable"] = initialize_shared_variable(data, model_type, area_id, [0], "received_variable", initialization_method)
 
-    data["dual_variable"] = initialize_shared_variable(data, model_type, area_id ,[0], "dual_variable", initilization_method)
+    data["dual_variable"] = initialize_shared_variable(data, model_type, area_id ,[0], "dual_variable", initialization_method)
 
     # distributed algorithm settings
     initialize_dopf!(data, model_type; kwargs...)
@@ -48,14 +42,14 @@ function initialize_method_coordinator(data::Dict{String, <:Any}, model_type::Da
 
     area_id = get_area_id(data)
     areas_id = get_areas_id(data)
-    initilization_method = get(kwargs, :initilization_method, "flat")
+    initialization_method = get(kwargs, :initialization_method, "flat")
 
     # initiate primal and dual shared variables
-    data["shared_variable"] = initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", initilization_method)
+    data["shared_variable"] = initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", initialization_method)
 
-    data["received_variable"] = initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", initilization_method)
+    data["received_variable"] = initialize_shared_variable(data, model_type, area_id, areas_id, "received_variable", initialization_method)
 
-    data["dual_variable"] = initialize_shared_variable(data, model_type, area_id, areas_id, "dual_variable", initilization_method)
+    data["dual_variable"] = initialize_shared_variable(data, model_type, area_id, areas_id, "dual_variable", initialization_method)
 
     # distributed algorithm settings
     initialize_dopf!(data, model_type; kwargs...)
@@ -154,7 +148,7 @@ function update_method_local(data::Dict{String, <:Any})
 
     calc_mismatch!(data)
     save_solution!(data)
-    update_flag_convergance!(data)
+    update_flag_convergence!(data)
     update_iteration!(data)
 end
 

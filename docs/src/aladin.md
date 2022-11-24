@@ -5,6 +5,10 @@
 CurrentModule = PowerModelsADA
 ```
 
+```@docs
+solve_dopf_aladin_coordinated
 ```
-TODO
+
+```@autodocs
+Modules = [PowerModelsADA.aladin_coordinated_methods]
 ```

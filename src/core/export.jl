@@ -15,12 +15,11 @@ calc_mismatch!,
 calc_global_mismatch,
 update_solution!,
 update_shared_variable!,
-update_flag_convergance!,
+update_flag_convergence!,
 update_iteration!,
-update_global_flag_convergance,
+update_global_flag_convergence,
 save_solution!,
 prepare_shared_data,
-serialize_shared_data!,
 receive_shared_data!,
 arrange_areas_id!,
 get_areas_id,
@@ -45,7 +44,7 @@ calc_number_variables,
 calc_dist_gen_cost,
 compare_solution,
 print_iteration,
-print_convergance
+print_convergence
 
 # Distributed algorithms modules
 export 

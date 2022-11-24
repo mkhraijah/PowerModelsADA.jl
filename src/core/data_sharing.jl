@@ -2,19 +2,19 @@
 #                   Methods for sharing data between areas                    #
 ###############################################################################
 
-"get the shared data with or without serialization"
+"prepare the shared data with or without serialization"
 function prepare_shared_data(data::Dict{String, <:Any}, to_area::Int64; serialize::Bool=false)
     shared_data_key = filter(x -> startswith(string(x), "shared"), keys(data))
     shared_data = Dict{String, Any}([key => get(data[key], string(to_area), Dict()) for key in shared_data_key])
 
     if serialize
-        shared_data = serialize_shared_data!(shared_data)
+        shared_data = _serialize_shared_data!(shared_data)
     end
 
     return shared_data
 end
 
-function serialize_shared_data!(shared_data::Dict{String, <:Any})
+function _serialize_shared_data!(shared_data::Dict{String, <:Any})
     io = IOBuffer()
     Serialization.serialize(io, shared_data)
     return take!(io)

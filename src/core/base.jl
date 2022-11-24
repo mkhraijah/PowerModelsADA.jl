@@ -3,32 +3,27 @@
 ###############################################################################
 
 """
-    solve_dopf(data::Dict{String, <:Any}, model_type::DataType, optimizer, dopf_method::Module; mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, print_level::Int64=1, kwargs...)
+    solve_dopf(data::Dict{String, <:Any}, model_type::DataType, optimizer, dopf_method::Module; mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, print_level::Int64=1, save_data::Vector{String}=[], kwargs...)
 
-Solve OPF problem using fully distributed algorithm. The distributed algorithm is defined by the build_method and update_method.
+Solve OPF problem using fully distributed algorithm.
 # Arguments:
 - data::Dict{String, <:Any} : dictionary contains case in PowerModel format
 - model_type::DataType : power flow formulation (PowerModel type)
 - optimizer : optimizer JuMP initiation object
-- dopf_method::Module : module contains the distributed algorithm methods as follow:
-    - initialize_method::Function : initliize distributed algorithm parameters and shared variables
+- dopf_method::Module : module contains the distributed algorithm methods as follows:
+    - initialize_method::Function : initliize the algorithm parameters and shared variables
     - update_method::Function : update the algorithm after each iteration
     - build_method::Function : problem formulation
 - mismatch_method::String="norm" : mismatch calculation method (norm, max)
 - tol::Float64=1e-4 : mismatch tolerance
 - max_iteration::Int64=1000 : maximum number of iteration
 - print_level::Int64=1 : 0 - no print, 1 - print mismatch after each iteration and result summary, 2 - print optimizer output
-- kwargs = algorithm parameters
+- save_data::Vector{String}=[] : vector contains the keys of the dictioaries to be saved at each iteration in "previous_solution". For example, save_data=["solution", "shared_variable", "mismatch"]
+- kwargs = algorithm-specific and initialization parameters
 """
-function solve_dopf(data::Dict{String, <:Any}, model_type::DataType, optimizer, dopf_method::Module; print_level::Int64=1, kwargs...)
+function solve_dopf(data_area::Dict{Int, <:Any}, model_type::DataType, optimizer, dopf_method::Module; print_level::Int64=1, kwargs...)
     # get areas ids
-    areas_id = get_areas_id(data)
-
-    # decompose the system into subsystems
-    data_area = Dict{Int64, Any}()
-    for i in areas_id
-        data_area[i] = decompose_system(data, i)
-    end
+    areas_id = get_areas_id(data_area)
 
     # initilize distributed power model parameters
     for i in areas_id
@@ -39,11 +34,11 @@ function solve_dopf(data::Dict{String, <:Any}, model_type::DataType, optimizer, 
     max_iteration = get(kwargs, :max_iteration, 1000)
 
     # initialaize the algorithms global counters
-    iteration = 0
-    flag_convergance = false
+    iteration = 1
+    flag_convergence = false
 
     # start iteration
-    while iteration < max_iteration && !flag_convergance
+    while iteration < max_iteration && !flag_convergence
 
         # solve local problem and update solution
         info = @capture_out begin
@@ -63,80 +58,88 @@ function solve_dopf(data::Dict{String, <:Any}, model_type::DataType, optimizer, 
             end
         end
 
-        # calculate mismatches and update convergance flags
+        # calculate mismatches and update convergence flags
         Threads.@threads for i in areas_id
             dopf_method.update_method(data_area[i])
         end
 
-        # check global convergance and update iteration counters
-        flag_convergance = update_global_flag_convergance(data_area)
+        # check global convergence and update iteration counters
+        flag_convergence = update_global_flag_convergence(data_area)
         iteration += 1
 
         print_iteration(data_area, print_level, [info])
         
     end
 
-    print_convergance(data_area, print_level)
-
+    print_convergence(data_area, print_level)
+    
     return data_area
 end
-
 
 function solve_dopf(data::String, model_type::DataType, optimizer, dopf_method::Module; print_level::Int64=1, kwargs...)
     data = parse_file(data)
     solve_dopf(data, model_type, optimizer, dopf_method; print_level=print_level, kwargs...)
 end
 
-"""
-    solve_dopf_coordinated(data::Dict{String, <:Any}, model_type::DataType, optimizer, model_type::DataType; mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, print_level::Int64=1, kwargs...)
-
-Solve OPF problem using distributed algorithm with central coordinator. The distributed algorithm is defined by the dopf_method Module.
-# Arguments:
-- data::Dict{String, <:Any} : dictionary contains case in PowerModel format
-- model_type::DataType : power flow formulation (PowerModel type)
-- optimizer : optimizer JuMP initiation object
-- model_type::DataType : module contains the distributed algorithm methods as follow:
-    - initialize_method_coordinator::Function : initliize distributed algorithm parameters and shared variables
-    - initialize_method_local::Function : initliize distributed algorithm parameters and shared variables
-    - update_method_coordinator::Function : update the algorithm after each iteration
-    - update_method_local::Function : update the algorithm after each iteration
-    - build_method_coordinator::Function : problem formulation
-    - build_method_local::Function : problem formulation
-- mismatch_method::String="norm" : mismatch calculation method (norm, max)
-- tol::Float64=1e-4, 
-- max_iteration::Int64=1000, 
-- print_level::Int64=1 : print mismatch after each iteration and result summary 
-- kwargs = distributed algorithm parameters
-
-"""
-function solve_dopf_coordinated(data::Dict{String, <:Any}, model_type::DataType, optimizer, dopf_method::Module; print_level::Int64=1, kwargs...)
-
-    ## arrange and get areas id
-    arrange_areas_id!(data)
+function solve_dopf(data::Dict{String, <:Any}, model_type::DataType, optimizer, dopf_method::Module; print_level::Int64=1, kwargs...)
+    # get areas ids
     areas_id = get_areas_id(data)
 
-    ## decompose the system into subsystems
-    data_coordinator = decompose_coordinator(data)
+    # decompose the system into subsystems
     data_area = Dict{Int64, Any}()
     for i in areas_id
         data_area[i] = decompose_system(data, i)
     end
-    
-    ## initilize distributed power model parameters
+
+    solve_dopf(data_area, model_type, optimizer, dopf_method; print_level, kwargs...)
+end
+
+"""
+    solve_dopf_coordinated(data::Dict{String, <:Any}, model_type::DataType, optimizer, dopf_method::Module; mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, print_level::Int64=1, save_data::Vector{String}=[], kwargs...)
+
+Solve OPF problem using distributed algorithm with central coordinator.
+# Arguments:
+- data::Dict{String, <:Any} : dictionary contains case in PowerModel format
+- model_type::DataType : power flow formulation (PowerModel type)
+- optimizer : optimizer JuMP initiation object
+- dopf_method::Module : module contains the distributed algorithm methods as follows:
+    - initialize_method_local::Function : initliize the local algorithm parameters and shared variables
+    - initialize_method_coordinator::Function : initliize the coordinator algorithm parameters and shared variables
+    - update_method_local::Function : update the local data after each iteration
+    - update_method_coordinator::Function : update the coordinator data after each iteration
+    - build_method_local::Function : local problem formulation
+    - build_method_coordinator::Function : coordinator problem formulation
+- mismatch_method::String="norm" : mismatch calculation method (norm, max)
+- tol::Float64=1e-4 : mismatch tolerance
+- max_iteration::Int64=1000 : maximum number of iteration
+- print_level::Int64=1 : 0 - no print, 1 - print mismatch after each iteration and result summary, 2 - print optimizer output
+- save_data::Vector{String}=[] : vector contains the keys of the dictioaries to be saved at each iteration in "previous_solution". For example, save_data=["solution", "shared_variable", "mismatch"]
+- kwargs = algorithm-specific and initialization parameters
+"""
+function solve_dopf_coordinated(data::Dict{Int64, <:Any}, model_type::DataType, optimizer, dopf_method::Module; print_level::Int64=1, kwargs...)
+
+    # get areas ids
+    areas_id = get_areas_id(data)
+    deleteat!(areas_id, areas_id .== 0)
+
+    # initilize distributed power model parameters
+    data_coordinator = data[0]
     dopf_method.initialize_method_coordinator(data_coordinator, model_type; kwargs...)
+    data_area = Dict{Int64, Any}()
     for i in areas_id
+        data_area[i] = data[i]
         dopf_method.initialize_method_local(data_area[i], model_type; kwargs...)
     end
 
     ## get global parameters
     max_iteration = get(kwargs, :max_iteration, 1000)
 
-    ## initialaize the algorithms global counters
-    iteration = 0
-    flag_convergance = false
+    # initialaize the algorithms global counters
+    iteration = 1
+    flag_convergence = false
 
-    ## start iteration
-    while iteration < max_iteration && !flag_convergance
+    # start iteration
+    while iteration < max_iteration && !flag_convergence
 
         # solve local area problems in parallel
         info1 = @capture_out begin
@@ -170,8 +173,8 @@ function solve_dopf_coordinated(data::Dict{String, <:Any}, model_type::DataType,
             dopf_method.update_method_local(data_area[i])
         end
 
-        # check global convergance and update iteration counters
-        flag_convergance = data_coordinator["counter"]["flag_convergance"]
+        # check global convergence and update iteration counters
+        flag_convergence = data_coordinator["counter"]["flag_convergence"]
         iteration += 1
 
         # print solution
@@ -180,10 +183,26 @@ function solve_dopf_coordinated(data::Dict{String, <:Any}, model_type::DataType,
     end
 
     data_area[0] = data_coordinator
-    print_convergance(data_area, print_level)
+    print_convergence(data_area, print_level)
 
     return data_area
 end
+
+
+function solve_dopf_coordinated(data::Dict{String, <:Any}, model_type::DataType, optimizer, dopf_method::Module; print_level::Int64=1, kwargs...)
+    # arrange and get areas id
+    arrange_areas_id!(data)
+    areas_id = get_areas_id(data)
+
+    # decompose the system into subsystems
+    data_area = Dict{Int64, Any}(0 => decompose_coordinator(data))
+    for i in areas_id
+        data_area[i] = decompose_system(data, i)
+    end
+
+    solve_dopf_coordinated(data_area, model_type, optimizer, dopf_method; print_level=print_level, kwargs...)
+end
+
 
 function solve_dopf_coordinated(data::String, model_type::DataType, optimizer, dopf_method::Module; print_level::Int64=1, kwargs...)
     data = parse_file(data)
@@ -198,20 +217,35 @@ function initialize_dopf!(data::Dict{String, <:Any}, model_type::DataType; kwarg
     data["option"]["max_iteration"] = get(kwargs, :max_iteration, 1000)
     data["option"]["mismatch_method"] = get(kwargs, :mismatch_method, "norm")
     data["option"]["model_type"] = model_type
+    data["option"]["termination_method"] = get(kwargs, :termination_method, "global")
 
     # counters
     data["counter"] = Dict{String, Any}()
-    data["counter"]["iteration"] = Int64(0)
-    data["counter"]["flag_convergance"] = false
+    data["counter"]["iteration"] = Int64(1)
+    data["counter"]["flag_convergence"] = false
+    data["counter"]["convergence_iteration"] = Int64(0)
+
+    # distributed termination method
+    if data["option"]["termination_method"] in ["local", "distributed"]
+        areas_id = string.(get_areas_id(data))
+        area_id = string(get_area_id(data))
+        all_areas = string.(get(kwargs, :all_areas, []))
+        data["shared_flag_convergence"] = Dict(area => Dict(area_ => 0 for area_ in all_areas) for area in areas_id if area != area_id)
+        data["received_flag_convergence"] = Dict(area => Dict(area_ => 0 for area_ in all_areas) for area in areas_id if area != area_id)
+        data["shared_convergence_iteration"] = Dict(area => 0 for area in areas_id if area != area_id)
+        data["received_convergence_iteration"] = Dict(area => 0 for area in areas_id if area != area_id)
+        data["counter"]["local_flag_convergence"] = false
+    end
 
     # mismatch 
     data["mismatch"] = Dict{String, Any}()
 
     # last solution 
-    data["solution"] = initialize_all_variable(data, model_type)
+    initialization_method = get(kwargs, :initialization_method, "flat")
+    data["solution"] = initialize_all_variable(data, model_type, "solution", initialization_method)
 
     # previous solutions 
-    save_data = get(kwargs, :save_data, ["solution"])
+    save_data = get(kwargs, :save_data, [])
     if !isempty(save_data)
         data["previous_solution"] = Dict{String, Any}([str=>Vector{Dict}() for str in save_data])
     end
@@ -254,7 +288,7 @@ function update_iteration!(data::Dict{String, <:Any})
 end
 
 """
-    calc_mismatch!(data::Dict{String, <:Any},method::String="norm"; p::Int64=2)
+    calc_mismatch!(data::Dict{String, <:Any}; p::Int64=2)
 calculate the mismatch using p-norm and return the area data dictionary with the mismatch as seen by the area.
 """
 function calc_mismatch!(data::Dict{String, <:Any}; p::Int64=2 )
@@ -281,11 +315,48 @@ function calc_mismatch!(data::Dict{String, <:Any}; p::Int64=2 )
 end
 
 "check the shared variables of a local area are within tol"
-function update_flag_convergance!(data::Dict{String, <:Any})
+function update_flag_convergence!(data::Dict{String, <:Any})
     area_id = string(data["area"])
     tol = data["option"]["tol"]
     mismatch = data["mismatch"][area_id]
-    data["counter"]["flag_convergance"] = mismatch < tol
+    iteration = data["counter"]["iteration"]
+    flag_convergence = mismatch < tol
+
+    if data["option"]["termination_method"] == "global"
+        if flag_convergence && !data["counter"]["flag_convergence"]
+            data["counter"]["convergence_iteration"] = iteration
+        end
+        data["counter"]["flag_convergence"] = flag_convergence
+    else
+        if flag_convergence && !data["counter"]["local_flag_convergence"]
+            data["counter"]["convergence_iteration"] = iteration
+        end
+        data["counter"]["local_flag_convergence"] = flag_convergence
+        areas_id = string.(get_areas_id(data))
+        deleteat!(areas_id, areas_id .== area_id)
+        all_areas = string.(collect(keys(data["shared_flag_convergence"][areas_id[1]])))
+
+        shared_convergence_iteration = maximum([data["counter"]["convergence_iteration"] ; [data["received_convergence_iteration"][area] for area in areas_id] ])
+
+        shared_flag_convergence = Dict(area_id => flag_convergence)
+        for area in all_areas
+            if area != area_id
+                shared_flag_convergence[area] = reduce( | , [data["received_flag_convergence"][area2][area] for area2 in areas_id])
+            end
+        end
+        
+        for area in areas_id
+            data["shared_convergence_iteration"][area] = shared_convergence_iteration
+            data["shared_flag_convergence"][area] = shared_flag_convergence
+        end
+
+        global_flag_convergence = reduce( & , [ val for (area, val) in shared_flag_convergence])
+
+        if global_flag_convergence && shared_convergence_iteration + length(all_areas) <=  iteration
+            data["counter"]["flag_convergence"] = global_flag_convergence
+        end
+    end
+
 end
 
 "calculate the global mismatch based on local mismatch"
@@ -299,16 +370,18 @@ function calc_global_mismatch(data_area::Dict{Int, <:Any}; p::Int64=2)
 end
 
 "check the flag convergence for all areas and return a global variables"
-function update_global_flag_convergance(data_area::Dict{Int, <:Any}, central::Bool=true)
-    if central
-        mismatch = calc_global_mismatch(data_area)
-        tol =first(data_area)[2]["option"]["tol"]
-        return mismatch <= tol
-    else
-        return reduce( &, [data_area[i]["counter"]["flag_convergance"] for i in keys(data_area)])
-    end
+function update_global_flag_convergence(data_area::Dict{Int, <:Any}, central::Bool=true)
+    # if central
+    #     mismatch = calc_global_mismatch(data_area)
+    #     tol =first(data_area)[2]["option"]["tol"]
+    #     return mismatch <= tol
+    # else
+    #     return reduce( &, [data_area[i]["counter"]["flag_convergence"] for i in keys(data_area)])
+    # end
+    return reduce( &, [data_area[i]["counter"]["flag_convergence"] for i in keys(data_area)])
 end 
 
+"print iteration information"
 function print_iteration(data::Dict, print_level::Int64, info_list::Vector=[])
     if print_level > 0
         iteration = first(data)[2]["counter"]["iteration"]
@@ -323,13 +396,14 @@ function print_iteration(data::Dict, print_level::Int64, info_list::Vector=[])
     end
 end
 
-function print_convergance(data::Dict, print_level::Int64)
+"print final solution status"
+function print_convergence(data::Dict, print_level::Int64)
     if print_level > 0
         iteration = first(data)[2]["counter"]["iteration"]
         mismatch = calc_global_mismatch(data)
         tol =first(data)[2]["option"]["tol"]
-        flag_convergance = mismatch <= tol
-        if flag_convergance
+        flag_convergence = reduce( &, data[i]["counter"]["flag_convergence"])
+        if flag_convergence
             println("*******************************************************")
             println("")
             println("Consistency achived within $tol mismatch tolerence")
