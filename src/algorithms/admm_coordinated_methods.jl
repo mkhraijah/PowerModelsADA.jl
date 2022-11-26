@@ -130,8 +130,8 @@ function update_method_local(data::Dict{String, <:Any})
     end
 
     calc_mismatch!(data)
-    save_solution!(data)
     update_flag_convergence!(data)
+    save_solution!(data)
     update_iteration!(data)
 end
 

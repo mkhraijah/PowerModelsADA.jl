@@ -17,15 +17,15 @@ The current version of `PowerModelsADA` implements four distributed algorithms:
 - Analytical Target Cascading (ATC)
 - Auxiliary Problem Principle (APP)
 - Augmented Lagrangian Alternating Direction Inexact Newton (ALADIN)
- 
+ <!-- 
  `PowerModelsADA` can be extended to include variations of the existing algorithm or a new user-defined algorithms. More details about the formulations and algorithm implementations are shown in [Technical Specifications](https://mkhraijah.github.io/PowerModelsADA.jl/dev/specification/)
 
-<!-- ## Installation -->
 
+## Installation 
 
-<!-- PowerModelsADA can be installed using the Julia package manager with -->
+PowerModelsADA can be installed using the Julia package manager with
 
-<!-- ```julia
+```julia
 using Pkg
 Pkg.add("PowerModelsADA")
 ``` 

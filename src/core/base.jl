@@ -50,11 +50,9 @@ function solve_dopf(data_area::Dict{Int, <:Any}, model_type::DataType, optimizer
 
         # share solution with neighbors, the shared data is first obtained to facilitate distributed implementation
         for i in areas_id # sender subsystem
-            for j in areas_id # receiver subsystem
-                if i != j
-                    shared_data = prepare_shared_data(data_area[i], j)
-                    receive_shared_data!(data_area[j], shared_data, i)
-                end
+            for j in data_area[i]["neighbors"] # receiver subsystem
+                shared_data = prepare_shared_data(data_area[i], j)
+                receive_shared_data!(data_area[j], deepcopy(shared_data), i)
             end
         end
 
@@ -63,12 +61,13 @@ function solve_dopf(data_area::Dict{Int, <:Any}, model_type::DataType, optimizer
             dopf_method.update_method(data_area[i])
         end
 
+        # print solution
+        print_iteration(data_area, print_level, [info])
+
         # check global convergence and update iteration counters
         flag_convergence = update_global_flag_convergence(data_area)
         iteration += 1
 
-        print_iteration(data_area, print_level, [info])
-        
     end
 
     print_convergence(data_area, print_level)
@@ -135,7 +134,7 @@ function solve_dopf_coordinated(data::Dict{Int64, <:Any}, model_type::DataType, 
     max_iteration = get(kwargs, :max_iteration, 1000)
 
     # initialize the algorithms global counters
-    iteration = 1
+    iteration = 0
     flag_convergence = false
 
     # start iteration
@@ -152,7 +151,7 @@ function solve_dopf_coordinated(data::Dict{Int64, <:Any}, model_type::DataType, 
         # share solution of local areas with the coordinator
         for i in areas_id # sender subsystem
             shared_data = prepare_shared_data(data_area[i], 0, serialize = false)
-            receive_shared_data!(data_coordinator, shared_data, i)
+            receive_shared_data!(data_coordinator, deepcopy(shared_data), i)
         end
 
         # solve coordinator problem 
@@ -164,7 +163,7 @@ function solve_dopf_coordinated(data::Dict{Int64, <:Any}, model_type::DataType, 
         # share coordinator solution with local areas
         for i in areas_id # sender subsystem
             shared_data = prepare_shared_data(data_coordinator, i, serialize = false)
-            receive_shared_data!(data_area[i], shared_data, 0)
+            receive_shared_data!(data_area[i], deepcopy(shared_data), 0)
         end
 
         # update local areas and coordinator problems after
@@ -173,12 +172,14 @@ function solve_dopf_coordinated(data::Dict{Int64, <:Any}, model_type::DataType, 
             dopf_method.update_method_local(data_area[i])
         end
 
+        # print solution
+        print_iteration(data_area, print_level, [info1; info2])
+
         # check global convergence and update iteration counters
         flag_convergence = data_coordinator["counter"]["flag_convergence"]
         iteration += 1
 
-        # print solution
-        print_iteration(data_area, print_level, [info1; info2])
+       
 
     end
 
@@ -225,20 +226,25 @@ function initialize_dopf!(data::Dict{String, <:Any}, model_type::DataType; kwarg
     data["counter"]["flag_convergence"] = false
     data["counter"]["convergence_iteration"] = Int64(0)
 
-    # distributed termination method
-    if data["option"]["termination_method"] in ["local", "distributed"]
-        areas_id = string.(get_areas_id(data))
-        area_id = string(get_area_id(data))
-        all_areas = string.(get(kwargs, :all_areas, []))
-        data["shared_flag_convergence"] = Dict(area => Dict(area_ => 0 for area_ in all_areas) for area in areas_id if area != area_id)
-        data["received_flag_convergence"] = Dict(area => Dict(area_ => 0 for area_ in all_areas) for area in areas_id if area != area_id)
-        data["shared_convergence_iteration"] = Dict(area => 0 for area in areas_id if area != area_id)
-        data["received_convergence_iteration"] = Dict(area => 0 for area in areas_id if area != area_id)
-        data["counter"]["local_flag_convergence"] = false
-    end
+    areas_id = get_areas_id(data)
+    area_id = get_area_id(data)
 
     # mismatch 
     data["mismatch"] = Dict{String, Any}()
+    data["neighbors"] = [area for area in areas_id if area != area_id]
+
+    # distributed termination method
+    if data["option"]["termination_method"] in ["local", "distributed"]
+        areas_id = string.(areas_id)
+        area_id = string(area_id)
+        deleteat!(areas_id, areas_id .== area_id)
+        all_areas = string.(get(kwargs, :all_areas, []))
+        data["shared_flag_convergence"] = Dict(area => Dict(area_ => false for area_ in all_areas) for area in areas_id)
+        data["received_flag_convergence"] = Dict(area => Dict(area_ => false for area_ in all_areas) for area in areas_id)
+        data["shared_convergence_iteration"] = Dict(area => 0 for area in areas_id)
+        data["received_convergence_iteration"] = Dict(area => 0 for area in areas_id)
+        data["counter"]["local_flag_convergence"] = false
+    end
 
     # last solution 
     initialization_method = get(kwargs, :initialization_method, "flat")
@@ -317,42 +323,51 @@ end
 "check the shared variables of a local area are within tol"
 function update_flag_convergence!(data::Dict{String, <:Any})
     area_id = string(data["area"])
+    areas_id = string.(get_areas_id(data))
+    deleteat!(areas_id, areas_id .== area_id)
+    
     tol = data["option"]["tol"]
     mismatch = data["mismatch"][area_id]
     iteration = data["counter"]["iteration"]
+
     flag_convergence = mismatch < tol
 
     if data["option"]["termination_method"] == "global"
+        # the convergence flag is communicated globally
         if flag_convergence && !data["counter"]["flag_convergence"]
             data["counter"]["convergence_iteration"] = iteration
         end
         data["counter"]["flag_convergence"] = flag_convergence
-    else
+    else # the convergence flag is decided locally
+        # Rule 1
         if flag_convergence && !data["counter"]["local_flag_convergence"]
             data["counter"]["convergence_iteration"] = iteration
-        end
-        data["counter"]["local_flag_convergence"] = flag_convergence
-        areas_id = string.(get_areas_id(data))
-        deleteat!(areas_id, areas_id .== area_id)
-        all_areas = string.(collect(keys(data["shared_flag_convergence"][areas_id[1]])))
+            data["counter"]["local_flag_convergence"] = flag_convergence
 
-        shared_convergence_iteration = maximum([data["counter"]["convergence_iteration"] ; [data["received_convergence_iteration"][area] for area in areas_id] ])
-
-        shared_flag_convergence = Dict(area_id => flag_convergence)
-        for area in all_areas
-            if area != area_id
-                shared_flag_convergence[area] = reduce( | , [data["received_flag_convergence"][area2][area] for area2 in areas_id])
+            for area in keys(data["shared_flag_convergence"])
+                data["shared_flag_convergence"][area][area_id] = flag_convergence
             end
+
         end
         
-        for area in areas_id
-            data["shared_convergence_iteration"][area] = shared_convergence_iteration
-            data["shared_flag_convergence"][area] = shared_flag_convergence
+        # Rule 2
+        all_areas = string.(collect(keys(data["shared_flag_convergence"][areas_id[1]])))
+        shared_convergence_iteration = maximum([data["counter"]["convergence_iteration"] ; [data["received_convergence_iteration"][area] for area in areas_id] ])
+
+        for area1 in areas_id
+            data["shared_convergence_iteration"][area1] = shared_convergence_iteration
+            for area2 in all_areas
+                if area2 != area_id
+                    data["shared_flag_convergence"][area1][area2] = reduce( | , [data["received_flag_convergence"][area][area2] for area in areas_id])
+                end
+            end
         end
 
-        global_flag_convergence = reduce( & , [ val for (area, val) in shared_flag_convergence])
 
-        if global_flag_convergence && shared_convergence_iteration + length(all_areas) <=  iteration
+        # Rule 3
+        global_flag_convergence = reduce( & , [ val for (area, val) in first(data["shared_flag_convergence"])[2]])
+
+        if global_flag_convergence && (shared_convergence_iteration + (length(all_areas)-1) <= iteration)
             data["counter"]["flag_convergence"] = global_flag_convergence
         end
     end
@@ -384,7 +399,7 @@ end
 "print iteration information"
 function print_iteration(data::Dict, print_level::Int64, info_list::Vector=[])
     if print_level > 0
-        iteration = first(data)[2]["counter"]["iteration"]
+        iteration = first(data)[2]["counter"]["iteration"]-1
         mismatch = calc_global_mismatch(data)
         println("Iteration = $iteration, mismatch = $mismatch")
 
