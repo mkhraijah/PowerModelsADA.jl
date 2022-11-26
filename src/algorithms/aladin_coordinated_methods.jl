@@ -11,6 +11,7 @@
 module aladin_coordinated_methods
 
 using JuMP
+import PowerModels as _PM
 using SparseArrays
 using LinearAlgebra
 using ..PowerModelsADA
@@ -204,7 +205,7 @@ function objective_aladin_local(pm::AbstractPowerModel)
 
     ## objective function
     if haskey(pm.data["solution"], "qg")
-        objective = q_gamma*(sum(_var(pm, "qg", string(idx)) for idx in ids(pm, :gen)))^2
+        objective = q_gamma*(sum(PowerModelsADA._var(pm, "qg", string(idx)) for idx in ids(pm, :gen)))^2
     else
         objective = 0
     end
@@ -213,7 +214,7 @@ function objective_aladin_local(pm::AbstractPowerModel)
     for area in keys(dual_variable)
         for variable in keys(dual_variable[area])
             for idx in keys(dual_variable[area][variable])
-                v = _var(pm, variable, idx)
+                v = PowerModelsADA._var(pm, variable, idx)
                 v_dual = dual_variable[area][variable][idx]
                 if area_id < parse(Int64,area) 
                     objective += v * v_dual
@@ -226,7 +227,7 @@ function objective_aladin_local(pm::AbstractPowerModel)
 
     for variable in keys(local_solution)
         for idx in keys(local_solution[variable])
-            v = _var(pm, variable, idx)
+            v = PowerModelsADA._var(pm, variable, idx)
             v_local = local_solution[variable][idx]
             objective += sigma[variable] * p / 2 * (v - v_local)^2
         end
@@ -249,7 +250,7 @@ post_processors_local = [update_solution!, update_shared_variable!, update_sensi
 function compute_cost_gradient(pm::AbstractPowerModel)
     g = initialize_all_variable(pm.data, typeof(pm),"zeros")
     for (i,gen) in pm.data["gen"]
-        pg = _var(pm, "pg", i)
+        pg = PowerModelsADA._var(pm, "pg", i)
         g["pg"][i] = 2*gen["cost"][1]*value(pg) + gen["cost"][2]
     end
     return g 
@@ -264,7 +265,7 @@ function compute_active_constraint_jacobian(pm::AbstractPowerModel, delete_depen
     C = Dict([variable => Dict([idx=> Vector() for idx in keys(variable_dict[variable])]) for variable in keys(variable_dict)])
     for variable in keys(C)
         for idx in keys(C[variable])
-            v = _var(pm, variable, idx)
+            v = PowerModelsADA._var(pm, variable, idx)
             col = JuMP.index(v).value
             C[variable][idx] = C_matrix[:,col]
         end
@@ -378,10 +379,10 @@ function compute_optimal_hessian(pm::AbstractPowerModel)
     ) for idx1 in keys(variable_dict[variable1])]) for variable1 in keys(variable_dict)])
     for variable1 in keys(B)
         for idx1 in keys(B[variable1])
-            v1 = _var(pm, variable1, idx1)
+            v1 = PowerModelsADA._var(pm, variable1, idx1)
             for variable2 in keys(B)
                 for idx2 in keys(B[variable2])
-                    v2 = _var(pm, variable2, idx2)
+                    v2 = PowerModelsADA._var(pm, variable2, idx2)
                     row = JuMP.index(v1).value
                     col = JuMP.index(v2).value
                     B[variable1][idx1][variable2][idx2] = B_matrix[row,col]
