@@ -20,7 +20,7 @@ makedocs(
                 "ADMM" => "admm.md",
                 "ATC" => "atc.md",
                 "APP" => "app.md",
-                "ALADEN" => "aladin.md"
+                "ALADIN" => "aladin.md"
             ]
         ],
         "Tutorials" => [

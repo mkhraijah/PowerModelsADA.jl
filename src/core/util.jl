@@ -10,11 +10,10 @@ Partition a system into n areas using KaHyPar partition algorithm
 # Arguments:
 - data::Dict{String, <:Any} : dictionary contains case in PowerModel format
 - n::Int : number of areas
-- configuration::Symbol : partition meteric (:edge_cut or :connectivity). The default is :edge_cut
-- print_info::Bool : print partition algorithm information
+- configuration::Symbol=:edge_cut : partition meteric (:edge_cut or :connectivity)
+- print_info::Bool=false : print partition algorithm information
 """
 function partition_system!(data::Dict, n::Int64; configuration::Symbol=:edge_cut, print_info::Bool=false)
- 
     nbus = length(data["bus"])
     nbranch = length(data["branch"])
     bus_index = [x.second["index"] for x in data["bus"]]

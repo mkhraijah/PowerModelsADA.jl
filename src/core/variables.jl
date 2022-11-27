@@ -36,13 +36,13 @@ function initialize_shared_variable(data::Dict{String, <:Any}, model_type::DataT
 end
 
 """
-    initial_value(data::Dict{String, <:Any}, var::String, idx::Int, initialization_method::String="flat")
+    initial_value(variable::String, initialization_method::String="flat")
 
 assign initial value based on initialization method
 
 # Arguments:
 - variable::String : variable names
-- initialization_method::String : ("flat", "previous_solution")
+- initialization_method::String="flat : ("flat", "previous_solution")
 """
 function initial_value(variable::String, initialization_method::String="flat")::Float64
     if initialization_method in ["flat" , "flat_start"] && variable in ["vm", "w", "wr"]
@@ -53,13 +53,15 @@ function initial_value(variable::String, initialization_method::String="flat")::
 end
 
 """
-    initialize_all_variable(data::Dict{String, <:Any}, model_type::DataType)
+    initialize_all_variable(data::Dict{String, <:Any}, model_type::DataType, dics_name::String="solution", initialization_method::String="flat")
 
-return a dictionary contains all the problem variables. Can be used to store the last solution
+return a dictionary contains all the problem variables. can be used to store the solutions.
 
 # Arguments:
-- data::Dict{String, <:Any} : dictionary contains case in PowerModel format
+- data::Dict{String, <:Any} : area data
 - model_type::DataType : power flow formulation (PowerModel type)
+- dics_name::String="solution" : location of existing dicrionary to be used to worm start the output
+- initialization_method::String="flat" : "flat" or "worm" initialization
 """
 function initialize_all_variable(data::Dict{String, <:Any}, model_type::DataType, dics_name::String="solution", initialization_method::String="flat")
     bus_variables_name, branch_variables_name, gen_variables_name = variable_names(model_type)

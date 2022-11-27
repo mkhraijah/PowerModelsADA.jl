@@ -3,31 +3,31 @@
 ###############################################################################
 
 
-"assign area to the PowerModel data using a dictionary with (bus => area) Int pairs"
+"assign area to the system data using a dictionary with (bus => area) Int pairs"
 function assign_area!(data::Dict{String, <:Any}, partition::Dict)
     for i in keys(data["bus"])
         data["bus"][i]["area"] = partition[parse(Int64,i)]
     end
 end
 
-"assign area to the PowerModel data using a CVS file with buses and area id"
+"assign area to the system data using a CVS file with buses and area ID"
 function assign_area!(data::Dict{String, <:Any}, partition_path::String)
     partition = DelimitedFiles.readdlm(partition_path, ',', Int, '\n')
     assign_area!(data, partition)
 end
 
-"assign area to the PowerModel data using a vector with (bus => area) pairs"
+"assign area to the system data using a vector with (bus => area) pairs"
 function assign_area!(data::Dict{String, <:Any}, partition::Vector{Pair{Int64, Int64}})
     assign_area!(data, Dict(partition))
 end
 
-"assign area to the PowerModel data using a matrix with [bus, area] columnsor rows"
+"assign area to the system data using a matrix with [bus, area] columnsor rows"
 function assign_area!(data::Dict{String, <:Any}, partition::Array{Int64, 2})
     if size(partition)[2] != 2 && length(data["bus"]) != 2
         partition = partition'
         if size(partition)[2] != 2
             #through error
-            error("Partitioning data doesn't containcorrect area assignment")
+            error("Partitioning data does not contain correct area assignments")
         end
     end
     assign_area!(data, Dict(partition[i,1] => partition[i,2] for i in 1:size(partition)[1] ))
@@ -44,9 +44,9 @@ function decompose_system(data::Dict{String, <:Any})
     return data_area
 end
 
-"decompose an area with area id"
+"obtain an area decomposition with area ID"
 function decompose_system(data::Dict{String, <:Any}, area_id::Int64)
-    # identifylocal buses
+    # identify local buses
     local_bus = get_local_bus(data, area_id)
     neighbor_bus = get_neighbor_bus(data, area_id)
 
@@ -73,7 +73,7 @@ function decompose_system(data::Dict{String, <:Any}, area_id::Int64)
     return data_area
 end
 
-"define system coordinator"
+"obtain system coordinator data"
 function decompose_coordinator(data::Dict{String, <:Any})
    
     areas_id = get_areas_id(data)
@@ -138,8 +138,7 @@ end
 # end
 
 """
-arrange area id from 1 to number of areas
-this step is necessary when having area number 0 and using central coordinator
+arrange area ID from 1 to number of areas. This step is necessary when having area number 0 and using central coordinator
 """
 function arrange_areas_id!(data::Dict{String, <:Any})
     areas_id = get_areas_id(data)
@@ -150,28 +149,28 @@ function arrange_areas_id!(data::Dict{String, <:Any})
     end
 end
 
-"helper functions to handle area ids, local buses, neighbor buses"
+"helper function to get all areas IDs"
 get_areas_id(data::Dict{String, <:Any}) = unique([bus["area"] for (i, bus) in data["bus"]])
 
-"helper functions to handle area ids, local buses, neighbor buses"
+"helper function to get all areas IDs"
 get_areas_id(data::Dict{Int, <:Any}) = collect(keys(data))
 
-"helper functions to handle area ids, local buses, neighbor buses"
+"helper function to get all areas IDs"
 get_areas_id(pm::AbstractPowerModel) = get_areas_id(pm.data)
 
-"helper functions to handle area ids, local buses, neighbor buses"
+"helper function to get the area ID"
 get_area_id(data::Dict{String, <:Any}) = get(data,"area", NaN)
 
-"helper functions to handle area ids, local buses, neighbor buses"
+"helper function to get the area ID"
 get_area_id(pm::AbstractPowerModel) = get_area_id(pm.data)
 
-"helper functions to handle area ids, local buses, neighbor buses"
+"helper functions to get the area's local buses"
 get_local_bus(data::Dict{String, <:Any}, area::Int) = Vector{Int64}([bus["bus_i"] for (i,bus) in data["bus"] if bus["area"] == area])
 
-"helper functions to handle area ids, local buses, neighbor buses"
+"helper functions to get the area's local buses"
 get_local_bus(pm::AbstractPowerModel, area::Int) = get_local_bus(pm.data, area)
 
-"helper functions to handle area ids, local buses, neighbor buses"
+"helper functions to get the area's neighbor buses"
 function get_neighbor_bus(data::Dict{String, <:Any}, local_bus::Vector)
     neighbor_bus = Vector{Int64}()
     for (i,branch) in data["branch"]
@@ -186,16 +185,16 @@ function get_neighbor_bus(data::Dict{String, <:Any}, local_bus::Vector)
     return neighbor_bus
 end
 
-"helper functions to handle area ids, local buses, neighbor buses"
+"helper functions to get the area's neighbor buses"
 get_neighbor_bus(pm::AbstractPowerModel, local_bus::Vector) = get_neighbor_bus(pm.data, local_bus)
 
-"helper functions to handle area ids, local buses, neighbor buses"
+"helper functions to get the area's neighbor buses"
 get_neighbor_bus(data::Dict{String, <:Any}, area::Int) = get_neighbor_bus(data, get_local_bus(data,area))
 
-"helper functions to handle area ids, local buses, neighbor buses"
+"helper functions to get the area's neighbor buses"
 get_neighbor_bus(pm::AbstractPowerModel, area::Int) = get_neighbor_bus(pm.data, area)
 
-"helper functions to handle area ids, local buses, neighbor buses"
+"helper functions to all areas buses in a dicrionary"
 function get_areas_bus(data::Dict{String, <:Any})
     areas_id = get_areas_id(data)
     areas_bus = Dict{Int64, Vector{Int64}}()
@@ -206,10 +205,10 @@ function get_areas_bus(data::Dict{String, <:Any})
     return areas_bus
 end
 
-"helper functions to handle area ids, local buses, neighbor buses"
+"helper functions to all areas buses in a dicrionary"
 get_areas_bus(pm::AbstractPowerModel) = get_areas_bus(pm.data)
 
-"get the shared buses and branches between defined area and all other areas"
+"get the shared buses and branches between an area and all other areas"
 function get_shared_component(data::Dict{String, <:Any}, area_id::Int64)
     areas_id = get_areas_id(data)
     areas_bus = get_areas_bus(data)

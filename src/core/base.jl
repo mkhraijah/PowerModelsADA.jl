@@ -102,17 +102,17 @@ Solve OPF problem using distributed algorithm with central coordinator.
 - model_type::DataType : power flow formulation (PowerModel type)
 - optimizer : optimizer JuMP initiation object
 - dopf_method::Module : module contains the distributed algorithm methods as follows:
-    - initialize_method_local::Function : initialize the local algorithm parameters and shared variables
-    - initialize_method_coordinator::Function : initialize the coordinator algorithm parameters and shared variables
-    - update_method_local::Function : update the local data after each iteration
-    - update_method_coordinator::Function : update the coordinator data after each iteration
-    - build_method_local::Function : local problem formulation
-    - build_method_coordinator::Function : coordinator problem formulation
+    - initialize\\_method_local::Function : initialize the local algorithm parameters and shared variables
+    - initialize\\_method_coordinator::Function : initialize the coordinator algorithm parameters and shared variables
+    - update\\_method_local::Function : update the local data after each iteration
+    - update\\_method_coordinator::Function : update the coordinator data after each iteration
+    - build\\_method_local::Function : local problem formulation
+    - build\\_method_coordinator::Function : coordinator problem formulation
 - mismatch_method::String="norm" : mismatch calculation method (norm, max)
 - tol::Float64=1e-4 : mismatch tolerance
 - max_iteration::Int64=1000 : maximum number of iteration
 - print_level::Int64=1 : 0 - no print, 1 - print mismatch after each iteration and result summary, 2 - print optimizer output
-- save_data::Vector{String}=[] : vector contains the keys of the dictioaries to be saved at each iteration in "previous_solution". For example, save_data=["solution", "shared_variable", "mismatch"]
+- save_data::Vector{String}=[] : vector contains the keys of the dictioaries to be saved at each iteration in "previous\\_solution". For example, save_data=["solution", "shared\\_variable", "mismatch"]
 - kwargs = algorithm-specific and initialization parameters
 """
 function solve_dopf_coordinated(data::Dict{Int64, <:Any}, model_type::DataType, optimizer, dopf_method::Module; print_level::Int64=1, kwargs...)
@@ -367,7 +367,7 @@ function update_flag_convergence!(data::Dict{String, <:Any})
         # Rule 3
         global_flag_convergence = reduce( & , [ val for (area, val) in first(data["shared_flag_convergence"])[2]])
 
-        if global_flag_convergence && (shared_convergence_iteration + (length(all_areas)-1) <= iteration)
+        if global_flag_convergence && (shared_convergence_iteration + length(all_areas)-2 <= iteration)
             data["counter"]["flag_convergence"] = global_flag_convergence
         end
     end

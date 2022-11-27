@@ -1,3 +1,7 @@
+```@meta
+CurrentModule = PowerModelsADA
+```
+
 # User-Defined Algorithm
 
 To define a new algorithm, we need to define a module for the new algorithm that contains the main solve function in addition to three algorithm-specific functions. The three algorithm-specific are: initialize, build, and update. You can follow the exmaple in the [template file](https://github.com/mkhraijah/PowerModelsADA.jl/blob/main/example/template.jl). 
@@ -53,7 +57,7 @@ function initialize_method(data::Dict{String, <:Any}, model_type::Type; tol::Flo
 end
 ```
 
-The second function is the build function, which build the subproblem. For a regular OPF problem with specific objective function you can use the following function template without any modification. However, the objective function needs to be defined as a separate function.
+The second function is the build function, which builds the `PowerModels` object of the subproblem. The subproblems typically have the same variables and constraints as the central OPF problem and differ in the objective functions. To build a subproblem with the same variables and constraints as the central OPF problem with a specific objective function, we need to define the objective function using the template shown below. The objective function definition takes the `PowerModels` object and returns a `JuMP` expression. You can use the internal helper function `_var` to obtain the `JuMP` model variables' object defined in the `PowerModels` object.
 
 ```julia
 "build PowerModel using xx algorithm"
@@ -69,15 +73,21 @@ function build_method(pm::AbstractPowerModel)
     objective_min_fuel_and_consensus!(pm, objective_function)
 end
 
-
-"set the APP algorithm objective"
+"set the xx algorithm objective"
 function objective_function(pm::AbstractPowerModel)
 
+    # to get the JuMP object of the active power of generator 1 use:
+    pg1 = _var(pm, :pg, 1)
+
     ###
-    objective = 0
+    objective = pg1
     ###
     return objective
 end
+```
+
+```@docs
+_var
 ```
 
 The last function is to update the area dictionary after communicating the shared variables results with other areas. 

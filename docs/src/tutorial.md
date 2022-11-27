@@ -1,8 +1,8 @@
 # Tutorial 
 
-`PowerModelsADA` solve the OPF problem using either pre-defined distributed algorithm or user-defined algorithm. This page shows example of solving the OPF problem using the pre-defined algorithms and how to define a new alternating distributed algorithm. 
+`PowerModelsADA` solves OPF problems using either a pre-defined distributed algorithm or a user-defined algorithm. This page shows examples of solving the OPF problem using the pre-defined algorithms and how to define a new alternating distributed algorithm. 
 
-The distributed algorithm-specific functions are stored in modules. Each module constrains at least three main functions: initialization, building, and update functions. Each module contains a solve function that solve the OPF by passing the case, solver, and power flow model.
+The distributed algorithm-specific functions are stored in modules. Each module contains at least three main functions: initialization, building, and update functions. Each module contains a solve function that solves the OPF by passing the case, solver, and power flow model.
 
 The distributed algorithm module and solve function are: 
 - ADMM: modules: `admm_methods` and `admm_coordinated_methods`. solve functions: `solve_dopf_admm` and `solve_dopf_admm_coordinated`
@@ -13,14 +13,15 @@ The distributed algorithm module and solve function are:
 
 
 ## Run Distributed Algorithm
-To solve the OPF algorithm, we need first to import `PowerModelsADA` package and an optimization solver. In this case we use `Ipopt` a NLP solver. You can install the solver using `using Pkg, Pkg.add("Ipopt")`. Then run the following code while you are inside the PowerModelsADA package directory. 
+To solve the OPF problem, we need first to import the `PowerModelsADA` package and an optimization solver. In this case we use the NLP solver `Ipopt`. You can install the solver using `using Pkg, Pkg.add("Ipopt")`. Then run the following code while you are inside the PowerModelsADA package directory. 
+
 ```julia
 ## Import package
 using PowerModelsADA
 using Ipopt 
 ```
 
-Next, we need to upload a test case. We will use IEEE 14-bus system in `/test/data/` folder in MATPOWER format. The file can be loaded using `parse_file` from PowerModels package. The test system needs to be divided into different areas. This can be check by looking into `data["bus"][bus_id]["area"]`. If not, you can use `partition_system!` function to divide the system or load a csv file contains the buses and area of each bus.  
+Next, we need to upload a test case. We will use IEEE 14-bus system in `/test/data/` folder in MATPOWER format. The file can be loaded using `parse_file` from `PowerModels` package. The test system needs to be divided into multiple distinct areas. This can be checked by looking into `data["bus"][bus_id]["area"]`. If not, you can use `partition_system!` function to divide the system or load a csv file contains the buses and area of each bus.  
 
 ```julia
 
@@ -31,7 +32,7 @@ data = parse_file(case_path)
 assign_area!(data, partition_file_path)
 
 ```
-Now, the case study is loaded and ready to be used to solve the OPF problem using distributed algorithms. We first need to define parameters, load solver, and select power flow formulation `model_type` as follow: 
+Now, the case study is loaded and ready to be used to solve the OPF problem using distributed algorithms. We first need to define parameters, load the solver, and select a power flow formulation `model_type` as follows: 
 
 
 ```julia
@@ -51,12 +52,25 @@ To solve the OPF problem using ADMM algorithm using the solve function, we use t
 
 ```julia
 data_area = solve_dopf_admm(data, model_type, optimizer, tol=tol, max_iteration=max_iteration, verbose = false, alpha=alpha);
-error_admm = compare_solution(data, data_area, model_type, optimizer)
+
 ```
 
-Another way to solve the OPF problem with more granular control on the distributed algorithm flow. We can use the following code: 
+To compare the distributed algorithm objective function value with the central OPF, use `compare_solution` to get the absolute value of the relative error. 
 
 ```julia
+error_admm = compare_solution(data, data_area, model_type, optimizer)
+
+```
+
+PowerModelsADA also provides the flexibility for more granular control of the distributed algorithm. We can use the following code to initialize the distributed algorithm (we use ADMM in this example).
+
+```julia
+
+## define parameters and power flow model
+max_iteration = 1000
+tol = 1e-4
+alpha = 1000
+model_type = DCPPowerModel
 
 ## obtain areas idx
 areas_id = get_areas_id(data)
@@ -69,6 +83,11 @@ for i in areas_id
     admm_methods.initialize_method(data_area[i], model_type; tol=tol, max_iteration=max_iteration, alpha = alpha)
 end
 
+```
+
+We then start the iterative process of the distributed algorithm using while loop with a pre-define termination criteria as follows: 
+
+```julia
 ## initialize global counters
 iteration = 0
 flag_convergence = false
@@ -76,28 +95,23 @@ flag_convergence = false
 ## start iteration
 while iteration < max_iteration && flag_convergence == false
 
-    
     ## solve local problem and update solution
     for i in areas_id
-        admm_methods.update_method(data_area[i])
-        solve_local!(data_area[i], model_type, optimizer, admm_methods.build_method)
+        result = solve_model(data_area[i], model_type, optimizer, admm_methods.build_method, solution_processors=admm_methods.post_processors)
+        update_data!(data_area[i], result["solution"])
     end
 
-    ## share solution with neighbors, the shared data is first obtained to facilitate distributed implementation  
+    ## share solution with neighbors
     for i in areas_id # sender subsystem
-        for j in areas_id # receiver subsystem
-            if i != j && string(i) in keys(data_area[j]["shared_variable"])
-                shared_data = send_shared_data(i, j, data_area[i])
-                receive_shared_data!(i, shared_data, data_area[j])
-            end
+        for j in data_area[i]["neighbors"] # receiver subsystem
+            shared_data = prepare_shared_data(data_area[i], j)
+            receive_shared_data!(data_area[j], deepcopy(shared_data), i)
         end
     end
 
-    ## calculate mismatches and update convergence flags
+    # calculate mismatches and update convergence flags
     for i in areas_id
-        calc_mismatch!(data_area[i])
-        update_flag_convergence!(data_area[i], tol)
-        update_iteration!(data_area[i])
+        dopf_method.update_method(data_area[i])
     end
 
     ## check global convergence and update iteration counters
