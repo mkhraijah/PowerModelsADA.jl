@@ -6,14 +6,14 @@ Status:
 [![Documentation](https://github.com/mkhraijah/PowerModelsADA.jl/workflows/Documentation/badge.svg)](https://mkhraijah.github.io/PowerModelsADA.jl/)
 </p>
 
-
 ## Overview
 
-[PowerModelsADA.jl](https://github.com/mkhraijah/PowerModelsADA.jl) (Power Models Alternating Distributed Algorithms) provides a framework for solving Optimal Power Flow (OPF) problems using multiple alternating distributed algorithms. `PowerModelsADA` is built on top of [PowerModels.jl](https://github.com/lanl-ansi/PowerModels.jl) to model and solve the subproblems.
+[PowerModelsADA.jl](https://github.com/mkhraijah/PowerModelsADA.jl) (Power Models Alternating Distributed Algorithms) provides a framework to solve Optimal Power Flow (OPF) problems using alternating distributed algorithms. The package allows to use different distributed algorithms. PowerModelsADA is built on top of `PowerModels.jl` and `JuMP.jl` to model and solve the subproblems.
 
 
 ## Distributed Algorithms 
-`PowerModelsADA` framework is designed to facilitate implementing alternating distributed algorithms. The framework provides functions to parse and decompose test cases into multiple areas, model the subproblems using `PowerModels`, solve the subproblems in parallel using multi-threading, communicate the shared data between the areas, and terminate the algorithm using the mismatches on the shared variables.
+The `PowerModelsADA` framework is designed to easily incorporate new alternating distributed algorithms. The framework provides means to decompose a test case into multiple areas, model the subproblems associated with each area using `PowerModels`, solve the supropblems in parallel using multi-threading, communicate the shared data between the areas, and calculate the mismatches to decide if the termination criteria are satisfied.
+
 
 The current version of `PowerModelsADA` implements four distributed algorithms: 
 
@@ -21,16 +21,22 @@ The current version of `PowerModelsADA` implements four distributed algorithms:
 - Analytical Target Cascading (ATC)
 - Auxiliary Problem Principle (APP)
 - Augmented Lagrangian Alternating Direction Inexact Newton (ALADIN)
- 
- <!---
-`PowerModelsADA` can be extended to include variations of the existing algorithm or new user-defined algorithms. More details about the formulations and algorithm implementations are shown in [Technical Specifications](https://mkhraijah.github.io/PowerModelsADA.jl/dev/specification/))
+
+`PowerModelsADA` can be extended to include variations of the existing algorithms or new user-defined algorithms. 
+
+<!--
+ More details about the formulations and algorithm implementations are shown in [Technical Specifications](https://mkhraijah.github.io/PowerModelsADA.jl/dev/specification/)
+
 ## Installation
-PowerModelsADA can be installed using the Julia package manager with)
+
+`PowerModelsADA` can be installed using the Julia package manager with
+
 ```julia
 using Pkg
 Pkg.add("PowerModelsADA")
-``` 
+```  
 -->
+
 
 
 ## Examples
