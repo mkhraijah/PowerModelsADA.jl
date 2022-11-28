@@ -62,7 +62,7 @@ function initialize_method_coordinator(data::Dict{String, <:Any}, model_type::Da
 
 end
 
-"build PowerModel for ATC algorithm local area"
+"build PowerModel object for ATC algorithm local area"
 function build_method_local(pm::AbstractPowerModel)
 
     # define variables
@@ -75,7 +75,7 @@ function build_method_local(pm::AbstractPowerModel)
     objective_min_fuel_and_consensus!(pm, objective_atc_local)
 end
 
-"build PowerModel for ATC algorithm coordinator"
+"build PowerModel object for the ATC algorithm coordinator"
 function build_method_coordinator(pm::AbstractPowerModel)
 
     # define variables
@@ -85,7 +85,7 @@ function build_method_coordinator(pm::AbstractPowerModel)
     objective_min_fuel_and_consensus!(pm, objective_atc_coordinator)
 end
 
-"ATC algorithm objective coordinator"
+"ATC algorithm objective function of the coordinator"
 function objective_atc_local(pm::AbstractPowerModel)
 
     ## atc parameters
@@ -112,7 +112,7 @@ function objective_atc_local(pm::AbstractPowerModel)
     return objective
 end
 
-"ATC algorithm objective local area"
+"ATC algorithm objective function of the local area"
 objective_atc_coordinator(pm::AbstractPowerModel) = objective_atc_local(pm)
 
 "update the ATC algorithm coordinator data after each iteration"

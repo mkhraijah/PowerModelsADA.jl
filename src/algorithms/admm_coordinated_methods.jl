@@ -54,7 +54,7 @@ function initialize_method_coordinator(data::Dict{String, <:Any}, model_type::Da
     data["parameter"] = Dict("alpha"=> get(kwargs, :alpha, 1000))
 end
 
-"build PowerModel for ADMM algorithm local area"
+"build PowerModel object for the ADMM algorithm local area"
 function build_method_local(pm::AbstractPowerModel)
 
     # define variables
@@ -67,7 +67,7 @@ function build_method_local(pm::AbstractPowerModel)
     objective_min_fuel_and_consensus!(pm, objective_admm_local)
 end
 
-"build PowerModel for ADMM algorithm coordinator"
+"build PowerModel object for the ADMM algorithm coordinator"
 function build_method_coordinator(pm::AbstractPowerModel)
 
     # define variables
@@ -77,7 +77,7 @@ function build_method_coordinator(pm::AbstractPowerModel)
     objective_min_fuel_and_consensus!(pm, objective_admm_coordinator)
 end
 
-"ADMM algorithm objective coordinator"
+"ADMM algorithm objective function of the coordinator"
 function objective_admm_local(pm::AbstractPowerModel)
     # parameters
     alpha = pm.data["parameter"]["alpha"]
@@ -103,7 +103,7 @@ function objective_admm_local(pm::AbstractPowerModel)
     return objective
 end
 
-"ADMM algorithm objective local area"
+"ADMM algorithm objective function of the local area"
 objective_admm_coordinator(pm::AbstractPowerModel) = objective_admm_local(pm)
 
 "update the ADMM algorithm coordinator data after each iteration"

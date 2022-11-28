@@ -35,7 +35,7 @@ function initialize_method(data::Dict{String, <:Any}, model_type::DataType; kwar
     data["parameter"] = Dict("alpha"=> get(kwargs, :alpha, 1000))
 end
 
-"build PowerModel using ADMM algorithm"
+"build PowerModel object for the ADMM algorithm"
 function build_method(pm::AbstractPowerModel)
 
     # define variables
@@ -48,7 +48,7 @@ function build_method(pm::AbstractPowerModel)
     objective_min_fuel_and_consensus!(pm, objective_admm)
 end
 
-"ADMM algorithm objective"
+"ADMM algorithm objective function"
 function objective_admm(pm::AbstractPowerModel)
 
     # parameters
@@ -124,7 +124,7 @@ Solve the distributed OPF problem using ADMM algorithm.
 - tol::Float64=1e-4 : mismatch tolerance
 - max_iteration::Int64=1000 : maximum number of iteration
 - print_level::Int64=1 : 0 - no print, 1 - print mismatch after each iteration and result summary, 2 - print optimizer output
-- alpha::Real=1000 : algorithm parameters
+- alpha::Real=1000 : algorithm parameter
 """
 solve_dopf_admm = admm_methods.solve_method
 

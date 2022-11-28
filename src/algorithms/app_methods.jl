@@ -40,7 +40,7 @@ function initialize_method(data::Dict{String, <:Any}, model_type::Type; kwargs..
 
 end
 
-"build PowerModel using APP algorithm"
+"build PowerModel object for the APP algorithm"
 function build_method(pm::AbstractPowerModel)
 
     # define variables
@@ -53,7 +53,7 @@ function build_method(pm::AbstractPowerModel)
     objective_min_fuel_and_consensus!(pm, objective_app)
 end
 
-"set the APP algorithm objective"
+"APP algorithm objective function"
 function objective_app(pm::AbstractPowerModel)
 
     ## APP parameters
@@ -132,9 +132,9 @@ Solve the distributed OPF problem using APP algorithm.
 - tol::Float64=1e-4 : mismatch tolerance
 - max_iteration::Int64=1000 : maximum number of iteration
 - print_level::Int64=1 : print mismatch after each iteration and result summary 
-- alpha::Real= 1000 : algorithm parameters
-- beta::Real= 2alpha : algorithm parameters
-- gamma::Real= alpha : algorithm parameters
+- alpha::Real=1000 : algorithm parameter
+- beta::Real=2alpha : algorithm parameter
+- gamma::Real=alpha : algorithm parameter
 """
 solve_dopf_app = app_methods.solve_method
 

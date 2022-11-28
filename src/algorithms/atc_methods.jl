@@ -39,7 +39,7 @@ function initialize_method(data::Dict{String, <:Any}, model_type::DataType; kwar
 
 end
 
-"build method for Distributed PowerModel using ATC algorithm"
+"build PowerModel object for the ATC algorithm"
 function build_method(pm::AbstractPowerModel)
 
     # define variables
@@ -52,7 +52,7 @@ function build_method(pm::AbstractPowerModel)
     objective_min_fuel_and_consensus!(pm, objective_atc)
 end
 
-"set the ATC algorithm objective"
+"ATC algorithm objective function"
 function objective_atc(pm::AbstractPowerModel)
 
     ## ATC parameters
@@ -136,8 +136,8 @@ Solve the distributed OPF problem using ATC algorithm.
 - tol::Float64=1e-4 : mismatch tolerance
 - max_iteration::Int64=1000 : maximum number of iteration
 - print_level::Int64=1 : print mismatch after each iteration and result summary 
-- alpha::Real=1.05 : algorithm parameters
-- beta::Real=1.0 : algorithm parameters
+- alpha::Real=1.05 : algorithm parameter
+- beta::Real=1.0 : algorithm parameter
 """
 solve_dopf_atc = atc_methods.solve_method
 
