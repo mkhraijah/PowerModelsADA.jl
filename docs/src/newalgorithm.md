@@ -1,10 +1,10 @@
+# User-Defined Algorithm
+
 ```@meta
 CurrentModule = PowerModelsADA
 ```
 
-# User-Defined Algorithm
-
-To define a new algorithm, we need to define a module for the new algorithm that contains the main solve function in addition to three algorithm-specific functions. The three algorithm-specific are: initialize, build, and update. You can follow the exmaple in the [template file](https://github.com/mkhraijah/PowerModelsADA.jl/blob/main/example/template.jl). 
+To define a new algorithm, we need to define a module for the new algorithm that contains the main solve function in addition to three algorithm-specific functions. The three algorithm-specific are: initialize, build, and update. You can follow the exmaple in the [template file](https://github.com/mkhraijah/PowerModelsADA.jl/blob/main/example/template.jl).
 
 The module of `xx` algorithm should be defined and exported as `xx_methods` as follows:
 
@@ -21,7 +21,6 @@ using ..PowerModelsADA
 export xx_methods, solve_dopf_xx
 ```
 
-
 The solve function is the main method to use the `xx` algorithm. The function takes the data, power flow formulation (`model_type`), JuMP solver object, and algorithm's parameters as required. The solve function should use the pre-defined algorithm flow as follows:  
 
 ```julia
@@ -36,9 +35,7 @@ function solve_method(data, model_type::DataType, optimizer;
 end
 ```
 
-The first algorithm-specific function is the initialize function. The function takes the area data file and adds to it the required parameters, counters, and shared variables. There are multiple built-in functions in `PowerModelsADA` that can be used to define the shared and received variables, as well as the dual variables. Note that the initialization function should include the `initialize_dopf!` to define the counters and convergence flags. 
-
-
+The first algorithm-specific function is the initialize function. The function takes the area data file and adds to it the required parameters, counters, and shared variables. There are multiple built-in functions in `PowerModelsADA` that can be used to define the shared and received variables, as well as the dual variables. Note that the initialization function should include the `initialize_dopf!` to define the counters and convergence flags.
 
 ```julia
 "initialize the XX algorithm"

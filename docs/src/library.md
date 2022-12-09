@@ -1,4 +1,4 @@
-# Library 
+# Library
 
 ```@meta
 CurrentModule = PowerModelsADA

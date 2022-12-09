@@ -1,6 +1,5 @@
 # ALADIN
 
-
 ```@meta
 CurrentModule = PowerModelsADA
 ```

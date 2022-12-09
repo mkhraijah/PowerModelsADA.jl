@@ -1,11 +1,15 @@
 # Technical Specifications
+
 TODO
 
-## Power Flow Formulation 
+## Power Flow Formulation
+
 TODO
 
 ## Optimization Solver
+
 TODO
 
-## Distributed Algorithm 
+## Distributed Algorithm
+
 TODO

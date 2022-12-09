@@ -1,7 +1,6 @@
-# Comparison Results 
+# Comparison Results
 
 The results of using `PowerModelsADA`v0.1 on 9 test cases from **[PGLib-OPF](https://github.com/power-grid-lib/pglib-opf)** is shown here. We benchmark three distributed algorithms with 5 power flow formulations.
-
 
 ### Simulation Setup
 
@@ -24,7 +23,6 @@ We report the results that achieved the $l_2$-norm of the mismatches less than 0
 | 300_ieee    	| 4    	| 40.33   	| 99   	| 40.25  	| 82   	| 36.15   	| 76   	|
 | 588_sdet    	| 8    	| 1818.97 	| 1877 	| 660.10 	| 625  	| 1280.41 	| 1278 	|
 
-
 ### Rectangular Form ACOPF
 
 | **Algorithm** |      	| **ADMM**  |      	| **ATC**   |      	| **APP**   |      	|
@@ -40,8 +38,7 @@ We report the results that achieved the $l_2$-norm of the mismatches less than 0
 | 300_ieee    	| 4     | 40.20   	| 73   	| 82.60 	| 94   	| 47.26   	| 92   	|
 | 588_sdet    	| 8     | 1538.00 	| 1337 	| NC    	| NC   	| 1366.12 	| 1180 	|
 
-
-### DC Approximation 
+### DC Approximation
 
 | **Algorithm** |      	| **ADMM**  |      	| **ATC**   |      	| **APP**   |      	|
 |-------------	|:-----:|---------:	|------:|--------:	|------:|---------:	|------:|
@@ -56,8 +53,7 @@ We report the results that achieved the $l_2$-norm of the mismatches less than 0
 | 300_ieee    	| 4     |   2.38 	|   37 	|   4.73 	|   59 	|  2.43 	|   35 	|
 | 588_sdet    	| 8     | 102.48 	| 1168 	| 18.535 	|  655 	| 89.58 	| 1155 	|
 
-
-### SOCP Relaxation 
+### SOCP Relaxation
 
 | **Algorithm** |      	| **ADMM**  |      	| **ATC**   |      	| **APP**   |      	|
 |-------------	|:-----:|---------:	|------:|--------:	|------:|---------:	|------:|
@@ -72,8 +68,7 @@ We report the results that achieved the $l_2$-norm of the mismatches less than 0
 | 300_ieee    	| 4      | 11.04   	| 25   	| 20.11 	| 52   	| 8.93    	| 18   	|
 | 588_sdet    	| 8      | 3381.35 	| 5000 	| 44.55 	| 79   	| 3177.05 	| 5000 	|
 
-
-### QC Relaxation 
+### QC Relaxation
 
 | **Algorithm** |      	| **ADMM**  |      	| **ATC**   |      	| **APP**   |      	|
 |-------------	|:-----:|---------:	|------:|--------:	|------:|---------:	|------:|

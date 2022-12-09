@@ -1,5 +1,4 @@
- # ATC
-
+# ATC
 
 ```@meta
 CurrentModule = PowerModelsADA

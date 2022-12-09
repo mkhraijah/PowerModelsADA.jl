@@ -3,12 +3,13 @@
 ```@meta
 CurrentModule = PowerModelsADA
 ```
+
 ## Overview
 
 [`PowerModelsADA.jl`](https://github.com/mkhraijah/PowerModelsADA.jl) (Power Models Alternating Distributed Algorithms) provides a framework to solve Optimal Power Flow (OPF) problems using alternating distributed algorithms. The package allows to use different distributed algorithms. `PowerModelsADA` is built on top of [`PowerModels.jl`](https://github.com/lanl-ansi/PowerModels.jl) and [`JuMP.jl`](https://github.com/jump-dev/JuMP.jl) to model and solve the subproblems.
 
+## Distributed Algorithms
 
-## Distributed Algorithms 
 The `PowerModelsADA` framework is designed to easily incorporate new alternating distributed algorithms. The framework provides means to decompose a test case into multiple areas, model the subproblems associated with each area using `PowerModels`, solve the supropblems in parallel using multi-threading, communicate the shared data between the areas, and calculate the mismatches to decide if the termination criteria are satisfied.
 
 The current version of `PowerModelsADA` implements four distributed algorithms: 

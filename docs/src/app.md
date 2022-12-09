@@ -1,6 +1,5 @@
 # APP
 
-
 ```@meta
 CurrentModule = PowerModelsADA
 ```

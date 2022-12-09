@@ -1,6 +1,5 @@
 # ADMM
 
-
 ```@meta
 CurrentModule = PowerModelsADA
 ```
