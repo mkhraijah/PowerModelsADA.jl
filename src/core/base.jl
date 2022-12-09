@@ -179,8 +179,6 @@ function solve_dopf_coordinated(data::Dict{Int64, <:Any}, model_type::DataType, 
         flag_convergence = data_coordinator["counter"]["flag_convergence"]
         iteration += 1
 
-       
-
     end
 
     data_area[0] = data_coordinator
@@ -188,7 +186,6 @@ function solve_dopf_coordinated(data::Dict{Int64, <:Any}, model_type::DataType, 
 
     return data_area
 end
-
 
 function solve_dopf_coordinated(data::Dict{String, <:Any}, model_type::DataType, optimizer, dopf_method::Module; print_level::Int64=1, kwargs...)
     # arrange and get areas id
@@ -203,7 +200,6 @@ function solve_dopf_coordinated(data::Dict{String, <:Any}, model_type::DataType,
 
     solve_dopf_coordinated(data_area, model_type, optimizer, dopf_method; print_level=print_level, kwargs...)
 end
-
 
 function solve_dopf_coordinated(data::String, model_type::DataType, optimizer, dopf_method::Module; print_level::Int64=1, kwargs...)
     data = parse_file(data)
@@ -349,7 +345,7 @@ function update_flag_convergence!(data::Dict{String, <:Any})
             end
 
         end
-        
+
         # Rule 2
         all_areas = string.(collect(keys(data["shared_flag_convergence"][areas_id[1]])))
         shared_convergence_iteration = maximum([data["counter"]["convergence_iteration"] ; [data["received_convergence_iteration"][area] for area in areas_id] ])
@@ -362,7 +358,6 @@ function update_flag_convergence!(data::Dict{String, <:Any})
                 end
             end
         end
-
 
         # Rule 3
         global_flag_convergence = reduce( & , [ val for (area, val) in first(data["shared_flag_convergence"])[2]])
@@ -377,23 +372,26 @@ end
 "calculate the global mismatch based on local mismatch"
 function calc_global_mismatch(data_area::Dict{Int, <:Any}; p::Int64=2) 
     mismatch_method = first(data_area)[2]["option"]["mismatch_method"]
-    if mismatch_method == "norm"
-        LinearAlgebra.norm([data_area[i]["mismatch"][string(i)] for i in keys(data_area) if i != 0], p)
-    elseif mismatch_method == "max" || mismatch_method == "maximum"
-        LinearAlgebra.maximum([data_area[i]["mismatch"][string(i)] for i in keys(data_area) if i != 0])
+    if first(data_area)[2]["option"]["termination_method"] == "global"
+        if mismatch_method == "norm"
+            return LinearAlgebra.norm([data_area[i]["mismatch"][string(i)] for i in keys(data_area) if i != 0], p)
+        elseif mismatch_method == "max" || mismatch_method == "maximum"
+            return LinearAlgebra.maximum([data_area[i]["mismatch"][string(i)] for i in keys(data_area) if i != 0])
+        end
+    else
+        return LinearAlgebra.maximum([data_area[i]["mismatch"][string(i)] for i in keys(data_area) if i != 0])
     end
 end
 
 "check the flag convergence for all areas and return a global variables"
 function update_global_flag_convergence(data_area::Dict{Int, <:Any}, central::Bool=true)
-    # if central
-    #     mismatch = calc_global_mismatch(data_area)
-    #     tol =first(data_area)[2]["option"]["tol"]
-    #     return mismatch <= tol
-    # else
-    #     return reduce( &, [data_area[i]["counter"]["flag_convergence"] for i in keys(data_area)])
-    # end
-    return reduce( &, [data_area[i]["counter"]["flag_convergence"] for i in keys(data_area)])
+    if first(data_area)[2]["option"]["termination_method"] == "global"
+        mismatch = calc_global_mismatch(data_area)
+        tol =first(data_area)[2]["option"]["tol"]
+        return mismatch <= tol
+    else
+        return reduce( &, [data_area[i]["counter"]["flag_convergence"] for i in keys(data_area)])
+    end
 end 
 
 "print iteration information"
@@ -421,7 +419,7 @@ function print_convergence(data::Dict, print_level::Int64)
         if flag_convergence
             println("*******************************************************")
             println("")
-            println("Consistency achievedwithin $tol mismatch tolerence")
+            println("Consistency achieved within $tol mismatch tolerence")
             println("Number of iterations = $iteration")
             
             objective = calc_dist_gen_cost(data)
@@ -431,7 +429,7 @@ function print_convergence(data::Dict, print_level::Int64)
         else
             println("*******************************************************")
             println("")
-            println("Consistency did not achievedwithin $tol mismatch toleranceand $iteration iteration")
+            println("Consistency did not achieved within $tol mismatch tolerance and $iteration iteration")
             println("Shared variables mismatch = $mismatch")
             println("")
             println("*******************************************************")
