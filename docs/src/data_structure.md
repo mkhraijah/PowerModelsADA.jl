@@ -48,7 +48,7 @@ To calculate the objective function of the central algorithm use `calc_dist_gen_
 calc_dist_gen_cost
 ```
 
-To compare the distributed algorithm objective function value with the central OPF, use `compare_solution` to get the absolute value of the relative error. 
+To compare the distributed algorithm objective function value with the central OPF, use `compare_solution` to get the absolute value of the relative error.
 
 ```@docs
 compare_solution

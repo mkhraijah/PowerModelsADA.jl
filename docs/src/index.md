@@ -12,7 +12,7 @@ CurrentModule = PowerModelsADA
 
 The `PowerModelsADA` framework is designed to easily incorporate new alternating distributed algorithms. The framework provides means to decompose a test case into multiple areas, model the subproblems associated with each area using `PowerModels`, solve the supropblems in parallel using multi-threading, communicate the shared data between the areas, and calculate the mismatches to decide if the termination criteria are satisfied.
 
-The current version of `PowerModelsADA` implements four distributed algorithms: 
+The current version of `PowerModelsADA` implements four distributed algorithms:
 
 - Alternating Direction Method of Multipliers (ADMM)
 - Analytical Target Cascading (ATC)

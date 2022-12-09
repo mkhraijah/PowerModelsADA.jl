@@ -87,7 +87,7 @@ end
 _var
 ```
 
-The last function is to update the area dictionary after communicating the shared variables results with other areas. 
+The last function is to update the area dictionary after communicating the shared variables results with other areas.
 
 ```julia
 "update the xx algorithm before each iteration"
