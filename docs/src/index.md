@@ -11,7 +11,6 @@ CurrentModule = PowerModelsADA
 ## Distributed Algorithms 
 The `PowerModelsADA` framework is designed to easily incorporate new alternating distributed algorithms. The framework provides means to decompose a test case into multiple areas, model the subproblems associated with each area using `PowerModels`, solve the supropblems in parallel using multi-threading, communicate the shared data between the areas, and calculate the mismatches to decide if the termination criteria are satisfied.
 
-
 The current version of `PowerModelsADA` implements four distributed algorithms: 
 
 - Alternating Direction Method of Multipliers (ADMM)
@@ -19,8 +18,16 @@ The current version of `PowerModelsADA` implements four distributed algorithms:
 - Auxiliary Problem Principle (APP)
 - Augmented Lagrangian Alternating Direction Inexact Newton (ALADIN)
 
-`PowerModelsADA` can be extended to include variations of the existing algorithms or new user-defined algorithms. 
+`PowerModelsADA` can be extended to include variations of the existing algorithms or new user-defined algorithms. More details about the formulations and algorithm implementations are shown in [Technical Specifications](https://mkhraijah.github.io/PowerModelsADA.jl/dev/specification/)
 
+## Installation
+
+`PowerModelsADA` can be installed using the Julia package manager with
+
+```julia
+using Pkg
+Pkg.add("PowerModelsADA")
+```
 
 ## Examples
 

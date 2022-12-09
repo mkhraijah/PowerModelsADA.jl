@@ -22,10 +22,7 @@ The current version of `PowerModelsADA` implements four distributed algorithms:
 - Auxiliary Problem Principle (APP)
 - Augmented Lagrangian Alternating Direction Inexact Newton (ALADIN)
 
-`PowerModelsADA` can be extended to include variations of the existing algorithms or new user-defined algorithms. 
-
-<!--
- More details about the formulations and algorithm implementations are shown in [Technical Specifications](https://mkhraijah.github.io/PowerModelsADA.jl/dev/specification/)
+`PowerModelsADA` can be extended to include variations of the existing algorithms or new user-defined algorithms. More details about the formulations and algorithm implementations are shown in [Technical Specifications](https://mkhraijah.github.io/PowerModelsADA.jl/dev/specification/)
 
 ## Installation
 
@@ -34,10 +31,7 @@ The current version of `PowerModelsADA` implements four distributed algorithms:
 ```julia
 using Pkg
 Pkg.add("PowerModelsADA")
-```  
--->
-
-
+```
 
 ## Examples
 
