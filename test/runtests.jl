@@ -47,17 +47,17 @@ data_RTS = parse_file("../test/data/case_RTS.m")
         end
     end
 
-## paritiotioning test
-    @testset "partition system" begin
-        @testset "case_RTS" begin
-            partition_system!(data_RTS, 3)
-            test_count = [count(c -> c["area"] == k, [bus for (i,bus) in data_RTS["bus"]]) for k in 1:3]
-            test_count_24 = count(==(24), test_count)
-            test_count_25 = count(==(25), test_count)
-            @test test_count_24 == 2
-            @test test_count_25 == 1
-        end
-    end
+# ## paritiotioning test
+#     @testset "partition system" begin
+#         @testset "case_RTS" begin
+#             partition_system!(data_RTS, 3)
+#             test_count = [count(c -> c["area"] == k, [bus for (i,bus) in data_RTS["bus"]]) for k in 1:3]
+#             test_count_24 = count(==(24), test_count)
+#             test_count_25 = count(==(25), test_count)
+#             @test test_count_24 == 2
+#             @test test_count_25 == 1
+#         end
+#     end
 
 ## ADMM test
     @testset "admm algorithm with DC power flow" begin

@@ -6,7 +6,6 @@ import Serialization
 import LinearAlgebra
 import DelimitedFiles
 import SparseArrays
-import KaHyPar
 import Suppressor: @capture_out
 import Distributed
 

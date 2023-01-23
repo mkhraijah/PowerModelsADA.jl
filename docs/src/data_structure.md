@@ -19,11 +19,10 @@ data = parse_file(case_path)
 
 ### Partitioning
 
-To check the areas ID in a data dictionary, use `get_areas_id(data)` to get all areas' IDs in `data`. If the data dictionary doesn't contain more than one area, we can partition the system manually using `assign_area!` function or using the partitioning algorithm in [KaHyPar.jl](https://github.com/kahypar/KaHyPar.jl) via `partition_system!` function. An example of partition file is shown in [partition example](https://github.com/mkhraijah/PowerModelsADA.jl/blob/main/test/data/case14_2areas.csv).
+To check the areas ID in a data dictionary, use `get_areas_id(data)` to get all areas' IDs in `data`. If the data dictionary doesn't contain more than one area, we can partition the system manually using `assign_area!` function. An example of partition file is shown in [partition example](https://github.com/mkhraijah/PowerModelsADA.jl/blob/main/test/data/case14_2areas.csv).
 
 ```@docs
 assign_area!
-partition_system!
 ```
 
 Before running the distributed algorithm, `PowerModelsADA` internally decomposes the original system into subsystems using `decompose_system` function. the function decouples the tie-lines between two areas by introducing dummy buses and virtual generators at the tie-lines' ends.
