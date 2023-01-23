@@ -9,8 +9,8 @@ module atc_coordinated_methods
 using ..PowerModelsADA
 
 "solve distributed OPF using ATC algorithm with central coordinator"
-function solve_method(data, model_type::DataType, optimizer; mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, save_data=["solution", "mismatch"], print_level::Int64=1, alpha::Real=1.05, beta::Real=1.0, initialization_method::String="flat")
-    solve_dopf_coordinated(data, model_type, optimizer, atc_coordinated_methods; mismatch_method=mismatch_method, tol=tol, max_iteration=max_iteration, save_data=save_data, print_level=print_level, alpha=alpha, beta=beta, initialization_method=initialization_method)
+function solve_method(data, model_type::DataType, optimizer; kwargs...)
+    solve_dopf_coordinated(data, model_type, optimizer, atc_coordinated_methods; kwargs...)
 end
 
 "initialize the ATC algorithm local area"
@@ -31,9 +31,9 @@ function initialize_method_local(data::Dict{String, <:Any}, model_type::DataType
  
     # initialize ATC parameters
     data["parameter"] = Dict( 
-        "alpha" => get(kwargs, :alpha, 1.05),
-        "beta" => get(kwargs, :beta, 1),
-        "beta_max" => get(kwargs, :beta_max, 1e6))
+        "alpha" => Float64(get(kwargs, :alpha, 1.05)),
+        "beta" => Float64(get(kwargs, :beta, 1)),
+        "beta_max" => Float64(get(kwargs, :beta_max, 1e6)))
 
 end
 
@@ -56,9 +56,9 @@ function initialize_method_coordinator(data::Dict{String, <:Any}, model_type::Da
 
     # initialize ATC parameters
     data["parameter"] = Dict( 
-        "alpha" => get(kwargs, :alpha, 1.05),
-        "beta" => get(kwargs, :beta, 1),
-        "beta_max" => get(kwargs, :beta_max, 1e6))
+        "alpha" => Float64(get(kwargs, :alpha, 1.05)),
+        "beta" => Float64(get(kwargs, :beta, 1)),
+        "beta_max" => Float64(get(kwargs, :beta_max, 1e6)))
 
 end
 

@@ -4,7 +4,7 @@
 
 # Template for variable shared
 "initialize shared variable dictionary"
-function initialize_shared_variable(data::Dict{String, <:Any}, model_type::DataType, from::Int64 ,to::Vector{Int64}, dics_name::String="shared_variable", initialization_method::String="flat")
+function initialize_shared_variable(data::Dict{String, <:Any}, model_type::DataType, from::Int64 ,to::Vector{Int64}, dics_name::String="shared_variable", initialization_method::String="flat", value::Float64=0.0)
     bus_variables_name, branch_variables_name = variable_shared_names(model_type)
     shared_bus, shared_branch = get_shared_component(data, from)
 
@@ -18,8 +18,8 @@ function initialize_shared_variable(data::Dict{String, <:Any}, model_type::DataT
         variables_dics = Dict{String, Any}([
             string(area) => Dict{String, Any}(
                 vcat(
-                    [variable => Dict{String, Any}([string(idx) => initial_value(variable, initialization_method) for idx in shared_bus[area]]) for variable in bus_variables_name],
-                    [variable => Dict{String, Any}([string(idx) => initial_value(variable, initialization_method) for idx in shared_branch[area]]) for variable in branch_variables_name]
+                    [variable => Dict{String, Any}([string(idx) => initial_value(data, variable, string(idx), initialization_method, value) for idx in shared_bus[area]]) for variable in bus_variables_name],
+                    [variable => Dict{String, Any}([string(idx) => initial_value(data, variable, string(idx), initialization_method, value) for idx in shared_branch[area]]) for variable in branch_variables_name]
                 )
             )
         for area in to])
@@ -29,9 +29,6 @@ function initialize_shared_variable(data::Dict{String, <:Any}, model_type::DataT
 end
 
 function initialize_shared_variable(data::Dict{String, <:Any}, model_type::DataType, from::Int64 ,to::Int64, dics_name::String="shared_variable", initialization_method::String="flat")
-    bus_variables_name, branch_variables_name = variable_shared_names(model_type)
-    shared_bus, shared_branch = get_shared_component(data, from)
-
     initialize_shared_variable(data, model_type, from, [to], dics_name, initialization_method)
 end
 
@@ -44,12 +41,48 @@ assign initial value based on initialization method
 - variable::String : variable names
 - initialization_method::String="flat : ("flat", "previous_solution")
 """
-function initial_value(variable::String, initialization_method::String="flat")::Float64
-    if initialization_method in ["flat" , "flat_start"] && variable in ["vm", "w", "wr"]
-        return 1
+function initial_value(data::Dict{String, <:Any}, variable::String, idx::String, initialization_method::String="flat", value::Float64=0.0)::Float64
+    if initialization_method in ["previous", "previous_solution", "warm", "warm_start"]
+        return previous_value(data, variable, idx)
+    elseif initialization_method in ["flat" , "flat_start"]
+        return initial_value(variable)
+    elseif initialization_method in ["constant"]
+        return value
     else
-        return 0
+        return 0.0
     end
+end
+
+function initial_value(variable::String)::Float64
+    if variable in ["vm", "w", "wr"]
+        return 1.1
+    else
+        return 0.0
+    end
+end
+
+function previous_value(data::Dict{String, <:Any}, variable::String, idx::String)::Float64
+    
+    if variable in ["vm", "va"]
+        return data["bus"][idx][variable]
+    elseif variable in ["w"]
+        if haskey(data["bus"][idx], "w")
+            return data["bus"][idx]["w"]
+        else
+            return data["bus"][idx]["vm"]^2
+        end
+    elseif variable in ["pf", "pt", "qf", "qt","wr", "wi", "vv", "ccm", "cs", "si", "td"]
+        if haskey(data["bus"][idx], variable)
+            return data["branch"][idx][variable]
+        else
+            error("no previous solutions exist to use warm start or the PowerModel is not supported")
+        end
+    elseif ["pg", "qg"]
+        return data["gen"][idx][variable]
+    else
+        error("no previous solutions exist to use warm start or the PowerModel is not supported")
+    end
+
 end
 
 """
@@ -63,32 +96,25 @@ return a dictionary contains all the problem variables. can be used to store the
 - dics_name::String="solution" : location of existing dicrionary to be used to worm start the output
 - initialization_method::String="flat" : "flat" or "worm" initialization
 """
-function initialize_all_variable(data::Dict{String, <:Any}, model_type::DataType, dics_name::String="solution", initialization_method::String="flat")
+function initialize_all_variable(data::Dict{String, <:Any}, model_type::DataType, initialization_method::String="flat")
     bus_variables_name, branch_variables_name, gen_variables_name = variable_names(model_type)
 
-    if initialization_method in ["previous", "previous_solution", "warm", "warm_start"]
-        if !haskey(data, dics_name)
-            error("no previous solutions exist to use warm start")
-        else
-            all_variables = data[dics_name]
-        end
-    else
-        all_variables = Dict{String, Dict}()
-        for variable in bus_variables_name
-            all_variables[variable] = Dict([idx => initial_value(variable, initialization_method) for idx in keys(data["bus"])])
-        end
-        for variable in branch_variables_name
-            all_variables[variable] = Dict([idx => initial_value(variable, initialization_method) for idx in keys(data["branch"])])
-        end
-        for variable in gen_variables_name
-            all_variables[variable] = Dict([idx => initial_value(variable, initialization_method) for idx in keys(data["gen"])])
-        end
+    all_variables = Dict{String, Dict}()
+    for variable in bus_variables_name
+        all_variables[variable] = Dict([idx => initial_value(data, variable, idx, initialization_method) for idx in keys(data["bus"])])
     end
+    for variable in branch_variables_name
+        all_variables[variable] = Dict([idx => initial_value(data, variable, idx, initialization_method) for idx in keys(data["branch"])])
+    end
+    for variable in gen_variables_name
+        all_variables[variable] = Dict([idx => initial_value(data, variable, idx, initialization_method) for idx in keys(data["gen"])])
+    end
+
     return all_variables
 end
 
-function initialize_solution!(data::Dict{String, <:Any}, model_type::DataType, dics_name::String="solution", initialization_method::String="flat")
-    data["solution"] = initialize_all_variable(data, model_type, dics_name, initialization_method)
+function initialize_solution!(data::Dict{String, <:Any}, model_type::DataType, initialization_method::String="flat")
+    data["solution"] = initialize_all_variable(data, model_type, initialization_method)
 end
 
 "return JuMP variable object from PowerModel object"

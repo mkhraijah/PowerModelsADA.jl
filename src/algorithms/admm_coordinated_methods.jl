@@ -9,8 +9,8 @@ module admm_coordinated_methods
 using ..PowerModelsADA
 
 "solve distributed OPF using ADMM algorithm with central coordinator"
-function solve_method(data, model_type::DataType, optimizer; mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, save_data=["solution", "mismatch"], print_level::Int64=1, alpha::Real=1000, initialization_method::String="flat")
-    solve_dopf_coordinated(data, model_type, optimizer, admm_coordinated_methods; mismatch_method=mismatch_method, tol=tol, max_iteration=max_iteration, save_data=save_data, print_level=print_level, alpha=alpha, initialization_method=initialization_method)
+function solve_method(data, model_type::DataType, optimizer; kwargs...)
+    solve_dopf_coordinated(data, model_type, optimizer, admm_coordinated_methods; kwargs...)
 end
 
 "initialize the ADMM algorithm local area"
@@ -30,7 +30,19 @@ function initialize_method_local(data::Dict{String, <:Any}, model_type::DataType
     initialize_dopf!(data, model_type; kwargs...)
  
     # initialize ADMM parameters
-    data["parameter"] = Dict("alpha"=> get(kwargs, :alpha, 1000))
+    data["parameter"] = Dict("alpha"=> Float64(get(kwargs, :alpha, 1000)))
+
+    if data["option"]["termination_measure"] in ["dual_residual", "mismatch_dual_residual"]
+        if haskey(data, "previous_solution")
+            for str in ["shared_variable", "received_variable"]
+                if !haskey(data["previous_solution"], str)
+                    data["previous_solution"][str]= Vector{Dict}()
+                end
+            end
+        else
+            data["previous_solution"]= Dict{String, Any}([str=> Vector{Dict}() for str in ["shared_variable", "received_variable"]])
+        end
+    end
 end
 
 "initializethe ADMM algorithm coordinator"
@@ -52,6 +64,18 @@ function initialize_method_coordinator(data::Dict{String, <:Any}, model_type::Da
 
     # initialize ADMM parameters
     data["parameter"] = Dict("alpha"=> get(kwargs, :alpha, 1000))
+
+    if data["option"]["termination_measure"] in ["dual_residual", "mismatch_dual_residual"]
+        if haskey(data, "previous_solution")
+            for str in ["shared_variable", "received_variable"]
+                if !haskey(data["previous_solution"], str)
+                    data["previous_solution"][str]= Vector{Dict}()
+                end
+            end
+        else
+            data["previous_solution"]= Dict{String, Any}([str=> Vector{Dict}() for str in ["shared_variable", "received_variable"]])
+        end
+    end
 end
 
 "build PowerModel object for the ADMM algorithm local area"
@@ -121,7 +145,7 @@ function update_method_local(data::Dict{String, <:Any})
         for variable in keys(dual_variable[area])
             for idx in keys(dual_variable[area][variable])
                 v_local = shared_variable_local[area][variable][idx]
-                v_central =  shared_variable_received[area][variable][idx]
+                v_central = shared_variable_received[area][variable][idx]
                 v_dual = dual_variable[area][variable][idx]
 
                 data["dual_variable"][area][variable][idx]= v_dual + alpha * (v_local - v_central)
@@ -130,6 +154,9 @@ function update_method_local(data::Dict{String, <:Any})
     end
 
     calc_mismatch!(data)
+    if data["option"]["termination_measure"] in ["dual_residual", "mismatch_dual_residual"]
+        calc_dual_residual!(data)
+    end
     update_flag_convergence!(data)
     save_solution!(data)
     update_iteration!(data)

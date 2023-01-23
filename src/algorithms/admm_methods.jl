@@ -28,11 +28,26 @@ function initialize_method(data::Dict{String, <:Any}, model_type::DataType; kwar
 
     data["dual_variable"] = initialize_shared_variable(data, model_type, area_id, areas_id, "dual_variable", initialization_method)
 
+    data["dual_residual"] = Dict{String, Any}()
+
     # distributed algorithm settings
     initialize_dopf!(data, model_type; kwargs...)
 
     # ADMM parameters
-    data["parameter"] = Dict("alpha"=> get(kwargs, :alpha, 1000))
+    data["parameter"] = Dict("alpha"=> Float64(get(kwargs, :alpha, 1000)))
+
+    if data["option"]["termination_measure"] in ["dual_residual", "mismatch_dual_residual"]
+        if haskey(data, "previous_solution")
+            for str in ["shared_variable", "received_variable"]
+                if !haskey(data["previous_solution"], str)
+                    data["previous_solution"][str]= Vector{Dict}()
+                end
+            end
+        else
+            data["previous_solution"]= Dict{String, Any}([str=> Vector{Dict}() for str in ["shared_variable", "received_variable"]])
+        end
+    end
+
 end
 
 "build PowerModel object for the ADMM algorithm"
@@ -95,12 +110,15 @@ function update_method(data::Dict{String, <:Any})
                 v_central = (shared_variable_local[area][variable][idx] + shared_variable_received[area][variable][idx])/2
                 v_dual = dual_variable[area][variable][idx]
 
-                data["dual_variable"][area][variable][idx]= v_dual  + alpha * (v_primal - v_central)
+                data["dual_variable"][area][variable][idx]= v_dual + alpha * (v_primal - v_central)
             end
         end
     end
 
-    calc_mismatch!(data)
+    calc_mismatch!(data, central=true)
+    if data["option"]["termination_measure"] in ["dual_residual", "mismatch_dual_residual"]
+        calc_dual_residual!(data, central=true)
+    end
     update_flag_convergence!(data)
     save_solution!(data)
     update_iteration!(data)

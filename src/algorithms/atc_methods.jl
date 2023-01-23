@@ -9,8 +9,8 @@ module atc_methods
 using ..PowerModelsADA
 
 "solve distributed OPF using ATC algorithm"
-function solve_method(data, model_type::DataType, optimizer; mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, save_data=["solution", "mismatch"], print_level::Int64=1, alpha::Real=1000, beta::Real=1, beta_max::Real=1e8, initialization_method::String="flat")
-    solve_dopf(data, model_type, optimizer, atc_methods; mismatch_method=mismatch_method, tol=tol, max_iteration=max_iteration, save_data=save_data, print_level=print_level, alpha=alpha, beta=beta, beta_max=beta_max, initialization_method=initialization_method)
+function solve_method(data, model_type::DataType, optimizer; kwargs...)
+    solve_dopf(data, model_type, optimizer, atc_methods; kwargs...)
 end
 
 "initialize the ATC algorithm"
@@ -33,9 +33,9 @@ function initialize_method(data::Dict{String, <:Any}, model_type::DataType; kwar
 
     # initialize ATC parameters
     data["parameter"] = Dict( 
-        "alpha" => get(kwargs, :alpha, 1.05),
-        "beta" => get(kwargs, :beta, 1),
-        "beta_max" => get(kwargs, :beta_max, 1e6))
+        "alpha" => Float64(get(kwargs, :alpha, 1.05)),
+        "beta" => Float64(get(kwargs, :beta, 1)),
+        "beta_max" => Float64(get(kwargs, :beta_max, 1e6)))
 
 end
 
@@ -112,7 +112,7 @@ function update_method(data::Dict{String, <:Any})
         data["parameter"]["beta"] *= alpha
     end
 
-    calc_mismatch!(data)
+    calc_mismatch!(data, central=true)
     update_flag_convergence!(data)
     save_solution!(data)
     update_iteration!(data)

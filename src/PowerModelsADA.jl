@@ -8,6 +8,7 @@ import DelimitedFiles
 import SparseArrays
 import KaHyPar
 import Suppressor: @capture_out
+import Distributed
 
 import PowerModels: AbstractPowerModel, parse_file, ids, ref, var, con, sol, nw_ids, nws, optimize_model!, nw_id_default, ismultinetwork, solve_model, update_data!, silence
 
@@ -26,6 +27,8 @@ include("algorithms/app_methods.jl")
 include("algorithms/admm_coordinated_methods.jl")
 include("algorithms/atc_coordinated_methods.jl")
 include("algorithms/aladin_coordinated_methods.jl")
+include("algorithms/adaptive_admm_methods.jl")
+include("algorithms/adaptive_admm_coordinated_methods.jl")
 
 
 end

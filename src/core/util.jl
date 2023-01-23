@@ -88,26 +88,37 @@ function calc_number_shared_variables(data::Dict{String, <:Any}, model_type::Dat
     areas_id = get_areas_id(data)
     area_id = get_area_id(data)
     shared_variable = initialize_shared_variable(data, model_type, area_id, areas_id, "shared_variable", "flat")
-    num = calc_number_variables(shared_variable)
-    return num
+    num_variables = calc_number_variables(shared_variable)
+    return num_variables
+end
+
+"get the number of shared variable in all area"
+function calc_number_system_shared_variables(data::Dict{String, <:Any}, model_type::DataType)
+    areas_id = get_areas_id(data)
+    num_variables = Dict()
+    for area in areas_id
+        data_area = decompose_system(data, area)
+        num_variables[area] = calc_number_shared_variables(data_area, model_type)
+    end
+    return num_variables
 end
 
 "get the number of variables in an area"
 function calc_number_all_variables(data::Dict{String, <:Any}, model_type::DataType)
     variables = initialize_all_variable(data, model_type)
-    num = calc_number_variables(variables)
-    return num
+    num_variables = calc_number_variables(variables)
+    return num_variables
 end
 
 "get the number of variables"
 function calc_number_variables(data::Dict{String, <:Any})
-    num = 0 
+    num_variables = 0 
     for (key,val) in data
         if isa(val, Dict{String, <:Any})
-            num += calc_number_variables(val)
+            num_variables += calc_number_variables(val)
         else
-            num += length(val)
+            num_variables += length(val)
         end
     end
-    return num
+    return num_variables
 end

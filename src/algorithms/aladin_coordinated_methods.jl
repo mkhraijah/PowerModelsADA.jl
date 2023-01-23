@@ -35,19 +35,19 @@ function initialize_method_local(data::Dict{String, <:Any}, model_type::DataType
 
     data["local_solution"] = initialize_all_variable(data, model_type)
 
-    data["received_delta"] = Dict{String, Dict{String, Any}}("0" => initialize_all_variable(data, model_type, "received_delta", "zeros"))
+    data["received_delta"] = Dict{String, Dict{String, Any}}("0" => initialize_all_variable(data, model_type, "zeros"))
 
     # initialize algorithm settings
     initialize_dopf!(data, model_type; kwargs...)
     
     # initialize ALADIN parameters
-    p = get(kwargs, :p, 1000)
-    r_p = get(kwargs, :r_p, 1.3)
-    p_upper = get(kwargs, :p_upper, 1e6)
+    p = Float64(get(kwargs, :p, 1000))
+    r_p = Float64(get(kwargs, :r_p, 1.3))
+    p_upper = Float64(get(kwargs, :p_upper, 1e6))
 
-    a1 = get(kwargs, :a1, 1)
-    a2 = get(kwargs, :a2, 1)
-    a3 = get(kwargs, :a3, 1)
+    a1 = Float64(get(kwargs, :a1, 1))
+    a2 = Float64(get(kwargs, :a2, 1))
+    a3 = Float64(get(kwargs, :a3, 1))
     
     q_gamma = get(kwargs, :q_gamma, 0)
     sigma = get(kwargs, :sigma, NaN)
@@ -64,8 +64,8 @@ function initialize_method_coordinator(data::Dict{String, <:Any}, model_type::Da
     data = deepcopy(data_system)
     data = decompose_coordinator(data)
     areas_id = get_areas_id(data)
-    # initialize primal and dual shared variables
 
+    # initialize primal and dual shared variables
     data["received_sensitivities"] = Dict{String,Any}([string(area) => Dict{String, Any}() for area in areas_id])
     data["received_variable"] = initialize_shared_variable(data, model_type, 0 ,areas_id, "received_variable", "flat")
     data["shared_dual_variable"] = Dict{String,Any}()
@@ -83,15 +83,15 @@ function initialize_method_coordinator(data::Dict{String, <:Any}, model_type::Da
     # initialize distributed algorithm parameters
     initialize_dopf!(data, model_type; kwargs...)
 
-    mu = get(kwargs, :mu, 1000)
-    r_mu = get(kwargs, :r_mu, 2)
-    mu_upper = get(kwargs, :mu_upper, 2e6)
+    mu = Float64(get(kwargs, :mu, 1000))
+    r_mu = Float64(get(kwargs, :r_mu, 2))
+    mu_upper = Float64(get(kwargs, :mu_upper, 2e6))
 
-    a1 = get(kwargs, :a1, 1)
-    a2 = get(kwargs, :a2, 1)
-    a3 = get(kwargs, :a3, 1)
+    a1 = Float64(get(kwargs, :a1, 1))
+    a2 = Float64(get(kwargs, :a2, 1))
+    a3 = Float64(get(kwargs, :a3, 1))
     
-    q_gamma = get(kwargs, :q_gamma, 0)
+    q_gamma = Float64(get(kwargs, :q_gamma, 0))
     sigma = get(kwargs, :sigma, NaN)
 
     data["parameter"] = Dict("mu" => mu, "r_mu" => r_mu, "mu_upper" => mu_upper, "a1" => a1, "a2" => a2, "a3" => a3, "q_gamma" => q_gamma, "sigma" => sigma)

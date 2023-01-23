@@ -9,9 +9,9 @@ module app_methods
 using ..PowerModelsADA
 
 "solve distributed OPF using APP algorithm"
-function solve_method(data, model_type::DataType, optimizer; mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, save_data=["solution"], print_level::Int64=1, alpha::Real=1000, beta::Real=2alpha, gamma::Real=alpha, initialization_method::String="flat")
+function solve_method(data, model_type::DataType, optimizer; kwargs...)
 
-    solve_dopf(data, model_type, optimizer, app_methods; mismatch_method=mismatch_method, tol=tol, max_iteration=max_iteration, save_data=save_data, print_level=print_level, alpha=alpha, beta=beta, gamma=gamma, initialization_method=initialization_method)
+    solve_dopf(data, model_type, optimizer, app_methods; kwargs...)
 end
 
 "initialize the APP algorithm"
@@ -34,9 +34,9 @@ function initialize_method(data::Dict{String, <:Any}, model_type::Type; kwargs..
 
     # initialize APP parameters
     data["parameter"] = Dict( 
-        "alpha" => get(kwargs, :alpha, 1000),
-        "beta" => get(kwargs, :beta, 2*get(kwargs, :alpha, 1000)),
-        "gamma" => get(kwargs, :gamma, get(kwargs, :alpha, 1000)))
+        "alpha" => Float64(get(kwargs, :alpha, 1000)),
+        "beta" => Float64(get(kwargs, :beta, 2*Float64(get(kwargs, :alpha, 1000)))),
+        "gamma" => Float64(get(kwargs, :gamma, Float64(get(kwargs, :alpha, 1000)))))
 
 end
 

@@ -5,13 +5,18 @@
 # PowerModelsADA methods
 export
 solve_dopf,
+solve_dopf_sp,
+solve_dopf_mp,
 solve_dopf_coordinated,
+solve_dopf_coordinated_sp,
+solve_dopf_coordinated_mp,
 solve_local!,
 assign_area!,
 partition_system!,
 decompose_system,
 decompose_coordinator,
 calc_mismatch!,
+calc_dual_residual!,
 calc_global_mismatch,
 update_solution!,
 update_shared_variable!,
@@ -52,7 +57,9 @@ admm_methods,
 atc_methods,
 app_methods,
 admm_coordinated_methods,
-atc_coordinated_methods
+atc_coordinated_methods,
+adaptive_admm_methods,
+adaptive_admm_coordinated_methods
 
 # JuMP optimizer initlization
 import JuMP: optimizer_with_attributes

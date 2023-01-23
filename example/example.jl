@@ -16,8 +16,12 @@ model_type = ACPPowerModel
 
 ## Distributed algorithm
 ## ADMM with fully distributed structure
-data_area = solve_dopf_admm(data, model_type, optimizer, tol=tol, max_iteration=max_iteration, print_level = 1, alpha=1000, save_data=["solution", "mismatch"])
+data_area = solve_dopf_admm(data, model_type, optimizer, tol=tol, max_iteration=max_iteration, print_level = 1, alpha=1000, save_data=["solution", "mismatch"], multiprocessors=false)
 error_admm = compare_solution(data, data_area, model_type, optimizer)
+
+## Adaptive ADMM with fully distributed structure
+data_area = solve_dopf_adaptive_admm(data, model_type, optimizer, tol=tol, max_iteration=max_iteration, print_level = 1, alpha=100.0, mu_inc=1.05, mu_dec=1.05, eta_inc=0.05, eta_dec=0.02, save_data=["solution", "mismatch"])
+error_adaptive_admm = compare_solution(data, data_area, model_type, optimizer)
 
 ## APP with fully distributed structure
 data_area = solve_dopf_app(data, model_type, optimizer; tol=tol, max_iteration=max_iteration, print_level = 1, alpha=1000, save_data=["solution", "mismatch"])
@@ -28,8 +32,12 @@ data_area = solve_dopf_atc(data, model_type, optimizer; tol=tol, max_iteration=m
 error_atc = compare_solution(data, data_area, model_type, optimizer)
 
 ## ADMM with central coordinator structure
-data_area = solve_dopf_admm_coordinated(data, model_type, optimizer; tol=tol, max_iteration=max_iteration, print_level = 1, alpha = 1000);
-error_admm = compare_solution(data, data_area, model_type, optimizer)
+data_area = solve_dopf_admm_coordinated(data, model_type, optimizer; tol=tol, max_iteration=max_iteration, print_level = 1, alpha = 100);
+error_admm_coordinated = compare_solution(data, data_area, model_type, optimizer)
+
+## Adaptive ADMM with central coordinator structure
+data_area = solve_dopf_adaptive_admm_coordinated(data, model_type, optimizer, tol=tol, max_iteration=max_iteration, print_level = 1,  alpha=100.0, mu_inc=1.1, mu_dec=1.05, eta_inc=0.05, eta_dec=0.02, save_data=["solution", "mismatch"])
+error_adaptive_admm_coordinated = compare_solution(data, data_area, model_type, optimizer)
 
 ## ATC with central coordinator structure
 data_area = solve_dopf_atc_coordinated(data, model_type, optimizer; max_iteration=max_iteration, print_level = 1, alpha = 1.05)
