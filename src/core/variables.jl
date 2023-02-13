@@ -55,7 +55,7 @@ end
 
 function initial_value(variable::String)::Float64
     if variable in ["vm", "w", "wr"]
-        return 1.1
+        return 1.0
     else
         return 0.0
     end

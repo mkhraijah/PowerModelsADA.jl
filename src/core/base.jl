@@ -782,7 +782,7 @@ function update_flag_convergence!(data::Dict{String, <:Any})
         # Rule 3
         global_flag_convergence = reduce( & , [ val for (area, val) in first(data["shared_flag_convergence"])[2]])
 
-        if global_flag_convergence && (shared_convergence_iteration + length(all_areas)-2 <= iteration)
+        if global_flag_convergence && (shared_convergence_iteration + length(all_areas) - 1 <= iteration)
             data["counter"]["flag_convergence"] = global_flag_convergence
         end
     end

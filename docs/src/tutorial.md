@@ -21,7 +21,7 @@ using PowerModelsADA
 using Ipopt 
 ```
 
-Next, we need to upload a test case. We will use IEEE 14-bus system in `/test/data/` folder in MATPOWER format. The file can be loaded using `parse_file` from `PowerModels` package. The test system needs to be divided into multiple distinct areas. This can be checked by looking into `data["bus"][bus_id]["area"]`. If not, you can use `partition_system!` function to divide the system or load a csv file contains the buses and area of each bus.  
+Next, we need to upload a test case. We will use IEEE 14-bus system in `/test/data/` folder in MATPOWER format. The file can be loaded using `parse_file` from `PowerModels` package. The test system needs to be divided into multiple distinct areas. This can be checked by looking into `data["bus"][bus_id]["area"]`.
 
 ```julia
 
@@ -42,24 +42,55 @@ max_iteration = 1000
 tol = 1e-4
 alpha = 1000
 optimizer = optimizer_with_attributes(Ipopt.Optimizer, "print_level"=>0)
+```
 
-##  Power Flow Model selection
-model_type = DCPPowerModel
+PowerModelsADA supports the following power flow models:
+
+### Exact power flow
+
+```julia
+model_type = ACPPowerModel # AC power flow model with polar bus voltage variables.
+model_type = ACRPowerModel # AC power flow model with rectangular bus voltage variables.
+```
+
+### Approximations
+
+```julia
+model_type = DCPPowerModel # Linearized 'DC' power flow model.
+model_type = LPACCPowerModel # LP AC power flow approximation.
+```
+
+### Convex relaxations
+
+```julia
+model_type = SOCWRPowerModel # Second-order cone relaxation of bus injection model of AC power flow.
+model_type = QCRMPowerModel # Quadratic-Convex relaxation of the AC power flow.
+model_type = SDPWRMPowerModel # Semidefinite relaxation of AC power flow.
+model_type = SparseSDPWRMPowerModel # Sparsity-exploiting semidefinite relaxation of AC power flow.
+```
+
+To solve the OPF problem using ADMM algorithm using the solve function, we use the following :
+
+```julia
+data_area = solve_dopf_admm(data, model_type, optimizer, tol=tol, max_iteration=max_iteration, alpha=alpha)
 
 ```
 
-To solve the OPF problem using ADMM algorithm using the solve function, we use the following code:
+To use multiprocessing features, we need to use the Distributed library, add processors, and upload the PowerModelsADA and the solver packages to the processors. For the best performance, the number of processors should be equal to the number of areas. The code becomes as follows: 
 
 ```julia
-data_area = solve_dopf_admm(data, model_type, optimizer, tol=tol, max_iteration=max_iteration, verbose = false, alpha=alpha)
-
+using Distributed 
+num_area = 4 # change the number to be equal to number of areas
+addprocs(num_area, exeflags="--project")
+@everywhere using PowerModelsADA
+@everywhere using Ipopt
+data_area = solve_dopf_admm(data, model_type, optimizer, tol=tol, max_iteration=max_iteration, alpha=alpha, multiprocessors=true)
 ```
 
 To compare the distributed algorithm objective function value with the central OPF, use `compare_solution` to get the absolute value of the relative error.
 
 ```julia
-error_admm = compare_solution(data, data_area, model_type, optimizer)
-
+optimality_gap = compare_solution(data, data_area, model_type, optimizer)
 ```
 
 PowerModelsADA also provides the flexibility for more granular control of the distributed algorithm. We can use the following code to initialize the distributed algorithm (we use ADMM in this example).

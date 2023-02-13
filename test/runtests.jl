@@ -3,6 +3,7 @@ using PowerModelsADA
 import HiGHS
 import Ipopt
 
+using Distributed
 using Test
 
 ## default setup for solvers
@@ -59,9 +60,9 @@ data_RTS = parse_file("../test/data/case_RTS.m")
 #         end
 #     end
 
-## ADMM test
+    ## ADMM test
     @testset "admm algorithm with DC power flow" begin
-        data_area = solve_dopf_admm(data_14, DCPPowerModel, milp_solver; alpha=1000, tol=1e-3, max_iteration=1000, print_level=0)
+        data_area = solve_dopf_admm(data_14, DCPPowerModel, milp_solver; alpha=1000, tol=1e-3, max_iteration=1000, print_level=0, multiprocessors=true, termination_method="local", all_areas = get_areas_id(data_14))
         dist_cost = calc_dist_gen_cost(data_area)
         @test isapprox(dist_cost, 7642.59, atol=5)
     end

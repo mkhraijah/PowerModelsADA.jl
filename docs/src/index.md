@@ -15,6 +15,7 @@ The `PowerModelsADA` framework is designed to easily incorporate new alternating
 The current version of `PowerModelsADA` implements four distributed algorithms:
 
 - Alternating Direction Method of Multipliers (ADMM)
+- Adaptive Alternating Direction Method of Multipliers (ADMM)
 - Analytical Target Cascading (ATC)
 - Auxiliary Problem Principle (APP)
 - Augmented Lagrangian Alternating Direction Inexact Newton (ALADIN)
