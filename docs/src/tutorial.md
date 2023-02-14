@@ -76,7 +76,7 @@ data_area = solve_dopf_admm(data, model_type, optimizer, tol=tol, max_iteration=
 
 ```
 
-To use multiprocessing features, we need to use the Distributed library, add processors, and upload the PowerModelsADA and the solver packages to the processors. For the best performance, the number of processors should be equal to the number of areas. The code becomes as follows: 
+To use multiprocessing features, we need to use the Distributed library, add processors, and upload the PowerModelsADA and the solver packages to the processors. For the best performance, the number of processors should be equal to the number of areas. The code becomes as follows:
 
 ```julia
 using Distributed 

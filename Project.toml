@@ -2,7 +2,7 @@ name = "PowerModelsADA"
 uuid = "bf5a6c5f-0285-47d6-bb57-79927775d05d"
 authors = ["Mohannad Alkhraijah"]
 repo = "https://github.com/mkhraijah/PowerModelsADA.jl"
-version = "0.1.1"
+version = "0.1.2"
 
 [deps]
 DelimitedFiles = "8bb1440f-4735-579b-a4ab-409b98df4dab"

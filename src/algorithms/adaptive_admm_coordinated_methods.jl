@@ -32,7 +32,7 @@ function initialize_method_local(data::Dict{String, <:Any}, model_type::DataType
 
     initialize_dopf!(data, model_type; kwargs...)
     # adaptive ADMM parameters
-    alpha = get(kwargs, :alpha, 1000.0)
+    alpha = Float64(get(kwargs, :alpha, 1000.0))
     data["parameter"] = Dict("alpha"=> alpha)
     data["received_parameter"]= Dict{String, Any}("0" => data["parameter"]["alpha"])
 
@@ -79,10 +79,10 @@ function initialize_method_coordinator(data::Dict{String, <:Any}, model_type::Da
 
     # adaptive ADMM parameters
     alpha = Float64(get(kwargs, :alpha, 1000))
-    mu_inc = Float64(get(kwargs, :mu_inc, 2))
-    mu_dec = Float64(get(kwargs, :mu_dec, 2))
-    eta_inc = Float64(get(kwargs, :eta_inc, 0.2))
-    eta_dec = Float64(get(kwargs, :eta_dec, 0.2))
+    mu_inc = Float64(get(kwargs, :mu_inc, 2.5))
+    mu_dec = Float64(get(kwargs, :mu_dec, 2.5))
+    eta_inc = Float64(get(kwargs, :eta_inc, 0.1))
+    eta_dec = Float64(get(kwargs, :eta_dec, 0.1))
 
     data["parameter"] = Dict("alpha"=> alpha,"mu_inc"=> mu_inc, "mu_dec"=> mu_dec, "eta_inc"=> eta_inc, "eta_dec"=>eta_dec)
     data["shared_parameter"] = Dict(string(area) => data["parameter"]["alpha"] for area in areas_id)

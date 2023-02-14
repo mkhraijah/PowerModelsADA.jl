@@ -62,15 +62,28 @@ data_RTS = parse_file("../test/data/case_RTS.m")
 
     ## ADMM test
     @testset "admm algorithm with DC power flow" begin
-        data_area = solve_dopf_admm(data_14, DCPPowerModel, milp_solver; alpha=1000, tol=1e-3, max_iteration=1000, print_level=0, multiprocessors=true, termination_method="local", all_areas = get_areas_id(data_14))
+        data_area = solve_dopf_admm(data_14, DCPPowerModel, milp_solver; alpha=1000, tol=1e-3, max_iteration=1000, print_level=0, multiprocessors=true, termination_method="local", mismatch_method="max", termination_measure="dual_residual", all_areas = get_areas_id(data_14))
+        error = compare_solution(data_14, data_area, DCPPowerModel, milp_solver)
+        @test isapprox(error, 0, atol=1e-3)
+    end
+
+    @testset "coordinated admm algorithm with AC polar power flow" begin
+        data_area = solve_dopf_admm_coordinated("../test/data/case14.m", ACPPowerModel, nlp_solver; alpha=1000, tol=1e-3, max_iteration=1000, print_level=1, multiprocessors=true)
+        dist_cost = calc_dist_gen_cost(data_area)
+        @test isapprox(dist_cost, 8081.52, atol=5)
+    end
+
+    # ## Adaptive ADMM test
+    @testset "adaptive admm algorithm with DC power flow" begin
+        data_area = solve_dopf_adaptive_admm(data_14, DCPPowerModel, milp_solver; alpha=1000, tol=1e-3, max_iteration=1000, print_level=0)
         dist_cost = calc_dist_gen_cost(data_area)
         @test isapprox(dist_cost, 7642.59, atol=5)
     end
 
-    @testset "coordinated admm algorithm with AC polar power flow" begin
-        data_area = solve_dopf_admm_coordinated(data_14, ACPPowerModel, nlp_solver; alpha=1000, tol=1e-3, max_iteration=1000, print_level=0)
+    @testset "adaptive coordinated admm algorithm with AC polar power flow" begin
+        data_area = solve_dopf_adaptive_admm_coordinated(data_14, SOCWRPowerModel, nlp_solver; alpha=1000, tol=1e-3, max_iteration=1000, print_level=0)
         dist_cost = calc_dist_gen_cost(data_area)
-        @test isapprox(dist_cost, 8081.52, atol=5)
+        @test isapprox(dist_cost, 8075.12, atol=5)
     end
 
     ## ATC test

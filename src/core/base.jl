@@ -26,6 +26,10 @@ function solve_dopf(data::Dict{String, <:Any}, model_type::DataType, optimizer, 
     # get areas ids
     areas_id = get_areas_id(data)
 
+    if length(areas_id) < 2
+        error("Number of areas is less than 2, at least 2 areas is needed")
+    end
+
     # decompose the system into subsystems
     data_area = Dict{Int64, Any}()
     for area in areas_id
@@ -300,6 +304,10 @@ function solve_dopf_coordinated(data::Dict{String, <:Any}, model_type::DataType,
     arrange_areas_id!(data)
     areas_id = get_areas_id(data)
 
+    if length(areas_id) < 2
+        error("Number of areas is less than 2, at least 2 areas is needed")
+    end
+    
     # decompose the system into subsystems
     data_area = Dict{Int64, Any}(0 => decompose_coordinator(data))
     for area in areas_id
@@ -667,7 +675,7 @@ function calc_mismatch!(data::Dict{String, <:Any}; central::Bool=false)
     for area in keys(shared_variable_local) if area != area_id && area in keys(shared_variable_received) ])
 
     if mismatch_method == "norm"
-        mismatch[area_id] = LinearAlgebra.norm([value for area in keys(mismatch) if area != area_id for variable in keys(mismatch[area]) for (idx,value) in mismatch[area][variable]])
+        mismatch[area_id] = LinearAlgebra.norm([value for area in keys(mismatch) if area != area_id for variable in keys(mismatch[area]) for (idx,value) in mismatch[area][variable]], 2)
     elseif mismatch_method == "max" || mismatch_method == "maximum"
         mismatch[area_id] = LinearAlgebra.maximum([value for area in keys(mismatch) if area != area_id for variable in keys(mismatch[area]) for (idx,value) in mismatch[area][variable]])
     end

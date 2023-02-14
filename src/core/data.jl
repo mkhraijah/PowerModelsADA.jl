@@ -150,28 +150,28 @@ function arrange_areas_id!(data::Dict{String, <:Any})
 end
 
 "helper function to get all areas IDs"
-get_areas_id(data::Dict{String, <:Any}) = unique([bus["area"] for (i, bus) in data["bus"]])
+get_areas_id(data::Dict{String, <:Any})::Vector{Int64} = unique([bus["area"] for (i, bus) in data["bus"]])
 
 "helper function to get all areas IDs"
-get_areas_id(data::Dict{Int, <:Any}) = collect(keys(data))
+get_areas_id(data::Dict{Int, <:Any})::Vector{Int64} = collect(keys(data))
 
 "helper function to get all areas IDs"
-get_areas_id(pm::AbstractPowerModel) = get_areas_id(pm.data)
+get_areas_id(pm::AbstractPowerModel)::Vector{Int64} = get_areas_id(pm.data)
 
 "helper function to get the area ID"
-get_area_id(data::Dict{String, <:Any}) = get(data,"area", NaN)
+get_area_id(data::Dict{String, <:Any})::Int64 = get(data,"area", NaN)
 
 "helper function to get the area ID"
-get_area_id(pm::AbstractPowerModel) = get_area_id(pm.data)
+get_area_id(pm::AbstractPowerModel)::Int64 = get_area_id(pm.data)
 
 "helper functions to get the area's local buses"
-get_local_bus(data::Dict{String, <:Any}, area::Int) = Vector{Int64}([bus["bus_i"] for (i,bus) in data["bus"] if bus["area"] == area])
+get_local_bus(data::Dict{String, <:Any}, area::Int)::Vector{Int64} = [bus["bus_i"] for (i,bus) in data["bus"] if bus["area"] == area]
 
 "helper functions to get the area's local buses"
-get_local_bus(pm::AbstractPowerModel, area::Int) = get_local_bus(pm.data, area)
+get_local_bus(pm::AbstractPowerModel, area::Int)::Vector{Int64} = get_local_bus(pm.data, area)
 
 "helper functions to get the area's neighbor buses"
-function get_neighbor_bus(data::Dict{String, <:Any}, local_bus::Vector)
+function get_neighbor_bus(data::Dict{String, <:Any}, local_bus::Vector)::Vector{Int64}
     neighbor_bus = Vector{Int64}()
     for (i,branch) in data["branch"]
         if branch["br_status"] == 1
@@ -186,13 +186,13 @@ function get_neighbor_bus(data::Dict{String, <:Any}, local_bus::Vector)
 end
 
 "helper functions to get the area's neighbor buses"
-get_neighbor_bus(pm::AbstractPowerModel, local_bus::Vector) = get_neighbor_bus(pm.data, local_bus)
+get_neighbor_bus(pm::AbstractPowerModel, local_bus::Vector)::Vector{Int64} = get_neighbor_bus(pm.data, local_bus)
 
 "helper functions to get the area's neighbor buses"
-get_neighbor_bus(data::Dict{String, <:Any}, area::Int) = get_neighbor_bus(data, get_local_bus(data,area))
+get_neighbor_bus(data::Dict{String, <:Any}, area::Int)::Vector{Int64} = get_neighbor_bus(data, get_local_bus(data,area))
 
 "helper functions to get the area's neighbor buses"
-get_neighbor_bus(pm::AbstractPowerModel, area::Int) = get_neighbor_bus(pm.data, area)
+get_neighbor_bus(pm::AbstractPowerModel, area::Int)::Vector{Int64} = get_neighbor_bus(pm.data, area)
 
 "helper functions to all areas buses in a dicrionary"
 function get_areas_bus(data::Dict{String, <:Any})
@@ -216,15 +216,15 @@ function get_shared_component(data::Dict{String, <:Any}, area_id::Int64)
     shared_bus = Dict{Int64, Any}()
     for area in areas_id
         if area != area_id
-            shared_branch[area] = unique([parse(Int64,idx) for (idx,branch) in data["branch"] if branch["br_status"] == 1 && ((branch["f_bus"] in areas_bus[area] && branch["t_bus"] in areas_bus[area_id]) || (branch["f_bus"] in areas_bus[area_id] && branch["t_bus"] in areas_bus[area])) ])
+            shared_branch[area] = Vector{Int64}(unique([parse(Int64,idx) for (idx,branch) in data["branch"] if branch["br_status"] == 1 && ((branch["f_bus"] in areas_bus[area] && branch["t_bus"] in areas_bus[area_id]) || (branch["f_bus"] in areas_bus[area_id] && branch["t_bus"] in areas_bus[area])) ]))
         else
-            shared_branch[area] = unique([parse(Int64,idx) for (idx,branch) in data["branch"] if branch["br_status"] == 1 && xor(branch["f_bus"] in areas_bus[area], branch["t_bus"] in areas_bus[area]) ])
+            shared_branch[area] = Vector{Int64}(unique([parse(Int64,idx) for (idx,branch) in data["branch"] if branch["br_status"] == 1 && xor(branch["f_bus"] in areas_bus[area], branch["t_bus"] in areas_bus[area]) ]))
         end
         
-        shared_bus[area] = unique(vcat([branch["f_bus"] for (idx,branch) in data["branch"] if parse(Int64,idx) in shared_branch[area]], [branch["t_bus"] for (idx,branch) in data["branch"] if parse(Int64,idx) in shared_branch[area]] ))
+        shared_bus[area] = Vector{Int64}(unique(vcat([branch["f_bus"] for (idx,branch) in data["branch"] if parse(Int64,idx) in shared_branch[area]], [branch["t_bus"] for (idx,branch) in data["branch"] if parse(Int64,idx) in shared_branch[area]] )))
     end
-    shared_bus[0] = unique([idx for area in areas_id for idx in shared_bus[area]])
-    shared_branch[0] = unique([idx for area in areas_id for idx in shared_branch[area]])
+    shared_bus[0] = Vector{Int64}(unique([idx for area in areas_id for idx in shared_bus[area]]))
+    shared_branch[0] = Vector{Int64}(unique([idx for area in areas_id for idx in shared_branch[area]]))
     return shared_bus, shared_branch
 end
 
