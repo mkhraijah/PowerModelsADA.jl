@@ -18,7 +18,6 @@ function assign_area!(data::Dict{String, <:Any}, partition_path::String)
         Pair{Int64, Int64}(row[1], row[2])
         for row in eachrow(partition_mat)
     ])
-    println("test")
     assign_area!(data, partition)
 end
 
@@ -195,10 +194,10 @@ end
 get_neighbor_bus(pm::AbstractPowerModel, local_bus::Vector)::Vector{Int64} = get_neighbor_bus(pm.data, local_bus)
 
 "helper functions to get the area's neighbor buses"
-get_neighbor_bus(data::Dict{String, <:Any}, area::Int)::Vector{Int64} = get_neighbor_bus(data, get_local_bus(data,area))
+get_neighbor_bus(data::Dict{String, <:Any}, area::Int64)::Vector{Int64} = get_neighbor_bus(data, get_local_bus(data,area))
 
 "helper functions to get the area's neighbor buses"
-get_neighbor_bus(pm::AbstractPowerModel, area::Int)::Vector{Int64} = get_neighbor_bus(pm.data, area)
+get_neighbor_bus(pm::AbstractPowerModel, area::Int64)::Vector{Int64} = get_neighbor_bus(pm.data, area)
 
 "helper functions to all areas buses in a dicrionary"
 function get_areas_bus(data::Dict{String, <:Any})
