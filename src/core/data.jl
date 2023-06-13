@@ -12,7 +12,12 @@ end
 
 "assign area to the system data using a CVS file with buses and area ID"
 function assign_area!(data::Dict{String, <:Any}, partition_path::String)
-    partition = DelimitedFiles.readdlm(partition_path, ',', Int, '\n')
+    partition_mat = DelimitedFiles.readdlm(partition_path, ',', Int, '\n')
+    # explicit conversion from Matrix{Int64} to Vector{Pair{Int64, Int64}}
+    partition = Vector{Pair{Int64, Int64}}([
+        Pair{Int64, Int64}(row[1], row[2])
+        for row in eachrow(partition_mat)
+    ])
     assign_area!(data, partition)
 end
 
@@ -165,10 +170,10 @@ get_area_id(data::Dict{String, <:Any})::Int64 = get(data,"area", NaN)
 get_area_id(pm::AbstractPowerModel)::Int64 = get_area_id(pm.data)
 
 "helper functions to get the area's local buses"
-get_local_bus(data::Dict{String, <:Any}, area::Int)::Vector{Int64} = [bus["bus_i"] for (i,bus) in data["bus"] if bus["area"] == area]
+get_local_bus(data::Dict{String, <:Any}, area::Int64)::Vector{Int64} = [bus["bus_i"] for (i,bus) in data["bus"] if bus["area"] == area]
 
 "helper functions to get the area's local buses"
-get_local_bus(pm::AbstractPowerModel, area::Int)::Vector{Int64} = get_local_bus(pm.data, area)
+get_local_bus(pm::AbstractPowerModel, area::Int64)::Vector{Int64} = get_local_bus(pm.data, area)
 
 "helper functions to get the area's neighbor buses"
 function get_neighbor_bus(data::Dict{String, <:Any}, local_bus::Vector)::Vector{Int64}
