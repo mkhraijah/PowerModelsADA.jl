@@ -18,6 +18,7 @@ function assign_area!(data::Dict{String, <:Any}, partition_path::String)
         Pair{Int64, Int64}(row[1], row[2])
         for row in eachrow(partition_mat)
     ])
+    println("test")
     assign_area!(data, partition)
 end
 
