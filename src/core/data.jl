@@ -106,7 +106,7 @@ function decompose_coordinator(data::Dict{String, <:Any})
 end
 
 "add virtual generators at the neighboring buses of an area"
-function add_virtual_gen(data::Dict{String, <:Any}, neighbor_bus::Vector, area_id::Int)
+function add_virtual_gen(data::Dict{String, <:Any}, neighbor_bus::Vector, area_id::Int64)
     max_gen_ind = maximum([parse(Int,i) for i in keys(data["gen"])])
     virtual_gen = Dict{String, Any}()
     cost_model = data["gen"][string(max_gen_ind)]["model"]
