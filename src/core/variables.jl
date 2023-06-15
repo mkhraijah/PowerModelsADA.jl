@@ -72,12 +72,12 @@ function previous_value(data::Dict{String, <:Any}, variable::String, idx::String
             return data["bus"][idx]["vm"]^2
         end
     elseif variable in ["pf", "pt", "qf", "qt","wr", "wi", "vv", "ccm", "cs", "si", "td"]
-        if haskey(data["bus"][idx], variable)
+        if haskey(data["branch"][idx], variable)
             return data["branch"][idx][variable]
         else
             error("no previous solutions exist to use warm start or the PowerModel is not supported")
         end
-    elseif ["pg", "qg"]
+    elseif variable in ["pg", "qg"]
         return data["gen"][idx][variable]
     else
         error("no previous solutions exist to use warm start or the PowerModel is not supported")

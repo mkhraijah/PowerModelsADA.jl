@@ -25,6 +25,7 @@ Solve OPF problem using fully distributed algorithm.
 function solve_dopf(data::Dict{String, <:Any}, model_type::DataType, optimizer, dopf_method::Module; print_level::Int64=1, multiprocessors::Bool=false, kwargs...)
     # get areas ids
     areas_id = get_areas_id(data)
+    diameter = get_diameter(data)
 
     if length(areas_id) < 2
         error("Number of areas is less than 2, at least 2 areas is needed")
@@ -36,7 +37,7 @@ function solve_dopf(data::Dict{String, <:Any}, model_type::DataType, optimizer, 
         data_area[area] = decompose_system(data, area)
     end
 
-    solve_dopf(data_area, model_type, optimizer, dopf_method; print_level, multiprocessors=multiprocessors, kwargs...)
+    solve_dopf(data_area, model_type, optimizer, dopf_method; print_level, multiprocessors=multiprocessors, diameter=diameter, all_areas=areas_id, kwargs...)
 end
 
 function solve_dopf(data::String, model_type::DataType, optimizer, dopf_method::Module; print_level::Int64=1, multiprocessors::Bool=false, kwargs...)
@@ -161,7 +162,7 @@ function solve_dopf_mp(data_area::Dict{Int64, <:Any}, model_type::DataType, opti
     end
     worker_area = Dict([i => findall(x -> x==i, area_worker) for i in worker_id if i in values(area_worker)])
 
-    # initiaiate communication channels 
+    # initiate communication channels 
     comms = Dict(0 => Dict(area => Distributed.RemoteChannel(1) for area in areas_id))
     for area1 in areas_id
         comms[area1] = Dict()
@@ -178,7 +179,7 @@ function solve_dopf_mp(data_area::Dict{Int64, <:Any}, model_type::DataType, opti
         put!(comms[0][area], data_area[area])
     end
 
-    ## get global parameters
+    # get global parameters
     max_iteration = get(kwargs, :max_iteration, 1000)
     tol = get(kwargs, :tol, 1e-4)
     termination_method = get(kwargs, :termination_method, "global")
@@ -237,7 +238,7 @@ function solve_dopf_mp(data_area::Dict{Int64, <:Any}, model_type::DataType, opti
             end
         end
 
-        # receive the mismatch from areas
+        # receive the mismatches from areas
         for area in areas_id
             counters = take!(comms[area][0])
             flag_convergence[area] = counters["flag_convergence"]
@@ -606,6 +607,7 @@ function initialize_dopf!(data::Dict{String, <:Any}, model_type::DataType; kwarg
         data["shared_convergence_iteration"] = Dict(area => 0 for area in areas_id)
         data["received_convergence_iteration"] = Dict(area => 0 for area in areas_id)
         data["counter"]["local_flag_convergence"] = false
+        data["option"]["diameter"] = get(kwargs, :diameter, size(all_areas)[1])
     end
 
     # last solution 
@@ -790,7 +792,7 @@ function update_flag_convergence!(data::Dict{String, <:Any})
         # Rule 3
         global_flag_convergence = reduce( & , [ val for (area, val) in first(data["shared_flag_convergence"])[2]])
 
-        if global_flag_convergence && (shared_convergence_iteration + length(all_areas) - 1 <= iteration)
+        if global_flag_convergence && (shared_convergence_iteration + data["option"]["diameter"] <= iteration)
             data["counter"]["flag_convergence"] = global_flag_convergence
         end
     end

@@ -64,7 +64,7 @@ function compare_solution(data::Dict{String, <:Any}, data_area::Dict{Int, <:Any}
     # Solve Centralized OPF
     Central_solution = _PM.solve_opf(data, model_type, optimizer)
     # Calculate objective function
-    Obj_distributed = calc_dist_gen_cost(data_area::Dict{Int, <:Any})
+    Obj_distributed = calc_dist_gen_cost(data_area)
     Obj_centeral = Central_solution["objective"]
     # Calculate optimality gap
     Relative_Error = abs(Obj_distributed - Obj_centeral)/ Obj_centeral * 100
@@ -122,4 +122,36 @@ function calc_number_variables(data::Dict{String, <:Any})
         end
     end
     return num_variables
+end
+
+"get the communication network diameter"
+function get_diameter(data)
+    areas_id = get_areas_id(data)
+    narea = length(areas_id)
+    data_area = decompose_system(data)
+    for i in areas_id
+        initialize_dopf!(data_area[i], DCPPowerModel)
+    end
+
+    D = zeros(Int64, narea,narea)
+    for id1 in 1:narea
+        for id2 in 1:narea
+            if id2 in data_area[id1]["neighbors"]
+                D[id1, id2] = 1
+            else
+                D[id1, id2] = narea
+            end
+        end
+    end
+
+    for k in 1:narea
+        for i in 1:narea
+            for j in 1:narea
+                if D[i,j] > D[i,k] + D[k,j]
+                    D[i,j] = D[i,k] + D[k,j]
+                end
+            end
+        end
+    end
+    return maximum(D)
 end
