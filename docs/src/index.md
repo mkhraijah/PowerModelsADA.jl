@@ -34,3 +34,21 @@ Pkg.add("PowerModelsADA")
 ## Examples
 
 An example demonstrating how to code up and solve the OPF problem with distributed algorithms is found in [Quick Start Guide](https://mkhraijah.github.io/PowerModelsADA.jl/dev/quickguide/) section of the documentation.
+
+## Contributions
+
+Contributions and enhancements of PowerModelADA are welcomed and encouraged. Please feel free to fork this repository and share your contributions to the main branch with a pull request.
+
+## Citation
+
+If you find PowerModelsADA.jl useful for your work, please cite our [paper](https://arxiv.org/abs/2304.00639):
+
+```bibtex
+@article{alkhraijah2023powermodelsada,
+  title={PowerModelsADA: A Framework for Solving Optimal Power Flow using Distributed Algorithms},
+  author={Alkhraijah, Mohannad and Harris, Rachel and Coffrin, Carleton and Molzahn, Daniel K},
+  journal={arXiv preprint arXiv:2304.00639},
+  year={2023},
+  url={https://arxiv.org/abs/2304.00639}
+}
+```

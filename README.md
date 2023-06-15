@@ -1,4 +1,4 @@
-#  PowerModelsADA.jl 
+# PowerModelsADA.jl
 
 Status:
 [![CI](https://github.com/mkhraijah/PowerModelsADA.jl/workflows/CI/badge.svg)](https://github.com/mkhraijah/PowerModelsADA.jl/actions?query=workflow%3ACI)
@@ -10,12 +10,11 @@ Status:
 
 [`PowerModelsADA.jl`](https://github.com/mkhraijah/PowerModelsADA.jl) (Power Models Alternating Distributed Algorithms) provides a framework to solve Optimal Power Flow (OPF) problems using alternating distributed algorithms. The package allows to use different distributed algorithms. `PowerModelsADA` is built on top of [`PowerModels.jl`](https://github.com/lanl-ansi/PowerModels.jl) and [`JuMP.jl`](https://github.com/jump-dev/JuMP.jl) to model and solve the subproblems.
 
+## Distributed Algorithms
 
-## Distributed Algorithms 
 The `PowerModelsADA` framework is designed to easily incorporate new alternating distributed algorithms. The framework provides means to decompose a test case into multiple areas, model the subproblems associated with each area using `PowerModels`, solve the supropblems in parallel using multi-threading, communicate the shared data between the areas, and calculate the mismatches to decide if the termination criteria are satisfied.
 
-
-The current version of `PowerModelsADA` implements four distributed algorithms: 
+The current version of `PowerModelsADA` implements four distributed algorithms:
 
 - Alternating Direction Method of Multipliers (ADMM)
 - Analytical Target Cascading (ATC)
@@ -36,3 +35,21 @@ Pkg.add("PowerModelsADA")
 ## Examples
 
 An example demonstrating how to code up and solve the OPF problem with distributed algorithms is found in [Quick Start Guide](https://mkhraijah.github.io/PowerModelsADA.jl/dev/quickguide/) section of the documentation.
+
+## Contributions
+
+Community-driven development and enhancement of PowerModelADA is welcomed and encouraged. Please feel free to fork this repository and share your contributions to the main branch with a pull request.
+
+## Citation
+
+If you find PowerModelsADA.jl useful for your work, please cite our [paper](https://arxiv.org/abs/2304.00639):
+
+```bibtex
+@article{alkhraijah2023powermodelsada,
+  title={PowerModelsADA: A Framework for Solving Optimal Power Flow using Distributed Algorithms},
+  author={Alkhraijah, Mohannad and Harris, Rachel and Coffrin, Carleton and Molzahn, Daniel K},
+  journal={arXiv preprint arXiv:2304.00639},
+  year={2023},
+  url={https://arxiv.org/abs/2304.00639}
+}
+```
