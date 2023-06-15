@@ -12,7 +12,12 @@ end
 
 "assign area to the system data using a CVS file with buses and area ID"
 function assign_area!(data::Dict{String, <:Any}, partition_path::String)
-    partition = DelimitedFiles.readdlm(partition_path, ',', Int, '\n')
+    partition_mat = DelimitedFiles.readdlm(partition_path, ',', Int, '\n')
+    # explicit conversion from Matrix{Int64} to Vector{Pair{Int64, Int64}}
+    partition = Vector{Pair{Int64, Int64}}([
+        Pair{Int64, Int64}(row[1], row[2])
+        for row in eachrow(partition_mat)
+    ])
     assign_area!(data, partition)
 end
 
@@ -101,7 +106,7 @@ function decompose_coordinator(data::Dict{String, <:Any})
 end
 
 "add virtual generators at the neighboring buses of an area"
-function add_virtual_gen(data::Dict{String, <:Any}, neighbor_bus::Vector, area_id::Int)
+function add_virtual_gen(data::Dict{String, <:Any}, neighbor_bus::Vector, area_id::Int64)
     max_gen_ind = maximum([parse(Int,i) for i in keys(data["gen"])])
     virtual_gen = Dict{String, Any}()
     cost_model = data["gen"][string(max_gen_ind)]["model"]
@@ -165,10 +170,10 @@ get_area_id(data::Dict{String, <:Any})::Int64 = get(data,"area", NaN)
 get_area_id(pm::AbstractPowerModel)::Int64 = get_area_id(pm.data)
 
 "helper functions to get the area's local buses"
-get_local_bus(data::Dict{String, <:Any}, area::Int)::Vector{Int64} = [bus["bus_i"] for (i,bus) in data["bus"] if bus["area"] == area]
+get_local_bus(data::Dict{String, <:Any}, area::Int64)::Vector{Int64} = [bus["bus_i"] for (i,bus) in data["bus"] if bus["area"] == area]
 
 "helper functions to get the area's local buses"
-get_local_bus(pm::AbstractPowerModel, area::Int)::Vector{Int64} = get_local_bus(pm.data, area)
+get_local_bus(pm::AbstractPowerModel, area::Int64)::Vector{Int64} = get_local_bus(pm.data, area)
 
 "helper functions to get the area's neighbor buses"
 function get_neighbor_bus(data::Dict{String, <:Any}, local_bus::Vector)::Vector{Int64}
@@ -189,10 +194,10 @@ end
 get_neighbor_bus(pm::AbstractPowerModel, local_bus::Vector)::Vector{Int64} = get_neighbor_bus(pm.data, local_bus)
 
 "helper functions to get the area's neighbor buses"
-get_neighbor_bus(data::Dict{String, <:Any}, area::Int)::Vector{Int64} = get_neighbor_bus(data, get_local_bus(data,area))
+get_neighbor_bus(data::Dict{String, <:Any}, area::Int64)::Vector{Int64} = get_neighbor_bus(data, get_local_bus(data,area))
 
 "helper functions to get the area's neighbor buses"
-get_neighbor_bus(pm::AbstractPowerModel, area::Int)::Vector{Int64} = get_neighbor_bus(pm.data, area)
+get_neighbor_bus(pm::AbstractPowerModel, area::Int64)::Vector{Int64} = get_neighbor_bus(pm.data, area)
 
 "helper functions to all areas buses in a dicrionary"
 function get_areas_bus(data::Dict{String, <:Any})
