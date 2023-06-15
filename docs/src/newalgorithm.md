@@ -4,7 +4,7 @@
 CurrentModule = PowerModelsADA
 ```
 
-To define a new algorithm, we need to define a module for the new algorithm that contains the main solve function in addition to three algorithm-specific functions. The three algorithm-specific are: initialize, build, and update. You can follow the exmaple in the [template file](https://github.com/mkhraijah/PowerModelsADA.jl/blob/main/example/template.jl).
+To define a new algorithm, we need to define a module for the new algorithm that contains the main solve function in addition to three algorithm-specific functions. The three algorithm-specific are: initialize, build, and update. You can follow the example in the [template file](https://github.com/mkhraijah/PowerModelsADA.jl/blob/main/example/template.jl).
 
 The module of `xx` algorithm should be defined and exported as `xx_methods` as follows:
 
@@ -17,11 +17,12 @@ using ..PowerModelsADA
 
 ### functions ###
 
+end
 # export the algorithm methods module and call method
 export xx_methods, solve_dopf_xx
 ```
 
-The solve function is the main method to use the `xx` algorithm. The function takes the data, power flow formulation (`model_type`), JuMP solver object, and algorithm's parameters as required. The solve function should use the pre-defined algorithm flow as follows:  
+The solve function is the main method to use the `xx` algorithm. The function takes the data, power flow formulation (`model_type`), JuMP solver object, and algorithm's parameters as required. The solve function should use the pre-defined algorithm flow as follows:
 
 ```julia
 "solve distributed OPF using XX algorithm"
@@ -35,11 +36,11 @@ function solve_method(data, model_type::DataType, optimizer;
 end
 ```
 
-The first algorithm-specific function is the initialize function. The function takes the area data file and adds to it the required parameters, counters, and shared variables. There are multiple built-in functions in `PowerModelsADA` that can be used to define the shared and received variables, as well as the dual variables. Note that the initialization function should include the `initialize_dopf!` to define the counters and convergence flags.
+The first algorithm-specific function is the initialize function. The function takes the area data file and adds to it the required parameters, counters, and shared variables. There are multiple built-in functions in `PowerModelsADA` that can be used to define the shared and received variables, as well as the dual variables. Note that the initialization function should include the `initialize_dopf!` to define the counters and convergence flags. We use `kwargs` with the `...` to combine the algorithm's parameters and pass them to the `initialize_method`.
 
 ```julia
 "initialize the XX algorithm"
-function initialize_method(data::Dict{String, <:Any}, model_type::Type; tol::Float64=1e-4, max_iteration::Int64=1000, kwargs...)
+function initialize_method(data::Dict{String, <:Any}, model_type::Type; kwargs...)
 
     # initiate primal and dual shared variables
     data["shared_variable"] = Dict(to_area=> variable_name=>value)
@@ -93,8 +94,7 @@ The last function is to update the area dictionary after communicating the share
 "update the xx algorithm before each iteration"
 function update_method(data::Dict{String, <:Any})
 
-    ###
-
+    ### update subproblem parameters for the next iteration
     ###
 end
 

@@ -10,6 +10,7 @@ The distributed algorithm module and solve function are:
 - ATC: modules: `atc_methods` and `atc_coordinated_methods`. solve functions: `solve_dopf_atc` and `solve_dopf_atc_coordinated`
 - APP: modules: `app_methods`. solve functions: `solve_dopf_app`
 - ALADIN: modules: `aladin_coordinated_methods`. solve function: `solve_dopf_aladin_coordinated`
+- Adaptive ADMM: Modules: `adaptive_admm_methods` and `adaptive_admm_coordinated_methods`. solve functions: `solve_dopf_adaptive_admm` and `solve_dopf_adaptive_admm_coordinated`
 
 ## Run Distributed Algorithm
 
@@ -24,13 +25,11 @@ using Ipopt
 Next, we need to upload a test case. We will use IEEE 14-bus system in `/test/data/` folder in MATPOWER format. The file can be loaded using `parse_file` from `PowerModels` package. The test system needs to be divided into multiple distinct areas. This can be checked by looking into `data["bus"][bus_id]["area"]`.
 
 ```julia
-
 ## Read case with partition file and return dictionary of the partitioned case
 case_path = "test/data/case14.m"
 partition_file_path = "test/data/case14_2areas.csv"
 data = parse_file(case_path)
 assign_area!(data, partition_file_path)
-
 ```
 
 Now, the case study is loaded and ready to be used to solve the OPF problem using distributed algorithms. We first need to define parameters, load the solver, and select a power flow formulation `model_type` as follows:

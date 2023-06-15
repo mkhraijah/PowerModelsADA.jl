@@ -37,7 +37,7 @@ The output of the distributed algorithms is stored in a dictionary. The dictiona
 
 ## Saving Iterations Data
 
-To save a specific data during the distributed algorithm (e.g., store the `"shared_variable"` dictionary each iteration), use the option `save_data::Vector{String}=[]` in the solve function and add the key of the data (e.g., `save_data=["shared variable"]`). The output of the solve function will contain a dictionary with a key called `"previous_solution"` that contains vectors of the selected saved data ordered by the iteration number.
+To save a specific data during the distributed algorithm (e.g., store the `"shared_variable"` dictionary each iteration), use the option `save_data::Vector{String}=[]` in the solve function and add the key of the data (e.g., `save_data=["shared variable"]`). The output of the solve function will contain a dictionary with a key called `"previous_solution"` that contains vectors of the selected stored data ordered by the iteration number.
 
 ## Generation Cost
 

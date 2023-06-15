@@ -10,12 +10,11 @@ CurrentModule = PowerModelsADA
 
 ## Distributed Algorithms
 
-The `PowerModelsADA` framework is designed to easily incorporate new alternating distributed algorithms. The framework provides means to decompose a test case into multiple areas, model the subproblems associated with each area using `PowerModels`, solve the supropblems in parallel using multi-threading, communicate the shared data between the areas, and calculate the mismatches to decide if the termination criteria are satisfied.
+The `PowerModelsADA` framework is designed to easily incorporate new alternating distributed algorithms. The framework provides means to decompose a test case into multiple areas, model the subproblems associated with each area using `PowerModels`, solve the supropblems in parallel using multi-threading or multi-processing using [`Distributed Computing`](https://docs.julialang.org/en/v1/manual/distributed-computing/), communicate the shared data between the areas, and calculate the mismatches to decide if the termination criteria are satisfied.
 
 The current version of `PowerModelsADA` implements four distributed algorithms:
 
 - Alternating Direction Method of Multipliers (ADMM)
-- Adaptive Alternating Direction Method of Multipliers (ADMM)
 - Analytical Target Cascading (ATC)
 - Auxiliary Problem Principle (APP)
 - Augmented Lagrangian Alternating Direction Inexact Newton (ALADIN)
@@ -37,11 +36,11 @@ An example demonstrating how to code up and solve the OPF problem with distribut
 
 ## Contributions
 
-Contributions and enhancements of PowerModelADA are welcomed and encouraged. Please feel free to fork this repository and share your contributions to the main branch with a pull request.
+Contributions and enhancements of `PowerModelADA` are welcomed and encouraged. Please feel free to fork this repository and share your contributions to the main branch with a pull request.
 
 ## Citation
 
-If you find PowerModelsADA.jl useful for your work, please cite our [paper](https://arxiv.org/abs/2304.00639):
+If you find `PowerModelsADA` useful for your work, please cite our [paper](https://arxiv.org/abs/2304.00639):
 
 ```bibtex
 @article{alkhraijah2023powermodelsada,
