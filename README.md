@@ -38,7 +38,7 @@ An example demonstrating how to code up and solve the OPF problem with distribut
 
 ## Contributions
 
-Community-driven development and enhancement of PowerModelADA is welcomed and encouraged. Please feel free to fork this repository and share your contributions to the main branch with a pull request.
+Contributions and enhancements of PowerModelADA are welcomed and encouraged. Please feel free to fork this repository and share your contributions to the main branch with a pull request.
 
 ## Citation
 
