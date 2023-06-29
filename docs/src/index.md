@@ -51,3 +51,7 @@ If you find `PowerModelsADA` useful for your work, please cite our [paper](https
   url={https://arxiv.org/abs/2304.00639}
 }
 ```
+
+## Acknowledgments
+
+This work is partially supported by the NSF AI Institute for Advances in Optimization (Award #2112533).
