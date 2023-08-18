@@ -23,7 +23,8 @@ Solve OPF problem using fully distributed algorithm.
 - kwargs = includes algorithm-specific and initialization parameters
 """
 function solve_dopf(data::Dict{String, <:Any}, model_type::DataType, optimizer, dopf_method::Module; print_level::Int64=1, multiprocessors::Bool=false, kwargs...)
-    # get areas ids
+    # arrange and get areas id
+    arrange_areas_id!(data)
     areas_id = get_areas_id(data)
     diameter = get_diameter(data)
 
@@ -679,7 +680,7 @@ function calc_mismatch!(data::Dict{String, <:Any}; central::Bool=false)
     if mismatch_method == "norm"
         mismatch[area_id] = LinearAlgebra.norm([value for area in keys(mismatch) if area != area_id for variable in keys(mismatch[area]) for (idx,value) in mismatch[area][variable]], 2)
     elseif mismatch_method == "max" || mismatch_method == "maximum"
-        mismatch[area_id] = LinearAlgebra.maximum([value for area in keys(mismatch) if area != area_id for variable in keys(mismatch[area]) for (idx,value) in mismatch[area][variable]])
+        mismatch[area_id] = LinearAlgebra.maximum([abs(value) for area in keys(mismatch) if area != area_id for variable in keys(mismatch[area]) for (idx,value) in mismatch[area][variable]])
     end
 
     data["mismatch"] = mismatch

@@ -603,7 +603,7 @@ Solve the distributed OPF problem using ALADIN algorithm with central coordinato
 - q_gamma::Real=0 : parameter
 - sigma::Dict{String, <:Any}=Dict() : dictionary with variable name as key and parameter value as values
 """
-function solve_dopf_aladin_coordinated(data::Union{Dict{String, <:Any}, String}, model_type::DataType, optimizer; mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, print_level::Int64=1, p::Real=1000, mu::Real=1000, p_upper::Real=1e6, mu_upper::Real=2e6, r_p::Real=1.5, r_mu::Real=2, a1::Real=1, a2::Real=1, a3::Real=1, q_gamma::Real=0, sigma::Dict{String, <:Any}=Dict())
+function solve_dopf_aladin_coordinated(data::Union{Dict{String, <:Any}, String}, model_type::DataType, optimizer; mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, print_level::Int64=1, p::Real=1000, mu::Real=1000, p_upper::Real=1e6, mu_upper::Real=2e6, r_p::Real=1.5, r_mu::Real=2, a1::Real=1, a2::Real=1, a3::Real=1, q_gamma::Real=0, sigma::Dict{String, <:Any}=Dict{String,Any}("w"=> 20, "wr"=>5, "wi"=>5 ,"vi"=> 10, "vr"=> 10, "va" => 10, "vm" => 5, "pf" => 1, "pt" => 1, "qf" => 1, "qt" => 1, "pg" => 1, "qg" => 1))
 
 
     # obtain and standardize case data
@@ -611,11 +611,6 @@ function solve_dopf_aladin_coordinated(data::Union{Dict{String, <:Any}, String},
         data = parse_file(data)
     end
     _PM.standardize_cost_terms!(data, order=2)
-
-    # arrange sigma parameter
-    if isempty(sigma)
-        sigma = Dict{String,Any}("w"=> 20, "wr"=>5, "wi"=>5 ,"vi"=> 10, "vr"=> 10, "va" => 10, "vm" => 5, "pf" => 1, "pt" => 1, "qf" => 1, "qt" => 1, "pg" => 1, "qg" => 1)
-    end
 
     # obtain and arrange areas id
     arrange_areas_id!(data)
