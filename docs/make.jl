@@ -20,7 +20,8 @@ makedocs(
                 "ADMM" => "admm.md",
                 "ATC" => "atc.md",
                 "APP" => "app.md",
-                "ALADIN" => "aladin.md"
+                "ALADIN" => "aladin.md",
+                "Adaptive ADMM" => "adaptive_admm.md"
             ]
         ],
         "Tutorials" => [

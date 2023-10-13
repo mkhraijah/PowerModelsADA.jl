@@ -8,6 +8,7 @@ adaptive ADMM algorithm module contains build and update methods
 module adaptive_admm_methods
 using ..PowerModelsADA
 using LinearAlgebra
+
 "solve distributed OPF using adaptive ADMM algorithm"
 function solve_method(data, model_type::DataType, optimizer; kwargs...)
     solve_dopf(data, model_type, optimizer, adaptive_admm_methods; kwargs...)
