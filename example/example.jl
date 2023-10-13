@@ -10,7 +10,7 @@ assign_area!(data, parition_file_path)
 
 ## Settings and optimizer initiation
 max_iteration = 1000
-tol = 1e-2
+tol = 1e-3
 optimizer = optimizer_with_attributes(Ipopt.Optimizer, "print_level"=>0)
 model_type = ACPPowerModel
 

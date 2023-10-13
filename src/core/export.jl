@@ -11,6 +11,9 @@ solve_dopf_coordinated,
 solve_dopf_coordinated_sp,
 solve_dopf_coordinated_mp,
 solve_local!,
+solve_pmada_model,
+instantiate_pmada_model,
+build_pmada_ref,
 assign_area!,
 # partition_system!,
 decompose_system,
@@ -50,7 +53,8 @@ calc_number_variables,
 calc_dist_gen_cost,
 compare_solution,
 print_iteration,
-print_convergence
+print_convergence,
+_pmada_global_keys
 
 # Distributed algorithms modules
 export 
@@ -76,4 +80,4 @@ for type in powermodels
 end
 
 # PowerModels functions
-export AbstractPowerModel, parse_file, ids, ref, var, con, sol, nw_ids, nws, optimize_model!, nw_id_default, ismultinetwork, solve_model, update_data!, silence
+export AbstractPowerModel, parse_file, ids, ref, var, con, sol, nw_ids, nws, optimize_model!, nw_id_default, ismultinetwork, update_data!, silence

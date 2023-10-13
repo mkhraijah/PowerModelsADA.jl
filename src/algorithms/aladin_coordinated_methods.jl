@@ -11,7 +11,7 @@
 module aladin_coordinated_methods
 
 using JuMP
-import PowerModels as _PM
+using PowerModels
 using SparseArrays
 using LinearAlgebra
 using ..PowerModelsADA
@@ -409,7 +409,7 @@ function optimal_hessian(pm::AbstractPowerModel)
     end
 
     #change the objective to generator cost only
-    _PM.objective_min_fuel_and_flow_cost(pm_temp)
+    PowerModels.objective_min_fuel_and_flow_cost(pm_temp)
 
     # compute hessian matrix
     H = spzeros(length(x),length(x))
@@ -498,7 +498,6 @@ function solve_coordinator!(data, optimizer)
 
     s = Dict{String, Any}(area1 => Dict{String, Any}(area2=> Dict{String, Any}(variable => Dict{String, Any}(idx => JuMP.@variable(model, base_name=string("s_", variable, "_", idx)) for idx in keys(dual_variable[area1][area2][variable])) for variable in keys(dual_variable[area1][area2])) for area2 in keys(dual_variable[area1]) if area1<area2) for area1 in keys(dual_variable))
 
-
     # define objective function
     qp_objective = JuMP.GenericQuadExpr{Float64, JuMP.VariableRef}()
     for area1 in keys(dual_variable)
@@ -534,8 +533,6 @@ function solve_coordinator!(data, optimizer)
         end
     end
 
-
-    
     optimize!(model)
 
     for area in keys(delta)
@@ -561,7 +558,6 @@ function solve_coordinator!(data, optimizer)
 
 end
 
-
 "update the ALADIN algorithm coordinator data after each iteration"
 function update_method_coordinator(data::Dict{String, <:Any}) 
 
@@ -573,6 +569,8 @@ function update_method_coordinator(data::Dict{String, <:Any})
     update_iteration!(data)
 
 end
+
+push!(_pmada_global_keys, "local_solution", "shared_variable", "received_variable", "shared_delta", "received_delta", "dual_variable", "shared_dual_variable", "received_dual_variable", "shared_sensitivities", "received_sensitivities")
 
 end
 
@@ -610,7 +608,7 @@ function solve_dopf_aladin_coordinated(data::Union{Dict{String, <:Any}, String},
     if isa(data, String)
         data = parse_file(data)
     end
-    _PM.standardize_cost_terms!(data, order=2)
+    PowerModels.standardize_cost_terms!(data, order=2)
 
     # obtain and arrange areas id
     arrange_areas_id!(data)
@@ -638,7 +636,7 @@ function solve_dopf_aladin_coordinated(data::Union{Dict{String, <:Any}, String},
         # solve local area problems in parallel
         info1 = @capture_out begin
             Threads.@threads for i in areas_id
-                result = solve_model(data_area[i], model_type, optimizer, aladin_coordinated_methods.build_method_local, solution_processors=aladin_coordinated_methods.post_processors_local)
+                result = solve_pmada_model(data_area[i], model_type, optimizer, aladin_coordinated_methods.build_method_local, solution_processors=aladin_coordinated_methods.post_processors_local)
                 update_data!(data_area[i], result["solution"])
             end
         end

@@ -10,7 +10,6 @@ using ..PowerModelsADA
 
 "solve distributed OPF using APP algorithm"
 function solve_method(data, model_type::DataType, optimizer; kwargs...)
-
     solve_dopf(data, model_type, optimizer, app_methods; kwargs...)
 end
 
@@ -116,6 +115,9 @@ function update_method(data::Dict{String, <:Any})
 end
 
 post_processors = [update_solution!, update_shared_variable!]
+
+push!(_pmada_global_keys, "shared_variable", "received_variable", "dual_variable")
+
 end
 
 """

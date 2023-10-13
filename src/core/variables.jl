@@ -16,20 +16,20 @@ function initialize_shared_variable(data::Dict{String, <:Any}, model_type::DataT
         end
 
     elseif occursin("dual",dics_name)
-        variables_dics = Dict{String, Any}([
-            string(area) => Dict{String, Any}(
+        variables_dics = Dict([
+            string(area) => Dict(
                 vcat(
-                    [variable => Dict{String, Any}([string(idx) => 0.0 for idx in shared_bus[area]]) for variable in bus_variables_name],
-                    [variable => Dict{String, Any}([string(idx) => 0.0 for idx in shared_branch[area]]) for variable in branch_variables_name]
+                    [variable => Dict([string(idx) => 0.0 for idx in shared_bus[area]]) for variable in bus_variables_name],
+                    [variable => Dict([string(idx) => 0.0 for idx in shared_branch[area]]) for variable in branch_variables_name]
                 )
             )
         for area in to])
     else
-        variables_dics = Dict{String, Any}([
-            string(area) => Dict{String, Any}(
+        variables_dics = Dict([
+            string(area) => Dict(
                 vcat(
-                    [variable => Dict{String, Any}([string(idx) => initial_value(variable, initialization_method, value) for idx in shared_bus[area]]) for variable in bus_variables_name],
-                    [variable => Dict{String, Any}([string(idx) => initial_value(variable, initialization_method, value) for idx in shared_branch[area]]) for variable in branch_variables_name]
+                    [variable => Dict([string(idx) => initial_value(variable, initialization_method, value) for idx in shared_bus[area]]) for variable in bus_variables_name],
+                    [variable => Dict([string(idx) => initial_value(variable, initialization_method, value) for idx in shared_branch[area]]) for variable in branch_variables_name]
                 )
             )
         for area in to])
@@ -43,15 +43,16 @@ function initialize_shared_variable(data::Dict{String, <:Any}, model_type::DataT
 end
 
 """
-    initial_value(variable::String, initialization_method::String="flat")
+    initial_value(variable::String, initialization_method::String="flat", value::Float64=0.0)
 
 assign initial value based on initialization method
 
 # Arguments:
 - variable::String : variable names
-- initialization_method::String="flat : ("flat", "previous_solution")
+- initialization_method::String="flat" : ("flat", "previous_solution", "constant")
+- value::Float64=0.0 : return value if initialization_method = "constant"
 """
-function initial_value(variable::String, initialization_method::String="flat", value::Float64=0.0)::Float64
+function initial_value(variable::String, initialization_method::String, value::Float64=0.0)::Float64
     if initialization_method in ["flat" , "flat_start"]
         return initial_value(variable)
     else initialization_method in ["constant"]
@@ -106,7 +107,7 @@ return a dictionary contains all the problem variables. can be used to store the
 function initialize_all_variable(data::Dict{String, <:Any}, model_type::DataType, initialization_method::String="flat")
     bus_variables_name, branch_variables_name, gen_variables_name = variable_names(model_type)
 
-    all_variables = Dict{String, Dict}()
+    all_variables = Dict{String, Any}()
     for variable in bus_variables_name
         all_variables[variable] = Dict([idx => initial_value(variable, initialization_method) for idx in keys(data["bus"])])
     end

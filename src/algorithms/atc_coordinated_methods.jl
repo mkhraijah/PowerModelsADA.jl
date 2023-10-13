@@ -159,6 +159,8 @@ post_processors_local = [update_solution!, update_shared_variable!]
 
 post_processors_coordinator = [update_solution!, update_shared_variable!]
 
+push!(_pmada_global_keys, "shared_variable", "received_variable", "dual_variable")
+
 end
 
 """

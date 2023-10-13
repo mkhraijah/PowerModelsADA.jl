@@ -5,7 +5,7 @@
 "prepare the shared data with or without serialization"
 function prepare_shared_data(data::Dict{String, <:Any}, to_area::Int64; serialize::Bool=false)
     shared_data_key = filter(x -> startswith(string(x), "shared"), keys(data))
-    shared_data = Dict{String, Any}([key => get(data[key], string(to_area), Dict()) for key in shared_data_key])
+    shared_data = Dict([key => get(data[key], string(to_area), Dict()) for key in shared_data_key])
 
     if serialize
         shared_data = _serialize_shared_data!(shared_data)
@@ -20,10 +20,10 @@ function _serialize_shared_data!(shared_data::Dict{String, <:Any})
     return take!(io)
 end
 
-"deserialize and store the received data in the local data"
+"deserialize and store the received data in the local data dictionary"
 function receive_shared_data!(data::Dict{String, <:Any}, shared_data::Vector, from_area::Int64)
     shared_data = Serialization.deserialize(IOBuffer(shared_data))
-    receive_shared_data!(from_area, shared_data, data)
+    receive_shared_data!(data, shared_data, from_area)
 end
 
 "store received data in the local data dictionary"

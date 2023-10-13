@@ -36,6 +36,7 @@ function initialize_method_local(data::Dict{String, <:Any}, model_type::DataType
     data["parameter"] = Dict("alpha"=> alpha)
     data["received_parameter"]= Dict{String, Any}("0" => data["parameter"]["alpha"])
 
+    # adaptive ADMM dual residual dictionary
     if haskey(data, "previous_solution")
         for str in ["shared_variable", "received_variable"]
             if !haskey(data["previous_solution"], str)
@@ -43,9 +44,13 @@ function initialize_method_local(data::Dict{String, <:Any}, model_type::DataType
             end
         end
     else
-        data["previous_solution"]= Dict{String, Any}([str=> Vector{Dict}() for str in ["shared_variable", "received_variable"]])
+        data["previous_solution"]= Dict([str=> Vector{Dict}() for str in ["shared_variable", "received_variable"]])
     end
 
+    # adaptive ADMM dual residual tolerance
+    if data["option"]["termination_measure"] in ["dual_residual", "mismatch_dual_residual"]
+        data["option"]["tol_dual"] = get(kwargs, :tol_dual, data["option"]["tol"])
+    end
 end
 
 "initialize the adaptive ADMM algorithm"
@@ -67,6 +72,7 @@ function initialize_method_coordinator(data::Dict{String, <:Any}, model_type::Da
     # distributed algorithm settings
     initialize_dopf!(data, model_type; kwargs...)
 
+    # adaptive ADMM dual residual dictionary
     if haskey(data, "previous_solution")
         for str in unique(["shared_variable", "received_variable",keys(data["previous_solution"])...])
             if !haskey(data["previous_solution"], str)
@@ -74,17 +80,24 @@ function initialize_method_coordinator(data::Dict{String, <:Any}, model_type::Da
             end
         end
     else
-        data["previous_solution"]= Dict{String, Any}([str=> Vector{Dict}() for str in ["shared_variable", "received_variable"]])
+        data["previous_solution"]= Dict([str=> Vector{Dict}() for str in ["shared_variable", "received_variable"]])
+    end
+
+    # adaptive ADMM dual residual tolerance
+    if data["option"]["termination_measure"] in ["dual_residual", "mismatch_dual_residual"]
+        data["option"]["tol_dual"] = get(kwargs, :tol_dual, data["option"]["tol"])
     end
 
     # adaptive ADMM parameters
     alpha = Float64(get(kwargs, :alpha, 1000))
+    alpha_max = Float64(get(kwargs, :alpha_max, 1e8))
+    alpha_min = Float64(get(kwargs, :alpha_min, 1))
     mu_inc = Float64(get(kwargs, :mu_inc, 2.5))
     mu_dec = Float64(get(kwargs, :mu_dec, 2.5))
     eta_inc = Float64(get(kwargs, :eta_inc, 0.1))
     eta_dec = Float64(get(kwargs, :eta_dec, 0.1))
 
-    data["parameter"] = Dict("alpha"=> alpha,"mu_inc"=> mu_inc, "mu_dec"=> mu_dec, "eta_inc"=> eta_inc, "eta_dec"=>eta_dec)
+    data["parameter"] = Dict("alpha"=> alpha,"mu_inc"=> mu_inc, "mu_dec"=> mu_dec, "eta_inc"=> eta_inc, "eta_dec"=>eta_dec, "alpha_max"=>alpha_max, "alpha_min"=>alpha_min)
     data["shared_parameter"] = Dict(string(area) => data["parameter"]["alpha"] for area in areas_id)
 
 end
@@ -202,6 +215,8 @@ function update_method_coordinator(data::Dict{String, <:Any})
     
     # parameters
     alpha = deepcopy(data["parameter"]["alpha"])
+    alpha_max = data["parameter"]["alpha_max"]
+    alpha_min = data["parameter"]["alpha_min"]
     mu_inc = data["parameter"]["mu_inc"]
     mu_dec = data["parameter"]["mu_dec"]
     eta_inc = data["parameter"]["eta_inc"]
@@ -234,6 +249,11 @@ function update_method_coordinator(data::Dict{String, <:Any})
     elseif data["dual_residual"]["0"] > mu_dec * data["mismatch"]["0"]
         alpha = alpha / ( 1 + eta_dec)
     end
+    if alpha > alpha_max
+        alpha = alpha_max
+    elseif alpha < alpha_min
+        alpha = alpha_min
+    end
 
     data["parameter"]["alpha"] = alpha
     for area in keys(data["shared_parameter"])
@@ -249,6 +269,8 @@ end
 post_processors_local = [update_solution!, update_shared_variable!]
 
 post_processors_coordinator = [update_solution!, update_shared_variable!]
+
+push!(_pmada_global_keys, "shared_parameter", "shared_variable", "received_variable", "dual_variable", "dual_residual")
 
 end
 

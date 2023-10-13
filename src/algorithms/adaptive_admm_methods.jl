@@ -32,6 +32,7 @@ function initialize_method(data::Dict{String, <:Any}, model_type::DataType; kwar
     # distributed algorithm settings
     initialize_dopf!(data, model_type; kwargs...)
 
+    # adaptive ADMM dual residual dictionary
     if haskey(data, "previous_solution")
         for str in unique(["shared_variable", "received_variable",keys(data["previous_solution"])...])
             if !haskey(data["previous_solution"], str)
@@ -39,18 +40,27 @@ function initialize_method(data::Dict{String, <:Any}, model_type::DataType; kwar
             end
         end
     else
-        data["previous_solution"]= Dict{String, Any}([str=> Vector{Dict}() for str in ["shared_variable", "received_variable"]])
+        data["previous_solution"]= Dict([str=> Vector{Dict}() for str in ["shared_variable", "received_variable"]])
+    end
+
+    # adaptive ADMM dual residual tolerance
+    if data["option"]["termination_measure"] in ["dual_residual", "mismatch_dual_residual"]
+        data["option"]["tol_dual"] = get(kwargs, :tol_dual, data["option"]["tol"])
     end
 
     # adaptive ADMM parameters
     alpha = Float64(get(kwargs, :alpha, 1000))
+    alpha_max = Float64(get(kwargs, :alpha_max, 1e8))
+    alpha_min = Float64(get(kwargs, :alpha_min, 1))
     mu_inc = Float64(get(kwargs, :mu_inc, 2))
     mu_dec = Float64(get(kwargs, :mu_dec, 2))
     eta_inc = Float64(get(kwargs, :eta_inc, 0.2))
     eta_dec = Float64(get(kwargs, :eta_dec, 0.2))
 
-    data["parameter"] = Dict("alpha"=> alpha,"mu_inc"=> mu_inc, "mu_dec"=> mu_dec, "eta_inc"=> eta_inc, "eta_dec"=>eta_dec)
+    data["parameter"] = Dict("alpha"=> alpha,"mu_inc"=> mu_inc, "mu_dec"=> mu_dec, "eta_inc"=> eta_inc, "eta_dec"=>eta_dec, "alpha_max"=>alpha_max, "alpha_min"=>alpha_min)
     data["alpha"] = initialize_shared_variable(data, model_type, area_id, areas_id, "parameter", "constant", alpha)
+
+
 end
 
 "build PowerModel object for the adaptive ADMM algorithm"
@@ -99,6 +109,8 @@ function update_method(data::Dict{String, <:Any})
     
     # parameters
     alphas = data["alpha"]
+    alpha_max = data["parameter"]["alpha_max"]
+    alpha_min = data["parameter"]["alpha_min"]
     mu_inc = data["parameter"]["mu_inc"]
     mu_dec = data["parameter"]["mu_dec"]
     eta_inc = data["parameter"]["eta_inc"]
@@ -133,6 +145,11 @@ function update_method(data::Dict{String, <:Any})
                     data["alpha"][area][variable][idx] = data["alpha"][area][variable][idx] * ( 1 + eta_inc)
                 elseif data["dual_residual"][area][variable][idx] > mu_dec * data["mismatch"][area][variable][idx]
                     data["alpha"][area][variable][idx] = data["alpha"][area][variable][idx] / ( 1 + eta_dec)
+                end
+                if data["alpha"][area][variable][idx] > alpha_max
+                    data["alpha"][area][variable][idx] = alpha_max
+                elseif data["alpha"][area][variable][idx] < alpha_min
+                    data["alpha"][area][variable][idx] = alpha_min
                 end
             end
         end
@@ -180,6 +197,9 @@ function calc_dual_residual_adaptive!(data::Dict{String, <:Any}; central::Bool=f
 end
 
 post_processors = [update_solution!, update_shared_variable!]
+
+push!(_pmada_global_keys, "alpha", "shared_variable", "received_variable", "dual_variable", "dual_residual")
+
 end
 
 """

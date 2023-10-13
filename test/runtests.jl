@@ -48,6 +48,16 @@ data_RTS = parse_file("../test/data/case_RTS.m")
         end
     end
 
+    @testset "serialize shared data" begin
+        data_area = decompose_system(data_14)
+        for i in [1,2]
+            admm_methods.initialize_method(data_area[i], QCRMPowerModel)
+        end
+        shared_data = prepare_shared_data(data_area[1], 2; serialize=true)
+        receive_shared_data!(data_area[2], shared_data, 1)
+        @test data_area[1]["shared_variable"]["2"] == data_area[2]["received_variable"]["1"]
+    end
+
 # ## paritiotioning test
 #     @testset "partition system" begin
 #         @testset "case_RTS" begin
@@ -62,13 +72,13 @@ data_RTS = parse_file("../test/data/case_RTS.m")
 
     ## ADMM test
     @testset "admm algorithm with DC power flow" begin
-        data_area = solve_dopf_admm(data_14, DCPPowerModel, nlp_solver; alpha=1000, tol=1e-3, max_iteration=1000, print_level=0, multiprocessors=true, termination_method="local", mismatch_method="max", termination_measure="dual_residual")
+        data_area = solve_dopf_admm("../test/data/case14.m", DCPPowerModel, nlp_solver; alpha=1000, tol=1e-3, max_iteration=1000, print_level=0, multiprocessors=true, termination_method="local", mismatch_method="max", termination_measure="dual_residual")
         error = compare_solution(data_14, data_area, DCPPowerModel, milp_solver)
         @test isapprox(error, 0, atol=1e-3)
     end
 
     @testset "coordinated admm algorithm with AC polar power flow" begin
-        data_area = solve_dopf_admm_coordinated("../test/data/case14.m", ACPPowerModel, nlp_solver; alpha=1000, tol=1e-3, max_iteration=1000, print_level=0, multiprocessors=true)
+        data_area = solve_dopf_admm_coordinated("../test/data/case14.m", ACPPowerModel, nlp_solver; alpha=1000, tol=1e-3, max_iteration=1000, print_level=0, multiprocessors=true, mismatch_method="max",termination_measure="dual_residual")
         dist_cost = calc_dist_gen_cost(data_area)
         @test isapprox(dist_cost, 8081.52, atol=5)
     end
@@ -87,21 +97,22 @@ data_RTS = parse_file("../test/data/case_RTS.m")
     end
 
     ## ATC test
-    @testset "atc algorithm with DC power flow" begin
-        data_area = solve_dopf_atc(data_14, DCPPowerModel, milp_solver; alpha=1.1, tol=1e-3, max_iteration=1000, print_level = 0)
-        dist_cost = calc_dist_gen_cost(data_area)
-        @test isapprox(dist_cost, 7642.59, atol=5)
-    end
-
     @testset "coordinated atc algorithm with SOC relaxation of power flow" begin
         data_area = solve_dopf_atc_coordinated(data_14, SOCWRPowerModel, nlp_solver; alpha=1.1, tol=1e-3, max_iteration=1000, print_level=0)
         dist_cost = calc_dist_gen_cost(data_area)
         @test isapprox(dist_cost, 8075.12, atol=5)
     end
 
+    @testset "atc algorithm with DC power flow" begin
+        data_area = solve_dopf_atc(data_14, DCPPowerModel, milp_solver; alpha=1.1, tol=1e-3, max_iteration=1000, print_level = 0)
+        dist_cost = calc_dist_gen_cost(data_area)
+        @test isapprox(dist_cost, 7642.59, atol=5)
+    end
+
     ## APP test
     @testset "app algorithm with DC power flow" begin
-        data_area = solve_dopf_app(data_14, DCPPowerModel, milp_solver; alpha=1000, tol=1e-3, max_iteration=1000, print_level = 0)
+        data_area = solve_dopf_app(data_14, DCPPowerModel, milp_solver; alpha=1000, tol=1e-3, max_iteration=2, print_level = 0)
+        data_area = solve_dopf_app(data_area, DCPPowerModel, milp_solver; alpha=1000, tol=1e-3, max_iteration=1000, print_level = 1, initialization_method="previous")
         dist_cost = calc_dist_gen_cost(data_area)
         @test isapprox(dist_cost, 7642.59, atol =5)
     end

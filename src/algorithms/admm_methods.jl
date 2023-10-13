@@ -9,15 +9,15 @@ module admm_methods
 using ..PowerModelsADA
 
 "solve distributed OPF using ADMM algorithm"
-function solve_method(data, model_type::DataType, optimizer; kwargs...)
+function solve_method(data, model_type::Type, optimizer; kwargs...)
     solve_dopf(data, model_type, optimizer, admm_methods; kwargs...)
 end
 
 "initialize the ADMM algorithm"
-function initialize_method(data::Dict{String, <:Any}, model_type::DataType; kwargs...)
+function initialize_method(data::Dict{String, <:Any}, model_type::Type; kwargs...)
 
-    area_id = PowerModelsADA.get_area_id(data)
-    areas_id = PowerModelsADA.get_areas_id(data)
+    area_id = get_area_id(data)
+    areas_id = get_areas_id(data)
     deleteat!(areas_id, areas_id .== area_id) # remove the same area from the list of areas_id
     initialization_method = get(kwargs, :initialization_method, "flat")
 
@@ -36,6 +36,7 @@ function initialize_method(data::Dict{String, <:Any}, model_type::DataType; kwar
     # ADMM parameters
     data["parameter"] = Dict("alpha"=> Float64(get(kwargs, :alpha, 1000)))
 
+    # ADMM dual residual dictionary and tolerance
     if data["option"]["termination_measure"] in ["dual_residual", "mismatch_dual_residual"]
         if haskey(data, "previous_solution")
             for str in ["shared_variable", "received_variable"]
@@ -44,8 +45,9 @@ function initialize_method(data::Dict{String, <:Any}, model_type::DataType; kwar
                 end
             end
         else
-            data["previous_solution"]= Dict{String, Any}([str=> Vector{Dict}() for str in ["shared_variable", "received_variable"]])
+            data["previous_solution"] = Dict([str=> Vector{Dict}() for str in ["shared_variable", "received_variable"]])
         end
+        data["option"]["tol_dual"] = get(kwargs, :tol_dual, data["option"]["tol"])
     end
 
 end
@@ -125,6 +127,9 @@ function update_method(data::Dict{String, <:Any})
 end
 
 post_processors = [update_solution!, update_shared_variable!]
+
+push!(_pmada_global_keys, "shared_variable", "received_variable", "dual_variable", "dual_residual")
+
 end
 
 """
@@ -140,6 +145,7 @@ Solve the distributed OPF problem using ADMM algorithm.
 - optimizer : optimizer JuMP initiation object
 - mismatch_method::String="norm" : mismatch calculation method (norm, max)
 - tol::Float64=1e-4 : mismatch tolerance
+- tol_dual::Float64=1e-4 : dual residual tolerance
 - max_iteration::Int64=1000 : maximum number of iteration
 - print_level::Int64=1 : 0 - no print, 1 - print mismatch after each iteration and result summary, 2 - print optimizer output
 - alpha::Real=1000 : algorithm parameter

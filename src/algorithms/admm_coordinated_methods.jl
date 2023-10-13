@@ -32,6 +32,7 @@ function initialize_method_local(data::Dict{String, <:Any}, model_type::DataType
     # initialize ADMM parameters
     data["parameter"] = Dict("alpha"=> Float64(get(kwargs, :alpha, 1000)))
 
+    # ADMM dual residual dictionary and tolerance
     if data["option"]["termination_measure"] in ["dual_residual", "mismatch_dual_residual"]
         if haskey(data, "previous_solution")
             for str in ["shared_variable", "received_variable"]
@@ -40,8 +41,9 @@ function initialize_method_local(data::Dict{String, <:Any}, model_type::DataType
                 end
             end
         else
-            data["previous_solution"]= Dict{String, Any}([str=> Vector{Dict}() for str in ["shared_variable", "received_variable"]])
+            data["previous_solution"]= Dict([str=> Vector{Dict}() for str in ["shared_variable", "received_variable"]])
         end
+        data["option"]["tol_dual"] = get(kwargs, :tol_dual, data["option"]["tol"])
     end
 end
 
@@ -73,8 +75,12 @@ function initialize_method_coordinator(data::Dict{String, <:Any}, model_type::Da
                 end
             end
         else
-            data["previous_solution"]= Dict{String, Any}([str=> Vector{Dict}() for str in ["shared_variable", "received_variable"]])
+            data["previous_solution"]= Dict([str=> Vector{Dict}() for str in ["shared_variable", "received_variable"]])
         end
+    end
+    # ADMM dual residual tolerance
+    if data["option"]["termination_measure"] in ["dual_residual", "mismatch_dual_residual"]
+        data["option"]["tol_dual"] = get(kwargs, :tol_dual, data["option"]["tol"])
     end
 end
 
@@ -168,6 +174,8 @@ update_method_coordinator(data::Dict{String, <:Any}) = update_method_local(data)
 post_processors_local = [update_solution!, update_shared_variable!]
 
 post_processors_coordinator = [update_solution!, update_shared_variable!]
+
+push!(_pmada_global_keys, "shared_variable", "received_variable", "dual_variable")
 
 end
 

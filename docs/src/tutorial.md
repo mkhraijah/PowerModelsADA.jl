@@ -2,7 +2,7 @@
 
 `PowerModelsADA` solves OPF problems using either a pre-defined distributed algorithm or a user-defined algorithm. This page shows examples of solving the OPF problem using the pre-defined algorithms and how to define a new alternating distributed algorithm.
 
-The distributed algorithm-specific functions are stored in modules. Each module contains at least three main functions: initialization, building, and update functions. Each module contains a solve function that solves the OPF by passing the case, solver, and power flow model.
+The distributed algorithm-specific functions are stored in modules. Each module contains at least three main functions: initialize, build, and update functions. Each module also contains a solve function that solves the OPF by passing the case, solver, and power flow model.
 
 The distributed algorithm module and solve function are:
 
@@ -10,11 +10,11 @@ The distributed algorithm module and solve function are:
 - ATC: modules: `atc_methods` and `atc_coordinated_methods`. solve functions: `solve_dopf_atc` and `solve_dopf_atc_coordinated`
 - APP: modules: `app_methods`. solve functions: `solve_dopf_app`
 - ALADIN: modules: `aladin_coordinated_methods`. solve function: `solve_dopf_aladin_coordinated`
-- Adaptive ADMM: Modules: `adaptive_admm_methods` and `adaptive_admm_coordinated_methods`. solve functions: `solve_dopf_adaptive_admm` and `solve_dopf_adaptive_admm_coordinated`
+- Adaptive ADMM: modules: `adaptive_admm_methods` and `adaptive_admm_coordinated_methods`. solve functions: `solve_dopf_adaptive_admm` and `solve_dopf_adaptive_admm_coordinated`
 
 ## Run Distributed Algorithm
 
-To solve the OPF problem, we need first to import the `PowerModelsADA` package and an optimization solver. In this case we use the NLP solver `Ipopt`. You can install the solver using `using Pkg, Pkg.add("Ipopt")`. Then run the following code while you are inside the PowerModelsADA package directory.
+To solve the OPF problem, we need first to import the `PowerModelsADA` package and an optimization solver. In this case we use the NLP solver `Ipopt`. You can install the solver using `using Pkg; Pkg.add("Ipopt")`. Then run the following code:
 
 ```julia
 ## Import package
@@ -68,7 +68,7 @@ model_type = SDPWRMPowerModel # Semidefinite relaxation of AC power flow.
 model_type = SparseSDPWRMPowerModel # Sparsity-exploiting semidefinite relaxation of AC power flow.
 ```
 
-To solve the OPF problem using ADMM algorithm using the solve function, we use the following :
+To solve the OPF problem using ADMM algorithm using the solve function, we use the following:
 
 ```julia
 data_area = solve_dopf_admm(data, model_type, optimizer, tol=tol, max_iteration=max_iteration, alpha=alpha)

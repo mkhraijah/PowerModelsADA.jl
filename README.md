@@ -12,7 +12,7 @@ Status:
 
 ## Distributed Algorithms
 
-The `PowerModelsADA` framework is designed to easily incorporate new alternating distributed algorithms. The framework provides means to decompose a test case into multiple areas, model the subproblems associated with each area using `PowerModels`, solve the supropblems in parallel using multi-threading or multi-processing using [`Distributed Computing`](https://docs.julialang.org/en/v1/manual/distributed-computing/), communicate the shared data between the areas, and calculate the mismatches to decide if the termination criteria are satisfied.
+The `PowerModelsADA` framework is designed to easily incorporate new alternating distributed algorithms. The framework provides means to decompose a test case into multiple areas, model the subproblems associated with each area using `PowerModels`, solve the supropblems in parallel using multi-threading or multi-processing via [`Distributed Computing`](https://docs.julialang.org/en/v1/manual/distributed-computing/), communicate the shared data between the areas, and calculate the mismatches to decide if the termination criteria are satisfied.
 
 The current version of `PowerModelsADA` implements four distributed algorithms:
 
@@ -42,15 +42,18 @@ Contributions and enhancements of `PowerModelADA` are welcomed and encouraged. P
 
 ## Citation
 
-If you find `PowerModelsADA` useful for your work, please cite our [paper](https://arxiv.org/abs/2304.00639):
+If you find `PowerModelsADA` useful for your work, please cite our [paper](https://ieeexplore.ieee.org/document/10262198):
 
 ```bibtex
-@article{alkhraijah2023powermodelsada,
-  title={PowerModelsADA: A Framework for Solving Optimal Power Flow using Distributed Algorithms},
-  author={Alkhraijah, Mohannad and Harris, Rachel and Coffrin, Carleton and Molzahn, Daniel K},
-  journal={arXiv preprint arXiv:2304.00639},
+@ARTICLE{alkhraijah2023powermodelsada,
+  author={Alkhraijah, Mohannad and Harris, Rachel and Coffrin, Carleton and Molzahn, Daniel K.},
+  journal={IEEE Transactions on Power Systems}, 
+  title={PowerModelsADA: A Framework for Solving Optimal Power Flow using Distributed Algorithms}, 
   year={2023},
-  url={https://arxiv.org/abs/2304.00639}
+  volume={},
+  number={},
+  pages={1-4},
+  doi={10.1109/TPWRS.2023.3318858}
 }
 ```
 

@@ -2,6 +2,52 @@
 #              Base method for all distributed OPF algorithms                 #
 ###############################################################################
 
+
+""
+function solve_pmada_model(file::String, model_type::Type, optimizer, build_method; kwargs...)
+    data = parse_file(file)
+    return solve_pmada_model(data, model_type, optimizer, build_method; kwargs...)
+end
+
+""
+function solve_pmada_model(data::Dict{String,<:Any}, model_type::Type, optimizer, build_method;
+        ref_extensions=[], solution_processors=[], relax_integrality=false,
+        multinetwork=false, multiconductor=false, kwargs...)
+
+    if multinetwork != _IM.ismultinetwork(data)
+        model_requirement = multinetwork ? "multi-network" : "single-network"
+        data_type = _IM.ismultinetwork(data) ? "multi-network" : "single-network"
+    end
+
+    if multiconductor != ismulticonductor(data)
+        model_requirement = multiconductor ? "multi-conductor" : "single-conductor"
+        data_type = ismulticonductor(data) ? "multi-conductor" : "single-conductor"
+    end
+
+    pm = instantiate_pmada_model(data, model_type, build_method; ref_extensions=ref_extensions, kwargs...)
+
+    result = optimize_model!(pm, relax_integrality=relax_integrality, optimizer=optimizer, solution_processors=solution_processors)
+
+    return result
+end
+
+
+""
+function instantiate_pmada_model(file::String, model_type::Type, build_method; kwargs...)
+    data = parse_file(file)
+    return instantiate_pmada_model(data, model_type, build_method; kwargs...)
+end
+
+""
+function instantiate_pmada_model(data::Dict{String,<:Any}, model_type::Type, build_method; kwargs...)
+    return _IM.instantiate_model(data, model_type, build_method, ref_add_core!, _pmada_global_keys, pm_it_sym; kwargs...)
+end
+
+""
+function build_pmada_ref(data::Dict{String,<:Any}; ref_extensions=[])
+    return _IM.build_ref(data, ref_add_core!, _pmada_global_keys, pm_it_name; ref_extensions=ref_extensions)
+end
+
 """
     solve_dopf(data::Dict{String, <:Any}, model_type::DataType, optimizer, dopf_method::Module; print_level::Int64=1, multiprocessors::Bool=false, mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, save_data::Vector{String}=[], kwargs...)
 
@@ -90,12 +136,12 @@ function solve_dopf_sp(data_area::Dict{Int64, <:Any}, model_type::DataType, opti
     flag_convergence = false
 
     # start iteration
-    while iteration < max_iteration && !flag_convergence
+    while iteration <= max_iteration && !flag_convergence
 
         # solve local problem and update solution
         info = @capture_out begin
             Threads.@threads for area in areas_id
-                result = solve_model(data_area[area], model_type, optimizer, dopf_method.build_method, solution_processors=dopf_method.post_processors)
+                result = solve_pmada_model(data_area[area], model_type, optimizer, dopf_method.build_method, solution_processors=dopf_method.post_processors)
                 update_data!(data_area[area], result["solution"])
             end
         end
@@ -182,14 +228,11 @@ function solve_dopf_mp(data_area::Dict{Int64, <:Any}, model_type::DataType, opti
 
     # get global parameters
     max_iteration = get(kwargs, :max_iteration, 1000)
-    tol = get(kwargs, :tol, 1e-4)
-    termination_method = get(kwargs, :termination_method, "global")
 
     # initialize the algorithms global counters
     iteration = 1
     global_flag_convergence = false
-    flag_convergence = Dict()
-    mismatch = Dict()
+    global_counters = Dict{Int64, Any}()
 
     # share global variables
     Distributed.@everywhere keys(worker_area) begin
@@ -201,16 +244,16 @@ function solve_dopf_mp(data_area::Dict{Int64, <:Any}, model_type::DataType, opti
         model_type = $model_type
         optimizer = $optimizer
         area_id = worker_area[myid()]
-        data_local = Dict(area => take!(comms[0][area]) for area in area_id)
+        data_local = Dict{Int64, Any}(area => take!(comms[0][area]) for area in area_id)
     end
 
     # start iteration
-    while iteration < max_iteration && !global_flag_convergence
+    while iteration <= max_iteration && !global_flag_convergence
 
         Distributed.@everywhere keys(worker_area) begin
             for area in area_id
                 # solve local problem and update solution
-                result = solve_model(data_local[area], model_type, optimizer, dopf_method.build_method, solution_processors=dopf_method.post_processors)
+                result = solve_pmada_model(data_local[area], model_type, optimizer, dopf_method.build_method, solution_processors=dopf_method.post_processors)
                 update_data!(data_local[area], result["solution"])
         
                 # send data to neighboring areas
@@ -231,10 +274,10 @@ function solve_dopf_mp(data_area::Dict{Int64, <:Any}, model_type::DataType, opti
 
                 # calculate and share mismatches
                 dopf_method.update_method(data_local[area])
-
-                flag_convergence = data_local[area]["counter"]["flag_convergence"]
-                mismatch = data_local[area]["mismatch"][string(area)]
-                counters = Dict("flag_convergence"=>flag_convergence, "mismatch"=>mismatch)
+                counters = Dict("option"=> data_local[area]["option"], "counter" => data_local[area]["counter"], "mismatch" => data_local[area]["mismatch"])
+                if data_local[area]["option"]["termination_measure"] in ["dual_residual", "mismatch_dual_residual"]
+                    counters["dual_residual"] = data_local[area]["dual_residual"]
+                end
                 put!(comms[area][0], deepcopy(counters))
             end
         end
@@ -242,15 +285,14 @@ function solve_dopf_mp(data_area::Dict{Int64, <:Any}, model_type::DataType, opti
         # receive the mismatches from areas
         for area in areas_id
             counters = take!(comms[area][0])
-            flag_convergence[area] = counters["flag_convergence"]
-            mismatch[area] = counters["mismatch"]
+            global_counters[area] = counters
         end
 
         # print progress
-        print_iteration(mismatch, iteration, print_level)
+        print_iteration(global_counters, print_level)
 
         # update flag convergence and iteration number
-        global_flag_convergence = update_global_flag_convergence(mismatch, flag_convergence, tol, termination_method)
+        global_flag_convergence = update_global_flag_convergence(global_counters)
         iteration += 1
 
     end
@@ -374,12 +416,12 @@ function solve_dopf_coordinated_sp(data_area::Dict{Int64, <:Any}, model_type::Da
     flag_convergence = false
 
     # start iteration
-    while iteration < max_iteration && !flag_convergence
+    while iteration <= max_iteration && !flag_convergence
 
         # solve local area problems in parallel
         info1 = @capture_out begin
             Threads.@threads for area in areas_id
-                result = solve_model(data_area[area], model_type, optimizer, dopf_method.build_method_local, solution_processors=dopf_method.post_processors_local)
+                result = solve_pmada_model(data_area[area], model_type, optimizer, dopf_method.build_method_local, solution_processors=dopf_method.post_processors_local)
                 update_data!(data_area[area], result["solution"])
             end
         end
@@ -392,7 +434,7 @@ function solve_dopf_coordinated_sp(data_area::Dict{Int64, <:Any}, model_type::Da
 
         # solve coordinator problem 
         info2 = @capture_out begin
-            result = solve_model(data_area[0], model_type, optimizer, dopf_method.build_method_coordinator, solution_processors=dopf_method.post_processors_coordinator)
+            result = solve_pmada_model(data_area[0], model_type, optimizer, dopf_method.build_method_coordinator, solution_processors=dopf_method.post_processors_coordinator)
             update_data!(data_area[0], result["solution"])
         end
 
@@ -502,11 +544,11 @@ function solve_dopf_coordinated_mp(data_area::Dict{Int, <:Any}, model_type::Data
     end
 
     # start iteration
-    while iteration < max_iteration && !flag_convergence
+    while iteration <= max_iteration && !flag_convergence
         Distributed.@everywhere keys(worker_area) begin
             for area in area_id
                 # solve local problem and update solution
-                result = solve_model(data_local[area], model_type, optimizer, dopf_method.build_method_local, solution_processors=dopf_method.post_processors_local)
+                result = solve_pmada_model(data_local[area], model_type, optimizer, dopf_method.build_method_local, solution_processors=dopf_method.post_processors_local)
                 update_data!(data_local[area], result["solution"])
                 # send data to coordinator
                 shared_data = prepare_shared_data(data_local[area], 0)
@@ -521,7 +563,7 @@ function solve_dopf_coordinated_mp(data_area::Dict{Int, <:Any}, model_type::Data
         end
 
         # solve coordinator problem 
-        result = solve_model(data_area[0], model_type, optimizer, dopf_method.build_method_coordinator, solution_processors=dopf_method.post_processors_coordinator)
+        result = solve_pmada_model(data_area[0], model_type, optimizer, dopf_method.build_method_coordinator, solution_processors=dopf_method.post_processors_coordinator)
         update_data!(data_area[0], result["solution"])
         dopf_method.update_method_coordinator(data_area[0])
         # share coordinator solution with local areas
@@ -542,7 +584,7 @@ function solve_dopf_coordinated_mp(data_area::Dict{Int, <:Any}, model_type::Data
         end
 
         # print solution
-        print_iteration(data_area, print_level, [])
+        print_iteration_coordinator(data_area, print_level, [])
 
         # check global convergence and update iteration counters
         flag_convergence = data_area[0]["counter"]["flag_convergence"]
@@ -692,6 +734,7 @@ calculate the dual redidual as seen by the area. Set central=true if the algorit
 """
 function calc_dual_residual!(data::Dict{String, <:Any}; central::Bool=false)
     area_id = string(get_area_id(data))
+    mismatch_method = data["option"]["mismatch_method"]
     alpha = data["parameter"]["alpha"]
     shared_variable_local = data["shared_variable"]
     shared_variable_received = data["received_variable"]
@@ -716,7 +759,12 @@ function calc_dual_residual!(data::Dict{String, <:Any}; central::Bool=false)
         for area in keys(shared_variable_local) ])
     end
 
-    dual_dual_residual[area_id] = LinearAlgebra.norm([value for area in keys(dual_dual_residual) if area != area_id for variable in keys(dual_dual_residual[area]) for (idx,value) in dual_dual_residual[area][variable]])
+    if mismatch_method == "norm"
+        dual_dual_residual[area_id] = LinearAlgebra.norm([value for area in keys(dual_dual_residual) if area != area_id for variable in keys(dual_dual_residual[area]) for (idx,value) in dual_dual_residual[area][variable]])
+    elseif mismatch_method == "max" || mismatch_method == "maximum"
+        dual_dual_residual[area_id] = LinearAlgebra.maximum([abs(value) for area in keys(dual_dual_residual) if area != area_id for variable in keys(dual_dual_residual[area]) for (idx,value) in dual_dual_residual[area][variable]])
+    end
+
     data["dual_residual"] = dual_dual_residual
 
 end
@@ -740,12 +788,12 @@ function flag_convergance(data::Dict{String, <:Any})
     mismatch = data["mismatch"][area_id]
 
     if termination_measure in ["dual_residual", "mismatch_dual_residual"]
+        tol_dual = data["option"]["tol_dual"]
         dual_residual = data["dual_residual"][area_id]
-        termination_value = LinearAlgebra.maximum([mismatch, dual_residual])
+        flag_convergence = (mismatch < tol && dual_residual < tol_dual)
     else
-        termination_value = mismatch
+        flag_convergence = mismatch < tol
     end
-    flag_convergence = termination_value < tol
 
     return flag_convergence
 end
@@ -800,61 +848,84 @@ function update_flag_convergence!(data::Dict{String, <:Any})
 
 end
 
+# "calculate the global mismatch based on local mismatch"
+# function calc_global_mismatch(data_area::Dict{Int, <:Any}) 
+#     mismatch_method = first(data_area)[2]["option"]["mismatch_method"]
+#     termination_measure = first(data_area)[2]["option"]["termination_measure"]
+#     termination_method = first(data_area)[2]["option"]["termination_method"]
+
+#     if termination_method == "global"
+#         if mismatch_method == "norm"
+#             if termination_measure in ["dual_residual", "mismatch_dual_residual"]
+#                 mismatch = LinearAlgebra.norm([data_area[i]["mismatch"][string(i)] for i in keys(data_area) if i != 0])
+#                 dual_residual = LinearAlgebra.norm([data_area[i]["dual_residual"][string(i)] for i in keys(data_area) if i != 0])
+#                 return LinearAlgebra.maximum([mismatch, dual_residual])
+#             else
+#                 return LinearAlgebra.norm([data_area[i]["mismatch"][string(i)] for i in keys(data_area) if i != 0])
+#             end
+#         elseif mismatch_method == "max" || mismatch_method == "maximum"
+#             if termination_measure in ["dual_residual", "mismatch_dual_residual"]
+#                 mismatch = LinearAlgebra.maximum([data_area[i]["mismatch"][string(i)] for i in keys(data_area) if i != 0])
+#                 dual_residual = LinearAlgebra.maximum([data_area[i]["dual_residual"][string(i)] for i in keys(data_area) if i != 0])
+#                 return LinearAlgebra.maximum([mismatch, dual_residual])
+#             else
+#                 return LinearAlgebra.maximum([data_area[i]["mismatch"][string(i)] for i in keys(data_area) if i != 0])
+#             end
+#         end
+#     else
+#         if termination_measure in ["dual_residual", "mismatch_dual_residual"]
+#             return LinearAlgebra.maximum([[data_area[i]["mismatch"][string(i)] for i in keys(data_area) if i != 0]; [data_area[i]["dual_residual"][string(i)] for i in keys(data_area) if i != 0]])
+#         else
+#             return LinearAlgebra.maximum([data_area[i]["mismatch"][string(i)] for i in keys(data_area) if i != 0])
+#         end
+#     end
+# end
+
 "calculate the global mismatch based on local mismatch"
 function calc_global_mismatch(data_area::Dict{Int, <:Any}) 
     mismatch_method = first(data_area)[2]["option"]["mismatch_method"]
-    termination_measure = first(data_area)[2]["option"]["termination_measure"]
-    termination_method = first(data_area)[2]["option"]["termination_method"]
 
-    if termination_method == "global"
-        if mismatch_method == "norm"
-            if termination_measure in ["dual_residual", "mismatch_dual_residual"]
-                mismatch = LinearAlgebra.norm([data_area[i]["mismatch"][string(i)] for i in keys(data_area) if i != 0])
-                dual_residual = LinearAlgebra.norm([data_area[i]["dual_residual"][string(i)] for i in keys(data_area) if i != 0])
-                return LinearAlgebra.maximum([mismatch, dual_residual])
-            else
-                return LinearAlgebra.norm([data_area[i]["mismatch"][string(i)] for i in keys(data_area) if i != 0])
-            end
-        elseif mismatch_method == "max" || mismatch_method == "maximum"
-            if termination_measure in ["dual_residual", "mismatch_dual_residual"]
-                mismatch = LinearAlgebra.maximum([data_area[i]["mismatch"][string(i)] for i in keys(data_area) if i != 0])
-                dual_residual = LinearAlgebra.maximum([data_area[i]["dual_residual"][string(i)] for i in keys(data_area) if i != 0])
-                return LinearAlgebra.maximum([mismatch, dual_residual])
-            else
-                return LinearAlgebra.maximum([data_area[i]["mismatch"][string(i)] for i in keys(data_area) if i != 0])
-            end
-        end
-    else
-        if termination_measure in ["dual_residual", "mismatch_dual_residual"]
-            return LinearAlgebra.maximum([[data_area[i]["mismatch"][string(i)] for i in keys(data_area) if i != 0]; [data_area[i]["dual_residual"][string(i)] for i in keys(data_area) if i != 0]])
-        else
-            return LinearAlgebra.maximum([data_area[i]["mismatch"][string(i)] for i in keys(data_area) if i != 0])
-        end
+    if mismatch_method == "norm"
+        return LinearAlgebra.norm([data_area[i]["mismatch"][string(i)] for i in keys(data_area) if i != 0])
+    elseif mismatch_method == "max" || mismatch_method == "maximum"
+        return LinearAlgebra.maximum([data_area[i]["mismatch"][string(i)] for i in keys(data_area) if i != 0])
     end
 end
 
+"calculate the global mismatch based on local mismatch"
+function calc_global_dual_residual(data_area::Dict{Int, <:Any}) 
+    mismatch_method = first(data_area)[2]["option"]["mismatch_method"]
+
+    if mismatch_method == "norm"
+        return LinearAlgebra.norm([data_area[i]["dual_residual"][string(i)] for i in keys(data_area) if i != 0])
+    elseif mismatch_method == "max" || mismatch_method == "maximum"
+        return LinearAlgebra.maximum([data_area[i]["dual_residual"][string(i)] for i in keys(data_area) if i != 0])
+    end
+end
+
+
 "check the flag convergence for all areas and return a global variables"
-function update_global_flag_convergence(data_area::Dict{Int, <:Any})
+function update_global_flag_convergence(data_area::Dict{Int64, <:Any})
     if first(data_area)[2]["option"]["termination_method"] == "global"
+        termination_measure = first(data_area)[2]["option"]["termination_measure"]
         mismatch = calc_global_mismatch(data_area)
         tol = first(data_area)[2]["option"]["tol"]
-        return mismatch <= tol
+        if termination_measure in ["dual_residual", "mismatch_dual_residual"]
+            tol_dual = first(data_area)[2]["option"]["tol_dual"]
+            dual_residual = calc_global_dual_residual(data_area) 
+            return mismatch < tol && dual_residual < tol_dual
+        else
+            mismatch = calc_global_mismatch(data_area)
+            tol = first(data_area)[2]["option"]["tol"]
+            return mismatch < tol
+        end
     else
         return reduce( &, [data_area[i]["counter"]["flag_convergence"] for i in keys(data_area)])
     end
 end 
 
-"check the flag convergence for all areas and return a global variables"
-function update_global_flag_convergence(mismatch::Dict, flag_convergence::Dict, tol::Float64, termination_method::String)
-    if termination_method == "global"
-        return LinearAlgebra.norm(values(mismatch)) <= tol
-    else
-        return reduce( &, values(flag_convergence))
-    end
-end 
-
 "print iteration information"
-function print_iteration(data::Dict, print_level::Int64, info_list::Vector=[])
+function print_iteration(data::Dict{Int64, <:Any}, print_level::Int64, info_list::Vector=[])
     if print_level > 0
         iteration = first(data)[2]["counter"]["iteration"]-1
         mismatch = calc_global_mismatch(data)
@@ -868,9 +939,11 @@ function print_iteration(data::Dict, print_level::Int64, info_list::Vector=[])
     end
 end
 
-function print_iteration(mismatch::Dict, iteration::Int64, print_level::Int64, info_list::Vector=[])
+"print iteration information"
+function print_iteration_coordinator(data::Dict{Int64, <:Any}, print_level::Int64, info_list::Vector=[])
     if print_level > 0
-        mismatch = LinearAlgebra.norm([mismatch[i] for i in keys(mismatch)])
+        iteration = data[0]["counter"]["iteration"]-1
+        mismatch = data[0]["mismatch"]["0"]
         println("Iteration = $iteration, mismatch = $mismatch")
 
         if print_level > 1
@@ -881,17 +954,31 @@ function print_iteration(mismatch::Dict, iteration::Int64, print_level::Int64, i
     end
 end
 
+
+# function print_iteration(mismatch::Dict, iteration::Int64, print_level::Int64, info_list::Vector=[])
+#     if print_level > 0
+#         mismatch = LinearAlgebra.norm([mismatch[i] for i in keys(mismatch)])
+#         println("Iteration = $iteration, mismatch = $mismatch")
+
+#         if print_level > 1
+#             for info in info_list
+#                 println(info)
+#             end
+#         end
+#     end
+# end
+
 "print final solution status"
 function print_convergence(data::Dict, print_level::Int64)
     if print_level > 0
-        iteration = first(data)[2]["counter"]["iteration"]
+        iteration = first(data)[2]["counter"]["iteration"]-1
         mismatch = calc_global_mismatch(data)
         tol =first(data)[2]["option"]["tol"]
         flag_convergence = update_global_flag_convergence(data)
         if flag_convergence
             println("*******************************************************")
             println("")
-            println("Consistency achieved within $tol mismatch tolerence")
+            println("Consistency achieved within $tol mismatch tolerance")
             println("Number of iterations = $iteration")
             
             objective = calc_dist_gen_cost(data)

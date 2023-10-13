@@ -25,26 +25,26 @@ export xx_methods, solve_dopf_xx
 The solve function is the main method to use the `xx` algorithm. The function takes the data, power flow formulation (`model_type`), JuMP solver object, and algorithm's parameters as required. The solve function should use the pre-defined algorithm flow as follows:
 
 ```julia
-"solve distributed OPF using XX algorithm"
+"solve distributed OPF using xx algorithm"
 function solve_method(data, model_type::DataType, optimizer; 
     mismatch_method::String="norm", tol::Float64=1e-4, max_iteration::Int64=1000, 
-    verbose::Int64=1, parameters...)
+    print_level::Int64=1, parameters...)
 
     solve_dopf(data, model_type, optimizer, xx_methods; 
     mismatch_method=mismatch_method, tol=tol, max_iteration=max_iteration, 
-    verbose=verbose, parameters...)
+    print_level=print_level, parameters...)
 end
 ```
 
 The first algorithm-specific function is the initialize function. The function takes the area data file and adds to it the required parameters, counters, and shared variables. There are multiple built-in functions in `PowerModelsADA` that can be used to define the shared and received variables, as well as the dual variables. Note that the initialization function should include the `initialize_dopf!` to define the counters and convergence flags. We use `kwargs` with the `...` to combine the algorithm's parameters and pass them to the `initialize_method`.
 
 ```julia
-"initialize the XX algorithm"
+"initialize the xx algorithm"
 function initialize_method(data::Dict{String, <:Any}, model_type::Type; kwargs...)
 
     # initiate primal and dual shared variables
-    data["shared_variable"] = Dict(to_area=> variable_name=>value)
-    data["received_variable"] = Dict(from_area=> variable_name=>value)
+    data["shared_variable"] = Dict(to_area=> variable_name=> variable_index=> value)
+    data["received_variable"] = Dict(from_area=> variable_name=>variable_index=> value)
 
     # distributed algorithm settings
     initialize_dopf!(data, model_type; kwargs...)
@@ -96,8 +96,23 @@ function update_method(data::Dict{String, <:Any})
 
     ### update subproblem parameters for the next iteration
     ###
+
+    ### you can use predefined function to calculate the mismatches, check convergence, save progress etc. 
+
+    calc_mismatch!(data, central=true)
+    update_flag_convergence!(data)
+    save_solution!(data)
+    update_iteration!(data)
 end
 
+```
+
+The final step is defining the post-processing functions and global keys. The post-processing functions perform tasks to the `PowerModels` object after solving the subproblem. `PowerModelsADA` comes with two post-processing functions. The first function updates the solution dictionary, and the second function updates the shared variables dictionary. The global keys are the keys that are used in the data area dictionary (related to the `xx` algorithm) and should be explicitly given by extending the existing `_pmada_global_keys` set of strings.
+
+```julia
+post_processors = [update_solution!, update_shared_variable!]
+
+push!(_pmada_global_keys, "shared_variable", "received_variable", "dual_variable")
 ```
 
 This is a general way to define a distributed algorithm that is fully distributed with the same main algorithm flow as the pre-defined algorithms. For other algorithm flows, the solve function needs to be defined fully instead of using the pre-define function `solve_dopf`.

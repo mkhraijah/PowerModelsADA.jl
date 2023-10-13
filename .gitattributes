@@ -1,0 +1,2 @@
+# remove MATPOWER test cases file when determine the package language
+*.m linguist-vendored=true
