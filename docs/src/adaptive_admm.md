@@ -1,4 +1,4 @@
-# ADMM
+# Adaptive Alternating Direction Method of Multipliers (Adaptive ADMM)
 
 ```@meta
 CurrentModule = PowerModelsADA

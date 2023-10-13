@@ -19,6 +19,19 @@ The current version of `PowerModelsADA` implements four distributed algorithms:
 - Auxiliary Problem Principle (APP)
 - Augmented Lagrangian Alternating Direction Inexact Newton (ALADIN)
 
+The specifications of the distributed algorithms are contained in modules within `PowerModelsADA` and can be used with the algorithms' solve functions. The distributed algorithms variations and solve functions are listed below.
+
+| **Algorithm**                      | **Module**                          | **Solve Function**                     |
+|------------------------------------|-------------------------------------|----------------------------------------|
+| ADMM (fully distributed)           | `admm_methods`                      | `solve_dopf_admm`                      |
+| ADMM (with a coordinator)          | `admm_coordinated_methods`          | `solve_dopf_admm_coordinated`          |
+| Adaptive ADMM (fully distributed)  | `adaptive_admm_methods`             | `solve_dopf_adaptive_admm`             |
+| Adaptive ADMM (with a coordinator) | `adaptive_admm_coordinated_methods` | `solve_dopf_adaptive_admm_coordinated` |
+| ATC (fully distributed)            | `atc_methods`                       | `solve_dopf_atc`                       |
+| ATC (with a coordinator)           | `atc_coordinated_methods`           | `solve_dopf_atc_coordinated`           |
+| APP                                | `app_methods`                       | `solve_dopf_app`                       |
+| ALADIN (with a coordinator)        | `aladin_coordinated_methods`        | `solve_dopf_aladin_coordinated`        |
+
 `PowerModelsADA` can be extended to include variations of the existing algorithms or new user-defined algorithms. More details about the formulations and algorithm implementations are shown in [Technical Specifications](https://mkhraijah.github.io/PowerModelsADA.jl/dev/specification/)
 
 ## Installation

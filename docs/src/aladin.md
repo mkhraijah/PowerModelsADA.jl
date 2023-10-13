@@ -1,4 +1,4 @@
-# ALADIN
+# Augmented Lagrangian Alternating Direction Inexact Newton (ALADIN)
 
 ```@meta
 CurrentModule = PowerModelsADA

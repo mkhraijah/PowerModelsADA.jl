@@ -4,12 +4,6 @@
 
 
 ""
-function solve_pmada_model(file::String, model_type::Type, optimizer, build_method; kwargs...)
-    data = parse_file(file)
-    return solve_pmada_model(data, model_type, optimizer, build_method; kwargs...)
-end
-
-""
 function solve_pmada_model(data::Dict{String,<:Any}, model_type::Type, optimizer, build_method;
         ref_extensions=[], solution_processors=[], relax_integrality=false,
         multinetwork=false, multiconductor=false, kwargs...)
@@ -29,13 +23,6 @@ function solve_pmada_model(data::Dict{String,<:Any}, model_type::Type, optimizer
     result = optimize_model!(pm, relax_integrality=relax_integrality, optimizer=optimizer, solution_processors=solution_processors)
 
     return result
-end
-
-
-""
-function instantiate_pmada_model(file::String, model_type::Type, build_method; kwargs...)
-    data = parse_file(file)
-    return instantiate_pmada_model(data, model_type, build_method; kwargs...)
 end
 
 ""

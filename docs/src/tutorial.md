@@ -6,11 +6,16 @@ The distributed algorithm-specific functions are stored in modules. Each module 
 
 The distributed algorithm module and solve function are:
 
-- ADMM: modules: `admm_methods` and `admm_coordinated_methods`. solve functions: `solve_dopf_admm` and `solve_dopf_admm_coordinated`
-- ATC: modules: `atc_methods` and `atc_coordinated_methods`. solve functions: `solve_dopf_atc` and `solve_dopf_atc_coordinated`
-- APP: modules: `app_methods`. solve functions: `solve_dopf_app`
-- ALADIN: modules: `aladin_coordinated_methods`. solve function: `solve_dopf_aladin_coordinated`
-- Adaptive ADMM: modules: `adaptive_admm_methods` and `adaptive_admm_coordinated_methods`. solve functions: `solve_dopf_adaptive_admm` and `solve_dopf_adaptive_admm_coordinated`
+| **Algorithm**                      | **Module**                          | **Solve Function**                     |
+|------------------------------------|-------------------------------------|----------------------------------------|
+| ADMM (fully distributed)           | `admm_methods`                      | `solve_dopf_admm`                      |
+| ADMM (with a coordinator)          | `admm_coordinated_methods`          | `solve_dopf_admm_coordinated`          |
+| Adaptive ADMM (fully distributed)  | `adaptive_admm_methods`             | `solve_dopf_adaptive_admm`             |
+| Adaptive ADMM (with a coordinator) | `adaptive_admm_coordinated_methods` | `solve_dopf_adaptive_admm_coordinated` |
+| ATC (fully distributed)            | `atc_methods`                       | `solve_dopf_atc`                       |
+| ATC (with a coordinator)           | `atc_coordinated_methods`           | `solve_dopf_atc_coordinated`           |
+| APP                                | `app_methods`                       | `solve_dopf_app`                       |
+| ALADIN (with a coordinator)        | `aladin_coordinated_methods`        | `solve_dopf_aladin_coordinated`        |
 
 ## Run Distributed Algorithm
 
@@ -127,7 +132,7 @@ while iteration < max_iteration && flag_convergence == false
 
     ## solve local problem and update solution
     for i in areas_id
-        result = solve_model(data_area[i], model_type, optimizer, admm_methods.build_method, solution_processors=admm_methods.post_processors)
+        result = solve_pmada_model(data_area[i], model_type, optimizer, admm_methods.build_method, solution_processors=admm_methods.post_processors)
         update_data!(data_area[i], result["solution"])
     end
 

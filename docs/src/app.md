@@ -1,4 +1,4 @@
-# APP
+# Auxiliary Problem Principle (APP)
 
 ```@meta
 CurrentModule = PowerModelsADA

@@ -1,4 +1,4 @@
-# ATC
+# Analytical Target Cascading (ATC)
 
 ```@meta
 CurrentModule = PowerModelsADA
