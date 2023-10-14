@@ -16,11 +16,12 @@ SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 Suppressor = "fd094767-a336-5f1f-9728-57cf17d0bbfb"
 
 [compat]
+DelimitedFiles = "1"
 HiGHS = "~0.3, ~1"
+InfrastructureModels = "~0.7"
 Ipopt = "~0.8, ~0.9, ~1"
 JuMP = "~0.22, ~0.23, ~1"
 PowerModels = "~0.18.4, ~0.19"
-InfrastructureModels = "~0.7"
 Suppressor = "~0.2"
 julia = "1.6, 1.8, 1.9"
 
