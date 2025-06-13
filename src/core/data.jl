@@ -68,12 +68,12 @@ function decompose_system(data::Dict{String, <:Any}, area_id::Int64)
     data_area["per_unit"] = data["per_unit"]
     data_area["bus"] = Dict([j => bus for (j,bus) in data["bus"] if bus["bus_i"] in [local_bus;neighbor_bus] && bus["bus_type"] != 4])
     data_area["branch"] = Dict([j => branch for (j,branch) in data["branch"] if (branch["f_bus"] in local_bus || branch["t_bus"] in local_bus) && branch["br_status"] == 1])
-    data_area["gen"] = merge(Dict([i => gen for (i,gen) in data["gen"] if gen["gen_bus"] in local_bus && gen["gen_status"] == 1]), virtual_gen)
-    data_area["shunt"] = Dict([i => shunt for (i,shunt) in data["shunt"] if shunt["shunt_bus"] in local_bus])
-    data_area["load"] = Dict([i => load for (i,load) in data["load"] if load["load_bus"] in local_bus])
-    data_area["storage"]= Dict([i => storage for (i,storage) in data["storage"] if gen["storage_bus"] in local_bus])
-    data_area["switch"]=Dict([i => switch for (i,switch) in data["switch"] if gen["switch_bus"] in local_bus])
-    data_area["dcline"]= Dict([i => dcline for (i,dcline) in data["dcline"] if dcline["f_bus"] in local_bus || dcline["t_bus"] in local_bus ] )
+    data_area["gen"] = Dict{String, Any}(merge(Dict{String, Any}([i => gen for (i,gen) in data["gen"] if gen["gen_bus"] in local_bus && gen["gen_status"] == 1]), virtual_gen))
+    data_area["shunt"] = Dict{String, Any}([i => shunt for (i,shunt) in data["shunt"] if shunt["shunt_bus"] in local_bus])
+    data_area["load"] = Dict{String, Any}([i => load for (i,load) in data["load"] if load["load_bus"] in local_bus])
+    data_area["storage"]= Dict{String, Any}([i => storage for (i,storage) in data["storage"] if gen["storage_bus"] in local_bus])
+    data_area["switch"]=Dict{String, Any}([i => switch for (i,switch) in data["switch"] if gen["switch_bus"] in local_bus])
+    data_area["dcline"]= Dict{String, Any}([i => dcline for (i,dcline) in data["dcline"] if dcline["f_bus"] in local_bus || dcline["t_bus"] in local_bus ] )
 
     return data_area
 end
@@ -94,14 +94,14 @@ function decompose_coordinator(data::Dict{String, <:Any})
     data_coordinator["source_type"] = data["source_type"]
     data_coordinator["baseMVA"] = data["baseMVA"]
     data_coordinator["per_unit"] = data["per_unit"]
-    data_coordinator["bus"] = Dict([j => bus for (j,bus) in data["bus"] if bus["bus_i"] in boundary_bus])
-    data_coordinator["branch"] = Dict([j => branch for (j,branch) in data["branch"] if branch["f_bus"] in boundary_bus && branch["t_bus"] in boundary_bus && data["bus"]["$(branch["f_bus"])"]["area"] != data["bus"]["$(branch["t_bus"])"]["area"] ])
-    data_coordinator["gen"] = Dict{String,Any}()
-    data_coordinator["shunt"] = Dict{String,Any}()
-    data_coordinator["load"] = Dict{String,Any}()
-    data_coordinator["storage"]= Dict{String,Any}()
-    data_coordinator["switch"]= Dict{String,Any}()
-    data_coordinator["dcline"]= Dict{String,Any}()
+    data_coordinator["bus"] = Dict{String, Any}([j => bus for (j,bus) in data["bus"] if bus["bus_i"] in boundary_bus])
+    data_coordinator["branch"] = Dict{String, Any}([j => branch for (j,branch) in data["branch"] if branch["f_bus"] in boundary_bus && branch["t_bus"] in boundary_bus && data["bus"]["$(branch["f_bus"])"]["area"] != data["bus"]["$(branch["t_bus"])"]["area"] ])
+    data_coordinator["gen"] = Dict{String, Any}()
+    data_coordinator["shunt"] = Dict{String, Any}()
+    data_coordinator["load"] = Dict{String, Any}()
+    data_coordinator["storage"]= Dict{String, Any}()
+    data_coordinator["switch"]= Dict{String, Any}()
+    data_coordinator["dcline"]= Dict{String, Any}()
     return data_coordinator
 end
 

@@ -5,18 +5,7 @@
 
 ""
 function solve_pmada_model(data::Dict{String,<:Any}, model_type::Type, optimizer, build_method;
-        ref_extensions=[], solution_processors=[], relax_integrality=false,
-        multinetwork=false, multiconductor=false, kwargs...)
-
-    if multinetwork != _IM.ismultinetwork(data)
-        model_requirement = multinetwork ? "multi-network" : "single-network"
-        data_type = _IM.ismultinetwork(data) ? "multi-network" : "single-network"
-    end
-
-    if multiconductor != ismulticonductor(data)
-        model_requirement = multiconductor ? "multi-conductor" : "single-conductor"
-        data_type = ismulticonductor(data) ? "multi-conductor" : "single-conductor"
-    end
+        ref_extensions=[], solution_processors=[], relax_integrality=false, kwargs...)
 
     pm = instantiate_pmada_model(data, model_type, build_method; ref_extensions=ref_extensions, kwargs...)
 
@@ -246,14 +235,14 @@ function solve_dopf_mp(data_area::Dict{Int64, <:Any}, model_type::DataType, opti
                 # send data to neighboring areas
                 for neighbor in data_local[area]["neighbors"] 
                     shared_data = prepare_shared_data(data_local[area], neighbor)
-                    put!(comms[area][neighbor], shared_data)
+                    put!(comms[area][neighbor], deepcopy(shared_data))
                 end
             end
         end
 
         Distributed.@everywhere keys(worker_area) begin
             for area in area_id
-                # receive data to neighboring areas
+                # receive data from neighboring areas
                 for neighbor in data_local[area]["neighbors"] 
                     received_data = take!(comms[neighbor][area])
                     receive_shared_data!(data_local[area], received_data, neighbor)
@@ -539,7 +528,7 @@ function solve_dopf_coordinated_mp(data_area::Dict{Int, <:Any}, model_type::Data
                 update_data!(data_local[area], result["solution"])
                 # send data to coordinator
                 shared_data = prepare_shared_data(data_local[area], 0)
-                put!(comms[area][0], shared_data)
+                put!(comms[area][0], deepcopy(shared_data))
             end
         end
 
@@ -556,7 +545,7 @@ function solve_dopf_coordinated_mp(data_area::Dict{Int, <:Any}, model_type::Data
         # share coordinator solution with local areas
         for area in areas_id
             shared_data = prepare_shared_data(data_area[0], area)
-            put!(comms[0][area], shared_data)
+            put!(comms[0][area], deepcopy(shared_data))
         end
 
         Distributed.@everywhere keys(worker_area) begin
@@ -678,7 +667,9 @@ end
 function save_solution!(data::Dict{String, <:Any})
     if haskey(data, "previous_solution")
         for str in keys(data["previous_solution"])
-            push!(data["previous_solution"][str], deepcopy(data[str]))
+            if haskey(data, str)
+                push!(data["previous_solution"][str], deepcopy(data[str]))
+            end
         end
     end
 end

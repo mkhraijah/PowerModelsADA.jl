@@ -1,6 +1,7 @@
 module PowerModelsADA
 
 import JuMP
+import MathOptInterface as MOI
 import PowerModels
 import InfrastructureModels
 import Serialization
@@ -10,11 +11,10 @@ import SparseArrays
 import Suppressor: @capture_out
 import Distributed
 
-import PowerModels: AbstractPowerModel, parse_file, ids, ref, var, con, sol, nw_ids, nws, optimize_model!, update_data!, ref_add_core!, pm_it_sym, pm_it_name, nw_id_default, ismultinetwork, ismulticonductor, silence
+import PowerModels: AbstractPowerModel, parse_file, ids, ref, var, con, sol, nw_ids, nws, optimize_model!, update_data!, ref_add_core!, pm_it_sym, pm_it_name, nw_id_default, ismultinetwork, silence
 
 const _PM = PowerModels
 const _IM = InfrastructureModels
-# const _pmada_global_keys = Set(["time_series", "per_unit", "parameter", "option", "solution", "local_solution", "shared_variable", "received_variable", "received_delta", "dual_variable", "received_dual_variable", "shared_sensitivities", "shared_dual_variable", "dual_residual", "mismatch", "dual_residual", "counter"])
 
 const _pmada_global_keys = Set(["time_series", "per_unit", "parameter", "option", "solution", "mismatch", "counter", "previous_solution", "shared_flag_convergence", "received_flag_convergence", "shared_convergence_iteration", "received_convergence_iteration"])
 
@@ -34,7 +34,5 @@ include("algorithms/atc_coordinated_methods.jl")
 include("algorithms/aladin_coordinated_methods.jl")
 include("algorithms/adaptive_admm_methods.jl")
 include("algorithms/adaptive_admm_coordinated_methods.jl")
-
-
 
 end

@@ -83,7 +83,7 @@ data_RTS = parse_file("../test/data/case_RTS.m")
         @test isapprox(dist_cost, 8081.52, atol=5)
     end
 
-    # ## Adaptive ADMM test
+    ## Adaptive ADMM test
     @testset "adaptive admm algorithm with DC power flow" begin
         data_area = solve_dopf_adaptive_admm(data_14, DCPPowerModel, milp_solver; alpha=1000, tol=1e-3, max_iteration=1000, print_level=0)
         dist_cost = calc_dist_gen_cost(data_area)
@@ -112,7 +112,7 @@ data_RTS = parse_file("../test/data/case_RTS.m")
     ## APP test
     @testset "app algorithm with DC power flow" begin
         data_area = solve_dopf_app(data_14, DCPPowerModel, milp_solver; alpha=1000, tol=1e-3, max_iteration=2, print_level = 0)
-        data_area = solve_dopf_app(data_area, DCPPowerModel, milp_solver; alpha=1000, tol=1e-3, max_iteration=1000, print_level = 1, initialization_method="previous")
+        data_area = solve_dopf_app(data_area, DCPPowerModel, milp_solver; alpha=1000, tol=1e-3, max_iteration=1000, print_level = 0, initialization_method="previous")
         dist_cost = calc_dist_gen_cost(data_area)
         @test isapprox(dist_cost, 7642.59, atol =5)
     end
